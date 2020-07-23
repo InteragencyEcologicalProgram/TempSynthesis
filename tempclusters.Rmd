@@ -2,7 +2,9 @@
 title: "Temperature cluster analysis"
 author: "Rosie"
 date: "7/16/2020"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -97,4 +99,130 @@ text(tempNMDS, "sites", labels = tempmowide4$Station)
 Now the question is whether teh clusters actually work out geographically. I'm going to have to spend some time with this map printed out and a highlighter to see how it lines up.
 
 ![CDEC stations included in analysis](CDEC_stations.jpg)
+
+## Cutting down the trees
+
+Now I can cut my trees into groups to see how they map out.
+
+```{r}
+cutday = as.data.frame(cutree(tempfit, k = c(2,4,6,12)))
+cutday$Station = row.names(cutday)
+```
+
+
+## Plot
+
+I trimmed the tree into different numbers of groups, so see what we get when we try to divide it into 2,4,6, or 12 regions.
+
+```{r}
+
+library("sf")
+library(dplyr)
+library(ggplot2)
+library(leaflet)
+library(scales)
+library(ggmap)
+
+#read in shapefile of the delta
+delta = read_sf("deltashap/hydro_delta_marsh.shp")
+
+#add lat/longs for the stations
+stas = read.csv("StationLatLongs.csv")
+
+cutday = merge(cutday, stas)
+names(cutday) = c("Station", "grps2", "grps4", "grps6", "grps12", "Latitude","Longitude")
+
+#turn it into a spatial object
+stashap = st_as_sf(cutday,
+                coords = c("Longitude", "Latitude"),
+                crs = 4326)
+
+gp4 = ggplot() +
+  geom_sf(data = delta, alpha = 0.5)+
+  geom_sf(data = stashap, mapping =aes(color = as.factor(grps4)))+
+  theme_bw() + guides(color = FALSE) + 
+  coord_sf(xlim = c(-122.2, -121), ylim = c(37.6, 38.8))+
+  ggtitle("4 groups")
+
+gp6 = ggplot() +
+  geom_sf(data = delta, alpha = 0.5)+
+  geom_sf(data = stashap, mapping =aes(color = as.factor(grps6)))+
+  theme_bw() + guides(color = FALSE) + 
+  coord_sf(xlim = c(-122.2, -121), ylim = c(37.6, 38.8))+
+  ggtitle("6 groups")
+
+gp12 = ggplot() +
+  geom_sf(data = delta, alpha = 0.5)+
+  geom_sf(data = stashap, mapping =aes(color = as.factor(grps12)))+
+  theme_bw() + guides(color = FALSE) + 
+  coord_sf(xlim = c(-122.2, -121), ylim = c(37.6, 38.8))+
+  ggtitle("12 groups")
+
+library(gridExtra)
+
+foo = grid.arrange(gp4, gp6, gp12, nrow = 1, ncol = 3)
+
+#ggsave("tempclusters.png",foo, device = "png", width = 12)
+
+```
+```{r}
+if (!require("rspatial")) devtools::install_github('rspatial/rspatial')
+library(rspatial)
+library( spgwr )
+#attached lat/longs to mean temperature
+tempmean2 = merge(tempmean, stas)
+
+#turn it into a spatial object
+
+temp_mn_shap = st_as_sf(tempmean2,
+                coords = c("Longitude", "Latitude"),
+                crs = 4326)
+
+
+#different kind of spatial object
+alb <- CRS("+proj=aea +lat_1=34 +lat_2=40.5 +lat_0=0 +lon_0=-120 +x_0=0 +y_0=-4000000 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")
+delta2 = sf::as_Spatial(dplyr::filter(delta, HNAME != "SAN FRANCISCO BAY", HNAME != "SAN PABLO BAY"))
+ctst <- spTransform(delta2, alb)
+
+
+#try a local regreesion for interpolation
+
+#find optimal bandwith
+#THIS TAKES FOREVER!
+tempmean2.1 = dplyr::filter(tempmean2, julian <190)
+tempmeansub = tempmean2[sample(nrow(tempmean2.1), 10000), ]
+sp = tempmeansub
+coordinates(sp) = ~ Longitude + Latitude
+crs(sp) <- "+proj=longlat +datum=NAD83"
+spt <- spTransform(sp, alb)
+bw <- gwr.sel( Temp~ julian, data=tempmeansub, coords = cbind(tempmeansub$Longitude, tempmeansub$Latitude))
+
+#create a set o fpoints to estimate parameters for
+
+
+r <- raster(ctst,  res=100)
+rdelta2 <- rasterize(ctst, r)
+newpts <- rasterToPoints(rdelta2)
+
+
+#run the GWR function to calculate local regressions
+#I'll just do this on January-June, to avoid circular statistics. 
+g <- gwr(Temp ~ julian, data= spt,
+       #  coords = cbind(tempmeansub$Longitude, tempmeansub$Latitude), 
+         bandwidth=bw, fit.points=newpts[, 1:2])
+g
+
+#link restuslts back to raster
+
+slope <- rdelta2
+intercept <- rdelta2
+slope[!is.na(slope)] <- g$SDF$julian
+intercept[!is.na(intercept)] <- g$SDF$'(Intercept)'
+s <- stack(intercept, slope)
+names(s) <- c('intercept', 'slope')
+plot(s)
+plot(spt)
+
+
+```
 

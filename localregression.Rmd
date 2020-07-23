@@ -1,0 +1,105 @@
+---
+title: "Local Regression analysis"
+author: "Rosie"
+date: "7/22/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(lubridate)
+library(tidyverse)
+library(vegan)
+library(sf)
+if (!require("rspatial")) devtools::install_github('rspatial/rspatial')
+library(rspatial)
+library( spgwr )
+
+#load the data
+temps = readRDS("Temp_filtered (1).rds")
+
+
+#first calculate the daily means
+tempmean = temps %>%
+  filter(Date > as.Date("2014-1-1"), Station != "RYF") %>%
+  mutate(julian = yday(Date)) %>%
+  group_by(Station, julian) %>%
+  summarize(Temp = mean(Temp, na.rm = T))
+
+```
+
+## Local regression
+
+One of the cool ways you can address differences across space is run a regression that calculates different coefficients over space. I ran the model over the continuous stations, then extrapolated the results to the rest of the Detla.
+
+First we have to do some data manipulation to get everything into a spatial format. 
+
+```{r}
+#read in shapefile of the delta
+delta = read_sf("deltashap/hydro_delta_marsh.shp")
+
+#add lat/longs for the stations
+stas = read.csv("StationLatLongs.csv")
+
+
+#attached lat/longs to mean temperature
+tempmean2 = merge(tempmean, stas)
+
+#Specify a coordinate reference system and turn it into a spatial object
+alb <- CRS("+proj=aea +lat_1=34 +lat_2=40.5 +lat_0=0 +lon_0=-120 +x_0=0 +y_0=-4000000 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")
+
+#Filter the Delta shapefile so it doesn't include areas where we dont have a lot of data
+delta2 = sf::as_Spatial(dplyr::filter(delta, HNAME != "SAN FRANCISCO BAY", HNAME != "SAN PABLO BAY"))
+
+#I'm not positive we have to do this transformation, but it was in teh example so I'm doing it.
+ctst <- spTransform(delta2, alb)
+```
+
+Now I'll filter out just the data from January-June and find the optimal badwidth for the interpolation. I think this basically tells you how much "smoothing" to put between your sampling points.
+```{r}
+tempmean2.1 = dplyr::filter(tempmean2, julian <190)
+tempmeansub = tempmean2.1
+sp = tempmeansub
+coordinates(sp) = ~ Longitude + Latitude
+crs(sp) <- "+proj=longlat +datum=NAD83"
+spt <- spTransform(sp, alb)
+
+#find optimal bandwith
+#THIS TAKES FOREVER!
+bw <- gwr.sel( Temp~ julian, data= spt)
+
+
+```
+
+To make the pretty map, I need to create a blank raster from the Delta shapefile. Once I calculate the predicted values for the regression, I'll fill it in.
+
+
+```{r}
+r <- raster(ctst,  res=100)
+rdelta2 <- rasterize(ctst, r)
+newpts <- rasterToPoints(rdelta2)
+```
+
+Now I run the GWR function to calculate local regressions
+
+```{r warning=F}
+#
+
+g <- gwr(Temp ~ julian, data= spt,
+         bandwidth=bw, fit.points=newpts[, 1:2])
+g
+```
+
+Put the fitted points back on my raster and plot it!
+
+```{r fig.width=15}
+slope <- rdelta2
+intercept <- rdelta2
+slope[!is.na(slope)] <- g$SDF$julian
+intercept[!is.na(intercept)] <- g$SDF$'(Intercept)'
+s <- stack(intercept, slope)
+names(s) <- c('intercept', 'slope')
+plot(s, xlim = c(-200000, -100000), ylim = c(-50000,50000))
+
+
+```
