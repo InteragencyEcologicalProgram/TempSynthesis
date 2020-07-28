@@ -1,0 +1,79 @@
+---
+title: "heatcategories"
+author: "Catarina Pien"
+date: "7/28/2020"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+Read in files
+* Integrated dataset - filtered
+* Extra EMP files 
+```{r read}
+library(tidyverse)
+library(lubridate)
+library(readr)
+
+setwd("C:/Users/cpien/OneDrive - California Department of Water Resources/Work/ClimateChange/R_code/TempSynthesis/DepthAnalysis/")
+
+depthdata <- readRDS("Data/depthdata_QC_20200728.rds")
+depthdata$Date <- date(depthdata$Datetime)
+```
+
+Classify Heat Category
+1. Calculate maximum daily temperatures by station, depth
+2. Flag temps > 25, >21
+3. If there are 3+ days in a row where max temp >25, stress category = High
+4. If not above, If there are more than 3 days in a row where max temp >21, stress category = Med
+5. If neither, stress = Low
+6. Join stress category with all temp values 
+```{r Heat category}
+# Calculate max temperatures
+
+max <- depthdata %>%
+  group_by(WaterCol, Station, Date) %>%
+  summarize(maxT = max(Temp))
+
+# Flagging starting on Day 3 of high/med temps   
+heat <- max %>%
+  group_by(WaterCol, Station) %>%
+  mutate(Thr25 = ifelse(maxT > 25, 1L, 0L),
+         Thr21 = ifelse(maxT > 21, 1L, 0L)) %>%
+  mutate(Stress = ifelse(Thr25 == lag(Thr25, 1) & Thr25 == lag(Thr25, 2) & Thr25 == 1L, "High", 
+                            ifelse(Thr21 == lag(Thr21, 1) & Thr21 == lag(Thr21, 2) & Thr21 == 1, "Med", 
+                                   "Low"))) %>%
+  select(-starts_with("Thr"))
+  
+# If the max temp of the day was flagged, the whole day's values are now flagged
+depthdata_heat <- left_join(depthdata, heat, by = c("WaterCol", "Station", "Date")) %>%
+  select(-maxT)
+
+```
+
+
+This would be for flagging all values in the group, not just starting on day 3
+```{r alt flagging}
+
+# heatAll <- max %>%
+#   group_by(WaterCol, Station) %>%
+#   mutate(Thr25 = ifelse(maxT > 25, 1L, 0L),
+#          Thr21 = ifelse(maxT > 21, 1L, 0L)) %>%
+#   mutate(issame25 = cumsum(Thr25 == 0L),
+#          issame21 = cumsum(Thr21 == 0L)) %>%
+#   group_by(WaterCol, Station, issame25) %>%
+#   mutate(ndays25 = ifelse(Thr25 == 1L, sum(Thr25), 0L)) %>%
+#   ungroup() %>%
+#   mutate(Flag25 = ifelse(ndays25 >3, "Y", "N")) %>%
+#   group_by(WaterCol, Station, issame21) %>%
+#   mutate(ndays21 = ifelse(Thr21 == 1L, sum(Thr21), 0L)) %>%
+#   ungroup() %>%
+#   mutate(Flag21 = ifelse(ndays21 >= 3, "Y", "N")) 
+#   select(-starts_with("issame")) %>%
+#   select(-starts_with("Thr")) %>%
+#   select(-starts_with("ndays")) %>%
+#   mutate(Stresscat = ifelse(Flag25 == "Y", "High",
+#                             ifelse(Flag21 == "Y", "Med", "Low"))) %>%
+#   select(-starts_with("Flag"))
+```
+
