@@ -7,6 +7,8 @@ editor_options:
   chunk_output_type: console
 ---
 
+Read in EMP's depth data, QC the data, join with the depth stations from QCed integrated dataset (filtered dataset, which does not contain any flagged data)
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
@@ -342,20 +344,28 @@ print(paste0(round(nrow(Flags)/nrow(temp_q6)*100,2), "% flagged"))
 ```
 
 
-Join with original dataset
+Bind QCed bottom middle data with original dataset
 ```{r original and depth data}
 
+# Filter original dataset to only depth stations, add a column for surface
 surfaceFilt <- tempFilt %>%
   filter(Station %in% c("ANH", "MAL", "MRZ", "RRI")) %>%
   mutate(WaterCol = "Surface") %>%
   select(-c(StationName, Date))
 
+# Remove some variables
 botmid_final <- select(temp_final, -Date)
 
+# Bind surface and depth data
 depth_QC <- rbind(surfaceFilt, botmid_final)
+```
+
+Write file
+```{r write}
+
+# Write file
 today = format(today(), "%Y%m%d")
 saveRDS(depth_QC, paste0("Data/depthdata_QC_", today, ".rds"))
 write.csv(depth_QC, paste0("Data/depthdata_QC_", today, ".csv"))
-
 ```
 
