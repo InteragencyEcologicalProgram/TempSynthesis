@@ -6,6 +6,7 @@ output: html_document
 editor_options: 
   chunk_output_type: console
 ---
+Classify each value into a high, medium, low stress day based on the accumulation of high maximum daily temperatures. 
 
 Read in files
 * Integrated dataset - filtered
