@@ -49,9 +49,15 @@ heat <- max %>%
 # If the max temp of the day was flagged, the whole day's values are now flagged
 depthdata_heat <- left_join(depthdata, heat, by = c("WaterCol", "Station", "Date")) %>%
   select(-maxT)
-
 ```
 
+Write file
+
+```{r write}
+today = format(today(), "%Y%m%d")
+saveRDS(depthdata_heat, paste0("Data/depthdata_heatstress_", today, ".rds"))
+write.csv(depth_QC, paste0("Data/depthdata_heatstress_", today, ".csv"))
+```
 
 This would be for flagging all values in the group, not just starting on day 3
 ```{r alt flagging}
