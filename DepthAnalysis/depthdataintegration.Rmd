@@ -18,7 +18,7 @@ Read in files
 library(tidyverse)
 library(lubridate)
 library(readr)
-
+setwd("C:/Users/cpien/OneDrive - California Department of Water Resources/Work/ClimateChange/R_code/TempSynthesis/DepthAnalysis/")
 tempFilt <- readRDS("Data/Temp_filtered.rds")
 
 ANH_bottom <- read.csv("Data/ANH_07122020_12312019_BottomTemp.csv")
@@ -65,19 +65,18 @@ middle_clean <- RRI_middle %>%
 bottom_clean$Datetime <- mdy_hm(bottom_clean$Datetime)
 middle_clean$Datetime <- mdy_hm(middle_clean$Datetime)
 
-botmid <- rbind(bottom_clean, middle_clean)
-depthdata <- rbind(botmid, surfaceFilt)
-
-depthdata <- mutate(depthdata, 
-       Date = date(Datetime),
+botmid <- rbind(bottom_clean, middle_clean) %>%
+  mutate(Date = date(Datetime),
        Year = year(Datetime),
        Month = month(Datetime),
        Day = day(Datetime),
        Hour = hour(Datetime),
        Minute = minute(Datetime)) %>%
+  mutate(Temp = round(Temp, digits = 1)) %>%
   filter(Year<2020)
-str(depthdata)
-summary(depthdata)
+
+
+
 ```
 
 Converted to hourly data, and ran QC1 (temp value filters)
@@ -94,7 +93,7 @@ botmid_H <- botmid %>%
 # QC1 
 
 # Data including flags
-temp_q1 <- depth_H %>% mutate(Flag_QC1 = ifelse(Temp<1 | Temp>40, "Y", "N")) 
+temp_q1 <- botmid_H %>% mutate(Flag_QC1 = ifelse(Temp<1 | Temp>40, "Y", "N")) 
 
 # Flagged values only
 temp_q1_b <- temp_q1 %>%
@@ -335,8 +334,6 @@ temp_final <- temp_flags %>%
             Pct_Flagged_QC6 = round(QC6/Init*100,2),
             Pct_Flagged_Total = round(QCTot/Init * 100,2) ))
 
-write_csv(Flagged_stations, "Tempdata/QC/Flagged_Percentages.csv")
-
 # Overall dataset
 Flags <- temp_flags %>%
   filter(grepl("Y", AllFlags))
@@ -359,5 +356,6 @@ depth_QC <- rbind(surfaceFilt, botmid_final)
 today = format(today(), "%Y%m%d")
 saveRDS(depth_QC, paste0("Data/depthdata_QC_", today, ".rds"))
 write.csv(depth_QC, paste0("Data/depthdata_QC_", today, ".csv"))
+
 ```
 
