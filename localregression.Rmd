@@ -103,3 +103,55 @@ plot(s, xlim = c(-200000, -100000), ylim = c(-50000,50000))
 
 
 ```
+
+##Now the cool part - how things have changed over the historical record
+
+```{r}
+
+
+#first calculate the daily means
+temps$Year = year(temps$Date)
+tempmax = temps %>%
+  mutate(julian = yday(Date)) %>%
+  group_by(Station, julian, Year) %>%
+  summarize(Temp = mean(Temp, na.rm = T),
+            maxTemp = max(Temp, na.rm = T),
+            minTemp = min(Temp, na.rm = T))
+
+tempmax2 = merge(tempmax, stas)
+
+tempmax2.1 = dplyr::filter(tempmax2, julian <250)
+#spx = sample_n(tempmax2.1, 10000)
+spx = tempmax2.1
+
+#turn it into a spatial object
+coordinates(spx) = ~ Longitude + Latitude
+crs(spx) <- "+proj=longlat +datum=NAD83"
+sptx <- spTransform(spx, alb)
+
+#find badwidth
+bwx <- gwr.sel( maxTemp~ julian + Year, data= sptx)
+
+
+gx <- gwr(maxTemp~ julian + Year, data= sptx,
+         bandwidth=bwx, fit.points=newpts[, 1:2])
+gx
+
+```
+```
+
+Put the fitted points back on my raster and plot it!
+
+```{r fig.width=15}
+slopeDay <- rdelta2
+slopeYear <- rdelta2
+intercept <- rdelta2
+slopeDay[!is.na(slopeDay)] <- gx$SDF$julian
+slopeYear[!is.na(slopeYear)] <- gx$SDF$Year
+intercept[!is.na(intercept)] <- gx$SDF$'(Intercept)'
+s <- stack(intercept, slopeDay, slopeYear)
+names(s) <- c('intercept', 'Seasonal Change', "Inter-annual Change")
+plot(s, xlim = c(-200000, -100000), ylim = c(-50000,50000))
+
+
+```

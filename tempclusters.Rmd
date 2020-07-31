@@ -165,6 +165,13 @@ foo = grid.arrange(gp4, gp6, gp12, nrow = 1, ncol = 3)
 #ggsave("tempclusters.png",foo, device = "png", width = 12)
 
 ```
+
+
+## Local regression
+
+One of the cool ways you can address differences across space is run a regression that calculates different coefficients over space. I ran the model over the continuous stations, then extrapolated the results to the rest of the Detla.
+
+
 ```{r}
 if (!require("rspatial")) devtools::install_github('rspatial/rspatial')
 library(rspatial)
@@ -172,30 +179,29 @@ library( spgwr )
 #attached lat/longs to mean temperature
 tempmean2 = merge(tempmean, stas)
 
-#turn it into a spatial object
-
-temp_mn_shap = st_as_sf(tempmean2,
-                coords = c("Longitude", "Latitude"),
-                crs = 4326)
-
-
-#different kind of spatial object
+#Specify a coordinate reference system and turn it into a spatial object
 alb <- CRS("+proj=aea +lat_1=34 +lat_2=40.5 +lat_0=0 +lon_0=-120 +x_0=0 +y_0=-4000000 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")
+
+#Filter the Delta shapefile so it doesn't include areas where we dont have a lot of data
 delta2 = sf::as_Spatial(dplyr::filter(delta, HNAME != "SAN FRANCISCO BAY", HNAME != "SAN PABLO BAY"))
+
+#I'm not positive we have to do this transformation, but it was in teh example so I'm doing it.
 ctst <- spTransform(delta2, alb)
 
 
 #try a local regreesion for interpolation
+#I'll start with modeling the change in temperature from January to June
 
-#find optimal bandwith
-#THIS TAKES FOREVER!
 tempmean2.1 = dplyr::filter(tempmean2, julian <190)
-tempmeansub = tempmean2[sample(nrow(tempmean2.1), 10000), ]
+tempmeansub = tempmean2.1[sample(nrow(tempmean2.1), 10000), ]
 sp = tempmeansub
 coordinates(sp) = ~ Longitude + Latitude
 crs(sp) <- "+proj=longlat +datum=NAD83"
 spt <- spTransform(sp, alb)
-bw <- gwr.sel( Temp~ julian, data=tempmeansub, coords = cbind(tempmeansub$Longitude, tempmeansub$Latitude))
+
+#find optimal bandwith
+#THIS TAKES FOREVER!
+bw <- gwr.sel( Temp~ julian, data= spt)
 
 #create a set o fpoints to estimate parameters for
 
@@ -206,13 +212,12 @@ newpts <- rasterToPoints(rdelta2)
 
 
 #run the GWR function to calculate local regressions
-#I'll just do this on January-June, to avoid circular statistics. 
+
 g <- gwr(Temp ~ julian, data= spt,
-       #  coords = cbind(tempmeansub$Longitude, tempmeansub$Latitude), 
          bandwidth=bw, fit.points=newpts[, 1:2])
 g
 
-#link restuslts back to raster
+#link results back to raster
 
 slope <- rdelta2
 intercept <- rdelta2
@@ -221,7 +226,6 @@ intercept[!is.na(intercept)] <- g$SDF$'(Intercept)'
 s <- stack(intercept, slope)
 names(s) <- c('intercept', 'slope')
 plot(s)
-plot(spt)
 
 
 ```
