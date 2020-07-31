@@ -1,0 +1,371 @@
+---
+title: "IntegrateDepthData"
+author: "Catarina Pien"
+date: "7/28/2020"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+Read in EMP's depth data, QC the data, join with the depth stations from QCed integrated dataset (filtered dataset, which does not contain any flagged data)
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Read in files
+* Integrated dataset - filtered
+* Extra EMP files 
+```{r read}
+library(tidyverse)
+library(lubridate)
+library(readr)
+setwd("C:/Users/cpien/OneDrive - California Department of Water Resources/Work/ClimateChange/R_code/TempSynthesis/DepthAnalysis/")
+tempFilt <- readRDS("Data/Temp_filtered.rds")
+
+ANH_bottom <- read.csv("Data/ANH_07122020_12312019_BottomTemp.csv")
+MAL_bottom <- read.csv("Data/MAL_07102012_12312019_BottomTemp.csv")
+MRZ_bottom <- read.csv("Data/MRZ_07102012_12312019_BottomTemp.csv")
+RRI_bottom <- read.csv("Data/RRI_01022008_12312019_BottomTemp.csv")
+RRI_middle <- read.csv("Data/RRI_01022008_12312019_MiddleTemp.csv")
+```
+
+Prepare and Merge (bind) Files
+* Rename columns to match integrated dataset
+* Rename stations to match integrated dataset
+* Merge all bottom stations together
+* Filter by QAQC Flag (G = Good, U = Unchecked)
+* Merge middle and bottom stations to undergo standardized QC with integrated dataset
+
+```{r merge}
+# Merge bottom files together
+# Rename stations
+# Rename columns
+
+bottom <- do.call("rbind", list(ANH_bottom, MAL_bottom, MRZ_bottom, RRI_bottom))
+bottom_clean <- bottom %>%
+  select(c(STATION.NAME, DATE, VALUE, QAQC.Flag)) %>%
+  mutate(WaterCol = "Bottom") %>%
+  rename(Datetime = DATE,
+         Temp = VALUE,
+         Station = STATION.NAME) %>%
+  mutate(Station = replace(as.character(Station), as.character(Station) == "(D12A)  Antioch", "ANH"),
+         Station = replace(as.character(Station), as.character(Station) == "(D10A)  Mallard", "MAL"),
+         Station = replace(as.character(Station), as.character(Station) == "(D6A)  Martinez", "MRZ"),
+         Station = replace(as.character(Station), as.character(Station) == "(P8A)  Stockton", "RRI")) %>%
+  filter(QAQC.Flag %in% c("G", "U")) 
+
+middle_clean <- RRI_middle %>%
+  select(c(STATION.NAME, DATE, VALUE, QAQC.Flag)) %>%
+  mutate(WaterCol = "Middle") %>%
+  rename(Datetime = DATE,
+         Temp = VALUE,
+         Station = STATION.NAME) %>%
+  mutate(Station = replace(as.character(Station), as.character(Station) == "(P8A)  Stockton", "RRI")) %>%
+  filter(QAQC.Flag %in% c("G", "U")) 
+
+bottom_clean$Datetime <- mdy_hm(bottom_clean$Datetime)
+middle_clean$Datetime <- mdy_hm(middle_clean$Datetime)
+
+botmid <- rbind(bottom_clean, middle_clean) %>%
+  mutate(Date = date(Datetime),
+       Year = year(Datetime),
+       Month = month(Datetime),
+       Day = day(Datetime),
+       Hour = hour(Datetime),
+       Minute = minute(Datetime)) %>%
+  mutate(Temp = round(Temp, digits = 1)) %>%
+  filter(Year<2020)
+
+
+
+```
+
+Converted to hourly data, and ran QC1 (temp value filters)
+* Used code from WaterTemp_QC, but added extra grouping factor of "WaterCol" which is whether sensor is surface, middle, or bottom
+
+```{r qaqc to same as rest of the data}
+# Hourly 
+botmid_H <- botmid %>%
+  group_by(WaterCol, Station, Date, Hour) %>% #group (calculations) by these vars
+  arrange(Station, Date, Hour, Minute) %>% #arrange in order of these vars to visualize duplication
+  slice(1) %>% #keep only the first value for each station, date, hour group so 1 value/hour
+  ungroup()
+  
+# QC1 
+
+# Data including flags
+temp_q1 <- botmid_H %>% mutate(Flag_QC1 = ifelse(Temp<1 | Temp>40, "Y", "N")) 
+
+# Flagged values only
+temp_q1_b <- temp_q1 %>%
+  filter(Flag_QC1 == "Y")
+
+```
+
+## QC2) Missing values: Flag days with less than n(20) values 
+
+1. Count the number of rows per station, date group. (There should only be one row per date)
+2. Flag days where there are less than 20 values (out of 24 - hourly data).
+3. Use leftjoin to add flags to the original data.
+
+```{r Missing Values, message = FALSE}
+
+# This data frame contains all the dates with less than 20 values. 
+temp_q2_a <- temp_q1 %>%
+  filter(Flag_QC1 == "N") %>% # only running on data that have not been flagged by the above to be consistent with rest of QC steps
+  group_by(WaterCol, Station, Date) %>%
+  arrange(WaterCol, Station, Date, Hour) %>%
+  summarise(total = n()) %>%
+  mutate(Flag_QC2 = ifelse(total < 20, "Y", "N")) %>%
+  select(-total) %>%
+  ungroup()
+
+# Flagged values
+temp_q2_b <- temp_q2_a %>%
+  filter(Flag_QC2 == "Y")
+
+#Join original dataframe with flagged values based on values NOT in common. 
+#based on station and date
+temp_q2 <- temp_q1 %>%
+   left_join(temp_q2_a, by = c("WaterCol", "Station", "Date")) %>%
+   filter(Flag_QC1 == "N") # This part is important for QC5 and QC6. Basically removes all values that are not within range (QC1) 
+    # for BET (maybe other stations) there were some alternately repeating values near 0 that were causing lots of spike QCs to be positive.
+   #filter(Flag_QC1 == "N") 
+```
+
+## QC3) Flag if there are 18+ repeating values in a row
+
+1. Create new columns indicating whether the temperature at x hour is the same as that of x-1 hours.
+2. Take a cumulative sum of all the rows where temperatures are different
+3. Group by the sum and count up the number of rows where the temperature is the same.
+4. Flag the rows where number of repeated values is above our cut-off
+
+```{r repeating values, message = FALSE}
+
+#########################################################
+# Significant help from Michael Koohafkan and Rosie Hartman
+
+# Function to determine whether values are repeating by each station
+# Inputs are data frame and x (number of repeating values you want to check for)
+# Check if number is same as previous number. If yes, 1. If no, 0.
+# Cumulative sum so each time a value repeats, cumulative sum goes up
+# Count the number in a row that are the same
+# Flag if that number > threshold 
+
+repeating_vals = function(df, x){
+  df$same = ifelse(df$Temp == lag(df$Temp, 1, default = 0), 1L, 0L)
+  df = df %>%
+    mutate(issame = cumsum(df$same == 0L)) %>%
+    group_by(WaterCol, Station, issame) %>%
+    mutate(flag = sum(same)+1 ) %>%
+    ungroup() %>%
+    mutate(Flag_repeats = ifelse(flag > x, "Y", "N"))
+  return(df)
+}
+###########################################################
+
+# Run function repeating values and get rid of the columns we don't need
+temp_q3 <- repeating_vals(df = temp_q2, x = 18) %>%
+  select(-flag, -issame, -same) %>%
+  rename(Flag_QC3 = Flag_repeats) 
+
+# Flagged values
+temp_q3_b <- temp_q3 %>%
+  filter(Flag_QC3 == "Y")
+
+# Remove earlier files
+rm(temp_q2_a)
+
+```
+
+
+## QC4) Use the anomalize package to flag anomalies
+* Twitter + GESD is for more for highly seasonal data (however, GESD is extremely slow because it is iterative)
+* STL + IQR if seasonality is not a major factor
+* Trend period depends on personal knowledge of data
+
+```{r anomalize}
+library(anomalize)
+library(tibbletime)
+# see https://business-science.github.io/anomalize/articles/anomalize_methods.html
+  
+# Subset data that can use this method (some data have too short of a period)
+# temp_test <- temp_H %>% filter(Station %in% c("OAD"))
+# Convert data frame to table 
+
+temp_q4_a <- as_tbl_time(temp_q3, index = Datetime)
+
+# Anomaly Detection
+# time_decompose: separates time series into seasonal, trend, and remainder components
+  # stl: loess works well when long term trend is present
+  # twitter: (removes median rather than fitting smoother) - when long-term trend is less dominant than short-term seasonal component
+# anomalize: applies anomaly detection methods to remainder component
+# time_recompose: calculate limits to separate "normal" data from anomalies
+temp_q4_c <- temp_q4_a %>%
+    group_by(WaterCol, Station) %>%
+    time_decompose(Temp, method = "stl", trend = "6 months") %>%
+    anomalize(remainder, method = "iqr", alpha = 0.05) %>%
+    time_recompose() %>% 
+    select(c(Datetime, anomaly)) %>%
+    as_tibble() 
+
+# Join "anomaly" with rest of the data
+temp_q4_d <- inner_join(temp_q3, temp_q4_c, by = c( "WaterCol", "Datetime", "Station"))
+
+# Rename "anomaly" Flag_QC4 for consistency, change No to N and Yes to Y
+temp_q4 <- temp_q4_d %>%
+    mutate(anomaly = factor(anomaly)) %>%
+    mutate(anomaly = recode(anomaly, No = "N", Yes = "Y"))  %>%
+    rename(Flag_QC4 = anomaly)
+    
+# Flagged values
+temp_q4_b <- temp_q4 %>%
+    filter(Flag_QC4 == "Y")
+
+```
+
+### QC5) Spike test
+- Modified from https://github.com/SuisunMarshBranch/wqptools/blob/master/R/rtqc.r
+
+Anomalize is pretty good, but there are a few single points here and there that don't get detected. 
+1. If |temp(t) - mean(temp(t-1) + temp(t+1))| > 5, it is flagged.
+
+```{r Spike test}
+### ---------------------------------------------
+# Q5: Temp - Temp@time-1
+# Additionally, if Q5 > 5 (5 degree change in 1 hour), flag. 
+
+temp_q5 <- temp_q4 %>%
+  group_by(WaterCol, Station) %>%
+  arrange(WaterCol, Station, Datetime) %>%
+  mutate(QC5 = abs(Temp- 0.5 * (lag(Temp, n = 1, default = 0) + lead(Temp, n=1, default = 0))))%>%
+  mutate(Flag_QC5 = ifelse((QC5 > 5), "Y", "N"))  %>%
+      mutate(Flag_QC5 = replace(Flag_QC5, is.na(Flag_QC5), "N")) %>% # Replace NA with No
+  select(-QC5) %>%
+  ungroup()
+
+# Flagged values
+temp_q5_b <- temp_q5 %>%
+  filter(Flag_QC5 == "Y")
+
+# Remove data 
+rm(temp_q4_a, temp_q4_c, temp_q4_d)
+
+```
+
+
+### QC6) Rate of Change Test
+1. Group by Station, Datetime
+2. Define standard deviation threshold (e.g. 5 * sd(last 50 hours)) - could change it to be greater or lesser
+3. If difference between value and the value before it > threshold, it is flagged.
+
+```{r Rate of Change}
+library(TTR)
+# Q6 = Temp - Temp@time-1
+# sdev_th: Determined threshold for too high of a rate of change (5 * SD(Temp) over 50 hours or 2 tidal cycles)
+# If Q6 > sdev_th, flag.
+
+temp_q6 <- temp_q5 %>%
+  group_by(WaterCol, Station) %>%
+  arrange(WaterCol, Station, Datetime) %>%
+  mutate(QC6 = abs(Temp- lag(Temp, n = 1, default = 0)))%>%
+  mutate(sdev_th = 5 * runSD(Temp, 50))%>%
+  mutate(Flag_QC6 = ifelse((QC6 > sdev_th), "Y", "N"))  %>%
+      mutate(Flag_QC6 = replace(Flag_QC6, is.na(Flag_QC6), "N")) %>% # Replace NA with No
+  select(-c(QC6, sdev_th)) %>%
+  ungroup()
+
+# Flagged values
+temp_q6_b <- temp_q6 %>%
+  filter(Flag_QC6 == "Y")
+
+```
+
+# Filter final 
+1. Add back in flagged data from QC1
+2. Combine flags in one column
+3. Create flagged dataset and filtered dataset
+
+```{r final dataset}
+# Merge back in q1 data since these were removed
+# Data that were filtered out were not subsequently run under other QC tests, so NA
+temp_q1_table <- temp_q1 %>%
+  filter(Flag_QC1 == "Y") %>%
+      mutate(Flag_QC2 = "NA",
+             Flag_QC3 = "NA", 
+             Flag_QC4 = "NA",
+             Flag_QC5 = "NA",
+             Flag_QC6 = "NA")
+
+# Combine Flags from QC1 with rest of flags
+temp_flags <- rbind(temp_q6, temp_q1_table) %>%
+  ungroup() %>%
+  mutate(AllFlags = paste0(Flag_QC1, ",", Flag_QC2, ",", Flag_QC3, ",", Flag_QC4, ",", Flag_QC5, ",", Flag_QC6)) %>%
+      select(-c(Year:Minute)) %>%
+      select(Station, Datetime, everything())
+
+
+# Filtered dataset - only rows that do not have any flags
+temp_final <- temp_flags %>%
+  filter(grepl("N,N,N,N,N,N", AllFlags)) %>%
+  select(-c(contains("Flag"))) %>%
+        select(Station, Datetime, everything())
+
+```
+
+## How much data are being removed?
+
+```{r Data removal}
+# By station 
+(Flagged_stations <- temp_flags %>%
+  group_by(Station) %>%
+  summarize(Init = n(),
+            QC1 = sum(Flag_QC1=="Y"),
+            QC2 = sum(Flag_QC2 == "Y"),
+            QC3 = sum(Flag_QC3 == "Y"),
+            QC4 = sum(Flag_QC4 == "Y"),
+            QC5 = sum(Flag_QC5 == "Y"),
+            QC6 = sum(Flag_QC6 == "Y"),
+            QCTot = sum(grepl("Y", AllFlags)),
+            Pct_Flagged_QC1 = round(QC1/Init*100,2),
+            Pct_Flagged_QC2 = round(QC2/Init*100,2),
+            Pct_Flagged_QC3 = round(QC3/Init*100,2),
+            Pct_Flagged_QC4 = round(QC4/Init*100,2),
+            Pct_Flagged_QC5 = round(QC5/Init*100,2),
+            Pct_Flagged_QC6 = round(QC6/Init*100,2),
+            Pct_Flagged_Total = round(QCTot/Init * 100,2) ))
+
+# Overall dataset
+Flags <- temp_flags %>%
+  filter(grepl("Y", AllFlags))
+print(paste0(round(nrow(Flags)/nrow(temp_q6)*100,2), "% flagged"))
+
+```
+
+
+Bind QCed bottom middle data with original dataset
+```{r original and depth data}
+
+# Filter original dataset to only depth stations, add a column for surface
+surfaceFilt <- tempFilt %>%
+  filter(Station %in% c("ANH", "MAL", "MRZ", "RRI")) %>%
+  mutate(WaterCol = "Surface") %>%
+  select(-c(StationName, Date))
+
+# Remove some variables
+botmid_final <- select(temp_final, -Date)
+
+# Bind surface and depth data
+depth_QC <- rbind(surfaceFilt, botmid_final)
+```
+
+Write file
+```{r write}
+
+# Write file
+today = format(today(), "%Y%m%d")
+saveRDS(depth_QC, paste0("Data/depthdata_QC_", today, ".rds"))
+write.csv(depth_QC, paste0("Data/depthdata_QC_", today, ".csv"))
+```
+
