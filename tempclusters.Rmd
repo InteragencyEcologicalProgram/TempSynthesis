@@ -126,6 +126,33 @@ library(ggmap)
 #read in shapefile of the delta
 delta = read_sf("deltashap/hydro_delta_marsh.shp")
 
+#read in shapefile of EDSM regions
+edsm = read_sf("EDSM_Subregions/EDSM_Subregions_03302020.shp")
+edsm2 = read_sf("03302020_shape/EDSM_Subregions_03302020.shp")
+#reference system is UTMs
+st_crs(edsm) = 32610
+st_crs(edsm2) = 32610
+edsm = st_transform(edsm, 4326)
+
+#for some reason they didn't include the strata in teh shapfile, so I"m attaching it seperately
+EDSM = read.csv("C:/Users/rhartman/OneDrive - California Department of Water Resources/salinity control gates/SMSCG/EDSM_KDTR.csv")
+
+
+foo1 =  sort(unique(EDSM$SubRegion))
+foo2 = sort(unique(edsm$SubRegion))
+
+foo3 = list(shapefile = foo2, EDI = foo1)
+
+
+EDSM = mutate(EDSM, Date = mdy(Date)) %>%
+  filter(year(Date) > 2018) %>%
+  group_by( Region, SubRegion, Stratum) %>%
+  summarize(count = length(Tow))
+
+edsm = left_join(edsm, EDSM)
+
+foo = select(as.data.frame(edsm), -geometry, -count)
+
 #add lat/longs for the stations
 stas = read.csv("StationLatLongs.csv")
 
@@ -144,12 +171,30 @@ gp4 = ggplot() +
   coord_sf(xlim = c(-122.2, -121), ylim = c(37.6, 38.8))+
   ggtitle("4 groups")
 
+library(RColorBrewer)
+mypal = c(brewer.pal(9, "Blues"), brewer.pal(9, "BuGn"), 
+          brewer.pal(9, "Greys"), brewer.pal(9, "PuBu"), brewer.pal(9, "YlGn"))
 gp6 = ggplot() +
+  geom_sf(data = edsm, mapping = aes(fill = Region, color = Region), alpha = 0.5)+
+  scale_fill_brewer(palette = "Set3")+
   geom_sf(data = delta, alpha = 0.5)+
   geom_sf(data = stashap, mapping =aes(color = as.factor(grps6)))+
-  theme_bw() + guides(color = FALSE) + 
+  scale_color_brewer(palette = "Set1")+
+  theme_bw() + guides(color = FALSE, fill = FALSE) + 
   coord_sf(xlim = c(-122.2, -121), ylim = c(37.6, 38.8))+
   ggtitle("6 groups")
+
+gp6
+
+gp6a = ggplot() +
+  geom_sf(data = edsm, mapping = aes(fill = Region), alpha = 0.5)+
+  geom_sf(data = delta, alpha = 0.5)+
+  geom_sf(data = stashap, mapping =aes(color = as.factor(grps6)))+
+  theme_bw() + guides(color = FALSE, fill = FALSE) + 
+  #coord_sf(xlim = c(-122.2, -121), ylim = c(37.6, 38.8))+
+  ggtitle("6 groups")
+
+gp6a
 
 gp12 = ggplot() +
   geom_sf(data = delta, alpha = 0.5)+
@@ -165,68 +210,17 @@ foo = grid.arrange(gp4, gp6, gp12, nrow = 1, ncol = 3)
 #ggsave("tempclusters.png",foo, device = "png", width = 12)
 
 ```
+## Join with EDSM regions
 
-
-## Local regression
-
-One of the cool ways you can address differences across space is run a regression that calculates different coefficients over space. I ran the model over the continuous stations, then extrapolated the results to the rest of the Detla.
-
+I want to see how closely the EDSM regions map to my clusters. 
 
 ```{r}
-if (!require("rspatial")) devtools::install_github('rspatial/rspatial')
-library(rspatial)
-library( spgwr )
-#attached lat/longs to mean temperature
-tempmean2 = merge(tempmean, stas)
 
-#Specify a coordinate reference system and turn it into a spatial object
-alb <- CRS("+proj=aea +lat_1=34 +lat_2=40.5 +lat_0=0 +lon_0=-120 +x_0=0 +y_0=-4000000 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")
+spas = st_join(stashap, edsm)
+stjoin = as.data.frame(spas)[,1:8]
 
-#Filter the Delta shapefile so it doesn't include areas where we dont have a lot of data
-delta2 = sf::as_Spatial(dplyr::filter(delta, HNAME != "SAN FRANCISCO BAY", HNAME != "SAN PABLO BAY"))
-
-#I'm not positive we have to do this transformation, but it was in teh example so I'm doing it.
-ctst <- spTransform(delta2, alb)
-
-
-#try a local regreesion for interpolation
-#I'll start with modeling the change in temperature from January to June
-
-tempmean2.1 = dplyr::filter(tempmean2, julian <190)
-tempmeansub = tempmean2.1[sample(nrow(tempmean2.1), 10000), ]
-sp = tempmeansub
-coordinates(sp) = ~ Longitude + Latitude
-crs(sp) <- "+proj=longlat +datum=NAD83"
-spt <- spTransform(sp, alb)
-
-#find optimal bandwith
-#THIS TAKES FOREVER!
-bw <- gwr.sel( Temp~ julian, data= spt)
-
-#create a set o fpoints to estimate parameters for
-
-
-r <- raster(ctst,  res=100)
-rdelta2 <- rasterize(ctst, r)
-newpts <- rasterToPoints(rdelta2)
-
-
-#run the GWR function to calculate local regressions
-
-g <- gwr(Temp ~ julian, data= spt,
-         bandwidth=bw, fit.points=newpts[, 1:2])
-g
-
-#link results back to raster
-
-slope <- rdelta2
-intercept <- rdelta2
-slope[!is.na(slope)] <- g$SDF$julian
-intercept[!is.na(intercept)] <- g$SDF$'(Intercept)'
-s <- stack(intercept, slope)
-names(s) <- c('intercept', 'slope')
-plot(s)
-
+regions = pivot_wider(stjoin, id_cols = c(Region, SubRegion), names_from = grps6, values_from = Station, values_fn = length)
 
 ```
+
 

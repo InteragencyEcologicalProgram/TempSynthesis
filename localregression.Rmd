@@ -331,7 +331,8 @@ bsm.res1
 ## GAMs
 
 ```{r}
-tempmax2.1 = arrange(tempmax2.1, Station, Date)
+tempmax2.1 = arrange(tempmax2.1, Station, Date) %>%
+  filter(Year >1995)
 
 g1 = bam(Temp ~ s(julian) + s(Year) + s(Latitude, Longitude), 
 data = tempmax2.1, method = "REML")
