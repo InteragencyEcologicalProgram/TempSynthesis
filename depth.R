@@ -3,7 +3,8 @@ library(tidyverse)
 library(lubridate)
 library(nlme)
 
-depth = read_rds("depthdata_heatstress_20200728.rds")
+depth = read_rds("~/TempSynthesis/DepthAnalysis/Depth_data/depthdata_heatstress_20200728.rds")
+
 
 #but first we will create some new date variables to make mainuplation easier
 depth =  mutate(depth, Year = year(Datetime), #new variable for year
@@ -27,7 +28,7 @@ ggplot(depth2019, aes(x = Datetime, y = Temp, color = WaterCol)) +
 
 #let's pull out the daily mins, means, maxes
 
-depth2019_s = group_by(depth, Station, WaterCol, Year, Month, Day, julian) %>% #group by day
+depth2019_s = group_by(depth2019, Station, WaterCol, Year, Month, Day, julian) %>% #group by day
   summarise(Temp2 = mean(Temp, na.rm = T), #caclulate means, mins, and maxes for each day
             maxTemp = max(Temp, na.rm = T), 
             mintemp = min(Temp, na.rm = T),
