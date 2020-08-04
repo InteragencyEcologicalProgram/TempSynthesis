@@ -1,0 +1,331 @@
+---
+title: "TempTrends"
+author: "Catarina Pien"
+date: "8/3/2020"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+This code explores temporal trends existing in the integrated temperature dataset.
+
+
+
+```{r import}
+library(tidyverse)
+library(lubridate)
+library(readr)
+
+setwd("C:/Users/cpien/OneDrive - California Department of Water Resources/Work/ClimateChange/R_code/TempSynthesis/")
+tempFilt <- readRDS("Data/Temp_filtered.rds")
+
+str(tempFilt)
+```
+
+Variable editing
+```{r vars}
+tempFilt$Year = year(tempFilt$Date)
+tempFilt$Month = month(tempFilt$Date)
+tempFilt$yDay = yday(tempFilt$Date)
+
+```
+
+Merge station info
+Merge regions
+```{r regions}
+library(sf)
+library(sp)
+subregions <- st_read("Data/EDSM_Subregions/EDSM_Subregions_03302020.shp")
+staInfo <- read.csv()
+left_join(tempFilt, staInfo, by = "Station")
+
+```
+
+## Mean, max, min temperatures 
+Create dataset for mean, max, and min, var for Monthly
+Filter for data that is represented for a whole year
+Create dataset for mean, max, min, var for Annual
+```{r meanmaxmin}
+tempMon <- tempFilt %>% 
+  group_by(Station, Year, Month) %>%
+  summarize(maxTemp = max(Temp),
+            minTemp = min(Temp),
+            meanTemp = round(mean(Temp),1),
+            sdTemp = round(sd(Temp),1))
+
+# Filter to only data that has temps from every month 
+
+nMon <- tempMon %>% group_by(Station, Year) %>%
+  summarize (nMon = n())
+
+tempAn <- left_join(tempFilt, nMon, by = c("Station", "Year")) %>%
+  filter(nMon == 12) %>%
+  group_by(Station, Year) %>%
+  summarize(maxTempAn = max(Temp),
+            minTempAn = min(Temp),
+            meanTempAn = mean(Temp),
+            varTempAn = sd(Temp))
+
+```
+
+Functions
+```{r}
+heatmapplot <-  function(data,fill, temp, l1, l2) {
+    fill <- enquo(fill)
+    temp <- enquo(temp)
+  p <- data %>%
+    ggplot(mapping = aes(Year, Station, fill = !! fill,
+                         text = paste("Station:", Station, "\nTemp:", !! temp)
+                         )) +
+    geom_tile() +
+      scale_fill_viridis(option = "cividis", limits = c(l1,l2)) + theme_minimal() + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1),
+        axis.title = element_text(size = 12))
+  ggplotly(p, tooltip = "text") 
+  
+}  
+
+```
+
+
+Link Regions, Filter into smaller datasets
+```{r filter}
+# Split into regions? 
+# Test
+stations <- unique(tempFilt$Station)
+staSamp1 <- stations[1:40]
+staSamp2 <- stations[41:80]
+staSamp3 <- stations[81:129]
+
+```
+
+## Heat map for maximum temps
+```{r heatmapMax}
+library(RColorBrewer)
+library(viridis)
+library(plotly)
+  
+maxTemps <- tempAn %>%
+  filter(!is.na(maxTempAn)) %>%
+  ungroup() %>%
+  dplyr::select(c(Year, Station, maxTempAn)) %>%
+  group_by(Station) %>%
+  mutate(maxTempAn_yr = scale(maxTempAn)) %>%
+  ungroup %>%
+  group_by(Year) %>%
+  mutate(maxTempAn_sta = scale(maxTempAn)) %>%
+  ungroup()
+
+str(maxTemps)
+
+# Smaller datasets
+maxAn1 <- filter(maxTemps, Station %in% staSamp1) 
+maxAn2 <- filter(maxTemps, Station %in% staSamp2) 
+maxAn3 <- filter(maxTemps, Station %in% staSamp3) 
+
+##### Heat maps (absolute values)
+maxAn1$Year <- ordered(maxAn1$Year)
+maxAn2$Year <- ordered(maxAn2$Year)
+maxAn3$Year <- ordered(maxAn3$Year)
+
+heatmapplot(maxAn1, maxTempAn, maxTempAn, 20, 35)
+heatmapplot(maxAn2, maxTempAn, maxTempAn, 20, 35)
+heatmapplot(maxAn3, maxTempAn, maxTempAn, 20, 35)
+
+##### Scaled heatmaps
+
+# By station
+heatmapplot(maxAn1, maxTempAn_sta, maxTempAn,  -4.1, 4.1)
+heatmapplot(maxAn2, maxTempAn_sta, maxTempAn,  -4.1, 4.1)
+heatmapplot(maxAn3, maxTempAn_sta, maxTempAn,  -4.1, 4.1)
+heatmapplot(maxTemps, maxTempAn_sta, maxTempAn,  -4.1, 4.1)
+
+## By year
+heatmapplot(maxAn1, maxTempAn_yr, maxTempAn,  -4.1, 4.1)
+heatmapplot(maxAn2, maxTempAn_yr, maxTempAn,  -4.1, 4.1)
+heatmapplot(maxAn3, maxTempAn_yr, maxTempAn,  -4.1, 4.1)
+heatmapplot(maxTemps, maxTempAn_yr, maxTempAn,  -4.1, 4.1)
+
+#####################################################################
+
+# Spread data so you have a value for each space/time combo
+maxAn_w <- maxTemps %>% spread(key=Year, value=maxTempAn)
+
+# Assign stations as row names
+maxAn_w2 <- as.data.frame(maxAn_w)
+row.names(maxAn_w2) <- maxAn_w$Station
+
+# Matrix of max temp data
+maxAn_w2 <- maxAn_w2[,2:32]
+maxAn.m <- data.matrix(maxAn_w2)
+
+# Subset so there aren't too many stations per map
+maxAn.m1 <- maxAn.m[1:40,]
+maxAn.m2 <- maxAn.m[41:80,]
+maxAn.m3 <- maxAn.m[81:127,]
+
+# Make heatmap
+# Note you can either scale the heat map by column or row. 
+
+# Row: how do years compare?
+heatmap(maxAn.m1, Rowv = NA, Colv = NA, col = brewer.pal(9, "YlGnBu"), scale = "row")
+heatmap(maxAn.m2, Rowv = NA, Colv = NA, col = brewer.pal(9, "YlGnBu"), scale = "row")
+heatmap(maxAn.m3, Rowv = NA, Colv = NA, col = brewer.pal(9, "YlGnBu"), scale = "row")
+
+
+# Column: how do stations compare to each other?
+heatmap(maxAn.m1, Rowv = NA, Colv = NA, col = brewer.pal(9, "YlGnBu"), scale = "column")
+heatmap(maxAn.m2, Rowv = NA, Colv = NA, col = brewer.pal(9, "YlGnBu"), scale = "column")
+heatmap(maxAn.m3, Rowv = NA, Colv = NA, col = brewer.pal(9, "YlGnBu"), scale = "column")
+
+heatmaply(maxAn1)
+```
+
+## Heat map for mean temps
+```{r heatmapMean}
+library(heatmaply)
+library(RColorBrewer)
+library(viridis)
+library(plotly)
+
+meanTemps <- tempAn %>%
+  filter(!is.na(meanTempAn)) %>%
+  ungroup() %>%
+  dplyr::select(c(Year, Station, meanTempAn)) %>%
+  group_by(Station) %>%
+  mutate(meanTempAn_yr = scale(meanTempAn)) %>%
+  ungroup %>%
+  group_by(Year) %>%
+  mutate(meanTempAn_sta = scale(meanTempAn)) %>%
+  ungroup()
+
+str(meanTemps)
+
+# Smaller datasets
+meanAn1 <- filter(meanTemps, Station %in% staSamp1) 
+meanAn2 <- filter(meanTemps, Station %in% staSamp2) 
+meanAn3 <- filter(meanTemps, Station %in% staSamp3) 
+
+##### Heat maps (absolute values)
+meanAn1$Year <- ordered(meanAn1$Year)
+meanAn2$Year <- ordered(meanAn2$Year)
+meanAn3$Year <- ordered(meanAn3$Year)
+
+heatmapplot(meanAn1, meanTempAn, meanTempAn, 12, 20)
+heatmapplot(meanAn2, meanTempAn, meanTempAn, 12, 20)
+heatmapplot(meanAn3, meanTempAn, meanTempAn, 12, 20)
+
+##### Scaled heatmaps
+
+# By station
+heatmapplot(meanAn1, meanTempAn_sta, meanTempAn, -4.5, 4.5)
+heatmapplot(meanAn2, meanTempAn_sta, meanTempAn, -4.5, 4.5)
+heatmapplot(meanAn3, meanTempAn_sta, meanTempAn, -4.5, 4.5)
+heatmapplot(meanTemps, meanTempAn_sta, meanTempAn, -4.5, 4.5)
+
+## By year
+heatmapplot(meanAn1, meanTempAn_yr, meanTempAn, -4.5, 4.5)
+heatmapplot(meanAn2, meanTempAn_yr, meanTempAn, -4.5, 4.5)
+heatmapplot(meanAn3, meanTempAn_yr, meanTempAn, -4.5, 4.5)
+heatmapplot(meanTemps, meanTempAn_yr, meanTempAn, -4.5, 4.5)
+
+```
+
+## Heat map for min temps
+```{r heatmap}
+library(heatmaply)
+library(RColorBrewer)
+library(viridis)
+library(plotly)
+
+minTemps <- tempAn %>%
+  filter(!is.na(minTempAn)) %>%
+  ungroup() %>%
+  dplyr::select(c(Year, Station, minTempAn)) %>%
+  group_by(Station) %>%
+  mutate(minTempAn_yr = scale(minTempAn)) %>%
+  ungroup %>%
+  group_by(Year) %>%
+  mutate(minTempAn_sta = scale(minTempAn)) %>%
+  ungroup()
+
+str(minTemps)
+
+# Smaller datasets
+minAn1 <- filter(minTemps, Station %in% staSamp1) 
+minAn2 <- filter(minTemps, Station %in% staSamp2) 
+minAn3 <- filter(minTemps, Station %in% staSamp3) 
+
+##### Heat maps (absolute values)
+minAn1$Year <- ordered(minAn1$Year)
+minAn2$Year <- ordered(minAn2$Year)
+minAn3$Year <- ordered(minAn3$Year)
+
+heatmapplot(minAn1, minTempAn, minTempAn, 1.5, 10)
+heatmapplot(minAn2, minTempAn, minTempAn, 1.5, 10)
+heatmapplot(minAn3, minTempAn, minTempAn, 1.5, 10)
+
+##### Scaled heatmaps
+
+# By station
+heatmapplot(minAn1, minTempAn_sta, minTempAn, -5.7, 5.7)
+heatmapplot(minAn2, minTempAn_sta, minTempAn, -5.7, 5.7)
+heatmapplot(minAn3, minTempAn_sta, minTempAn, -5.7, 5.7)
+heatmapplot(minTemps, minTempAn_sta, minTempAn, -5.7, 5.7)
+
+## By year
+heatmapplot(minAn1, minTempAn_yr, minTempAn, -3.5, 3.5)
+heatmapplot(minAn2, minTempAn_yr, minTempAn, -3.5, 3.5)
+heatmapplot(minAn3, minTempAn_yr, minTempAn, -3.5, 3.5)
+heatmapplot(minTemps, minTempAn_yr, minTempAn, -3.5, 3.5)
+
+```
+
+Heat maps for sd
+```{r heatmap}
+library(heatmaply)
+library(RColorBrewer)
+library(viridis)
+library(plotly)
+
+varTemps <- tempAn %>%
+  filter(!is.na(varTempAn)) %>%
+  ungroup() %>%
+  dplyr::select(c(Year, Station, varTempAn)) %>%
+  group_by(Station) %>%
+  mutate(varTempAn_yr = scale(varTempAn)) %>%
+  ungroup %>%
+  group_by(Year) %>%
+  mutate(varTempAn_sta = scale(varTempAn)) %>%
+  ungroup()
+
+str(varTemps)
+
+# Smaller datasets
+varAn1 <- filter(varTemps, Station %in% staSamp1) 
+varAn2 <- filter(varTemps, Station %in% staSamp2) 
+varAn3 <- filter(varTemps, Station %in% staSamp3) 
+
+##### Heat maps (absolute values)
+varAn1$Year <- ordered(varAn1$Year)
+varAn2$Year <- ordered(varAn2$Year)
+varAn3$Year <- ordered(varAn3$Year)
+
+heatmapplot(varAn1, varTempAn, varTempAn, 2, 7)
+heatmapplot(varAn2, varTempAn, varTempAn, 2, 7)
+heatmapplot(varAn3, varTempAn, varTempAn, 2, 7)
+
+##### Scaled heatmaps
+
+# By station
+heatmapplot(varAn1, varTempAn_sta, varTempAn, -4.5, 4.5)
+heatmapplot(varAn2, varTempAn_sta, varTempAn, -4.5, 4.5)
+heatmapplot(varAn3, varTempAn_sta, varTempAn, -4.5, 4.5)
+heatmapplot(varTemps, varTempAn_sta, varTempAn, -4.5, 4.5)
+
+## By year
+heatmapplot(varAn1, varTempAn_yr, varTempAn, -3, 3)
+heatmapplot(varAn2, varTempAn_yr, varTempAn, -3, 3)
+heatmapplot(varAn3, varTempAn_yr, varTempAn, -3, 3)
+heatmapplot(varTemps, varTempAn_yr, varTempAn, -3, 3)
+
+```
