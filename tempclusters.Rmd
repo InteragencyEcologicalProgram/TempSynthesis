@@ -28,10 +28,30 @@ Now, there are a number of different ways to describe the temperature regime, bu
 
 I used Cat's continuous data set rather than the descrete data set because it is a more balanced design where we will have a mean temperature for each day of the year and we know it was taken at the exact same spot.
 
+
+First clean up the data and make sure we only have complete years.
+
+```{r}
+temps2 = mutate(temps, Year = year(Datetime)) %>%
+  group_by(Year, Station) %>%
+  summarize(numb = length(Temp)) %>%
+  filter(numb >7000, Year >= 2015) 
+
+temps3 = group_by(temps2, Station) %>%
+  filter(length(unique(Year)) >=4) %>%
+  ungroup()
+
+tempssub = merge(temps, temps3)
+
+
+
+```
+
+
 ```{r warning=FALSE, message=FALSE, fig.width= 12}
 
 #first calculate the daily means
-tempmean = temps %>%
+tempmean = tempssub %>%
   filter(Date > as.Date("2014-1-1"), Station != "RYF") %>%
   mutate(julian = yday(Date)) %>%
   group_by(Station, julian) %>%
@@ -130,13 +150,15 @@ delta = read_sf("DeltaShapefile/hydro_delta_marsh.shp")
 #add lat/longs for the stations
 stas = read.csv("StationLatLongs.csv")
 
-cutday = merge(cutday, stas)
-names(cutday) = c("Station", "grps2", "grps4", "grps6", "grps12", "Latitude","Longitude")
+cutday = merge(stas, cutday, all.x =T)
+names(cutday) = c("Station", "Latitude", "Longitude", "grps2", "grps4", "grps6", "grps12")
 
 #turn it into a spatial object
 stashap = st_as_sf(cutday,
                 coords = c("Longitude", "Latitude"),
                 crs = 4326)
+
+save(stashap, file ="stations.rdata")
 
 #Make plots of the stations divided into four groups, six groups
 #or twelve groups based on teh cluster analysis. 
@@ -150,6 +172,7 @@ gp4 = ggplot() +
 gp6 = ggplot() +
   geom_sf(data = delta, alpha = 0.5)+
   geom_sf(data = stashap, mapping =aes(color = as.factor(grps6)))+
+ # geom_sf_label(aes(label = Station), stashap) +
   scale_color_brewer(palette = "Set1")+
   theme_bw() + guides(color = FALSE, fill = FALSE) + 
   coord_sf(xlim = c(-122.2, -121), ylim = c(37.6, 38.8))+
@@ -206,10 +229,10 @@ stjoin3 = rename(stjoin3, EDSMSubregion = SubRegion, EDSMRegion = Region)
 allstas = left_join(stjoin, stjoin2) %>%
   left_join(stjoin3) %>%
   rename(cluster = grps6) %>%
-  select(-geometry, -grps2, -grps4, -grps12, -SQM)
+  dplyr::select(-geometry, -grps2, -grps4, -grps12, -SQM)
 
 #See how many stations are in each subregion.
-regions = pivot_wider(stjoin, id_cols = c(Region, SubRegion), names_from = grps6, values_from = Station, values_fn = length)
+#regions = pivot_wider(stjoin, id_cols = c(Region, SubRegion), names_from = grps6, values_from = Station, values_fn = length)
 
 #set up a palette for graphing all the subregions
 mypal = c(brewer.pal(9, "Blues"), brewer.pal(9, "BuGn"), 
@@ -264,6 +287,43 @@ gp6b = ggplot() +
 gp6b
 
 grid.arrange(gp6, gp6x, gp6a, gp6b, nrow = 1, ncol = 4)
+
+
+```
+OK, Now let's figure out what regions ALL the points are in (even the ones that don't have a complete data set from the past five years.. 
+
+I used a Leaflet app to draw polygons aroudn the regions.
+
+
+```{r}
+# read in the new region shapefile
+
+RosieReg = read_sf("RosieRegions/shpExport.shp")
+
+#The shiny app didn't actually allow me to add attributes, so I'll do it now
+RosieReg$notes = c("Suisun Marsh", "Suisun Bay", "Sac River", "North Delta", "Far North", "San Joaquin", "South")
+
+#perform a spatial join between the stations and my regions
+spasR = st_join(stashap, RosieReg)
+
+
+stashap = mutate(stashap, cluster = grps6)
+stashap$cluster[which(is.na(stashap$cluster))] = 7
+stashap$cluster = factor(stashap$cluster, labels = c("1","2","3","4","5","6","NA"))
+
+mypal2 = c(brewer.pal(6, "Dark2"), "grey")
+#plot of my regions
+gp6c = ggplot() +
+  geom_sf(data = RosieReg, mapping = aes(fill = notes), alpha = 0.5)+
+  geom_sf_label(aes(label = notes), RosieReg, nudge_y = .1) +
+  geom_sf(data = delta, alpha = 0.5)+
+  geom_sf(data = stashap, mapping =aes(color = cluster))+
+  scale_fill_brewer(palette = "Pastel2") + scale_color_manual(values = mypal2)+
+  theme_bw() + 
+  coord_sf(xlim = c(-122.2, -121), ylim = c(37.6, 38.8))+
+  ggtitle("Rosie's Regions, 6 clusters")
+
+gp6c
 
 
 ```

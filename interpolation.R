@@ -58,3 +58,13 @@ idw <- interpolate(r, gs)
 ## [inverse distance weighted interpolation]
 idwr <- mask(idw, ctst)
 plot(idwr,  xlim = c(-200000, -100000), ylim = c(-50000,50000))
+
+
+
+###############################################
+#look at dat from those weird stations
+
+test = filter(temps, Station %in% c("GSS", "NMR", "SWE", "GES", "SMR"))
+
+ggplot(test, aes(x = Datetime, y = Temp)) + geom_line(aes(color = Station)) + facet_wrap(~Station)
+              
