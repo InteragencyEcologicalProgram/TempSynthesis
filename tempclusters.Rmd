@@ -306,6 +306,7 @@ RosieReg$notes = c("Suisun Marsh", "Suisun Bay", "Sac River", "North Delta", "Fa
 #perform a spatial join between the stations and my regions
 spasR = st_join(stashap, RosieReg)
 
+write.csv(as.data.frame(spasR[,c(1,6,7)]), "Stations_wRosiesReg.csv")
 
 stashap = mutate(stashap, cluster = grps6)
 stashap$cluster[which(is.na(stashap$cluster))] = 7
@@ -315,10 +316,11 @@ mypal2 = c(brewer.pal(6, "Dark2"), "grey")
 #plot of my regions
 gp6c = ggplot() +
   geom_sf(data = RosieReg, mapping = aes(fill = notes), alpha = 0.5)+
-  geom_sf_label(aes(label = notes), RosieReg, nudge_y = .1) +
+  geom_sf_label(aes(label = notes), RosieReg, nudge_y = .1, nudge_x = 0.1) +
   geom_sf(data = delta, alpha = 0.5)+
   geom_sf(data = stashap, mapping =aes(color = cluster))+
-  scale_fill_brewer(palette = "Pastel2") + scale_color_manual(values = mypal2)+
+  scale_fill_brewer(palette = "Pastel2", guide = NULL) + 
+  scale_color_manual(values = mypal2)+
   theme_bw() + 
   coord_sf(xlim = c(-122.2, -121), ylim = c(37.6, 38.8))+
   ggtitle("Rosie's Regions, 6 clusters")
@@ -328,4 +330,29 @@ gp6c
 
 ```
 
+Can I see how far apart the clusters are?
+```{r}
 
+tempmean2 = merge(tempmean, cutday[,c(1,6)])
+
+#put it into wide format for the cluster analysis
+tempwide2 = pivot_wider(tempmean2, id_cols = c(Station, grps6), 
+                       names_from = julian, values_from = Temp)
+
+row.names(tempwide2) = tempwide2$Station
+
+library(dendextend)
+#calculate distance and cluster
+tempdist = dist(tempwide2[,c(-1,-2)], "euclidean")
+tempfit = hclust(tempdist, method = "ward.D")
+plot(tempfit, main = "Clusters based on daily ave temp", cex = 0.6)
+
+
+d <- as.dendrogram(tempfit)
+
+mypal3 = mypal2[c(4,2,3,1,5,6)]
+
+d <- d %>% color_branches(k=6, col = mypal3) %>%  color_labels(k=6, col = mypal3)
+
+plot(d)
+```
