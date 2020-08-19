@@ -12,6 +12,11 @@ knitr::opts_chunk$set(echo = TRUE)
 library(lubridate)
 library(tidyverse)
 library(vegan)
+library(sf)
+library(RColorBrewer)
+library(gridExtra)
+library(scales)
+library(ggmap)
 temps = readRDS("Temp_filtered (1).rds")
 ```
 
@@ -23,10 +28,30 @@ Now, there are a number of different ways to describe the temperature regime, bu
 
 I used Cat's continuous data set rather than the descrete data set because it is a more balanced design where we will have a mean temperature for each day of the year and we know it was taken at the exact same spot.
 
+
+First clean up the data and make sure we only have complete years.
+
+```{r}
+temps2 = mutate(temps, Year = year(Datetime)) %>%
+  group_by(Year, Station) %>%
+  summarize(numb = length(Temp)) %>%
+  filter(numb >7000, Year >= 2015) 
+
+temps3 = group_by(temps2, Station) %>%
+  filter(length(unique(Year)) >=4) %>%
+  ungroup()
+
+tempssub = merge(temps, temps3)
+
+
+
+```
+
+
 ```{r warning=FALSE, message=FALSE, fig.width= 12}
 
 #first calculate the daily means
-tempmean = temps %>%
+tempmean = tempssub %>%
   filter(Date > as.Date("2014-1-1"), Station != "RYF") %>%
   mutate(julian = yday(Date)) %>%
   group_by(Station, julian) %>%
@@ -112,19 +137,15 @@ cutday$Station = row.names(cutday)
 
 ## Plot
 
-I trimmed the tree into different numbers of groups, so see what we get when we try to divide it into 2,4,6, or 12 regions.
+I trimmed the tree into different numbers of groups, so see what we get when we try to divide it into 4,6, or 12 regions. Personally, I like the 6 group version best.
 
 ```{r}
 
-library("sf")
-library(dplyr)
-library(ggplot2)
-library(leaflet)
-library(scales)
-library(ggmap)
+
 
 #read in shapefile of the delta
-delta = read_sf("deltashap/hydro_delta_marsh.shp")
+delta = read_sf("DeltaShapefile/hydro_delta_marsh.shp")
+
 
 #read in shapefile of EDSM regions
 edsm = read_sf("EDSM_Subregions/EDSM_Subregions_03302020.shp")
@@ -156,14 +177,18 @@ foo = select(as.data.frame(edsm), -geometry, -count)
 #add lat/longs for the stations
 stas = read.csv("StationLatLongs.csv")
 
-cutday = merge(cutday, stas)
-names(cutday) = c("Station", "grps2", "grps4", "grps6", "grps12", "Latitude","Longitude")
+cutday = merge(stas, cutday, all.x =T)
+names(cutday) = c("Station", "Latitude", "Longitude", "grps2", "grps4", "grps6", "grps12")
 
 #turn it into a spatial object
 stashap = st_as_sf(cutday,
                 coords = c("Longitude", "Latitude"),
                 crs = 4326)
 
+save(stashap, file ="stations.rdata")
+
+#Make plots of the stations divided into four groups, six groups
+#or twelve groups based on teh cluster analysis. 
 gp4 = ggplot() +
   geom_sf(data = delta, alpha = 0.5)+
   geom_sf(data = stashap, mapping =aes(color = as.factor(grps4)))+
@@ -179,6 +204,10 @@ gp6 = ggplot() +
   scale_fill_brewer(palette = "Set3")+
   geom_sf(data = delta, alpha = 0.5)+
   geom_sf(data = stashap, mapping =aes(color = as.factor(grps6)))+
+<<<<<<< HEAD
+=======
+ # geom_sf_label(aes(label = Station), stashap) +
+>>>>>>> 64f6a845d7d255d923f176fd15a56ed026a57b77
   scale_color_brewer(palette = "Set1")+
   theme_bw() + guides(color = FALSE, fill = FALSE) + 
   coord_sf(xlim = c(-122.2, -121), ylim = c(37.6, 38.8))+
@@ -186,6 +215,7 @@ gp6 = ggplot() +
 
 gp6
 
+<<<<<<< HEAD
 gp6a = ggplot() +
   geom_sf(data = edsm, mapping = aes(fill = Region), alpha = 0.5)+
   geom_sf(data = delta, alpha = 0.5)+
@@ -195,6 +225,8 @@ gp6a = ggplot() +
   ggtitle("6 groups")
 
 gp6a
+=======
+>>>>>>> 64f6a845d7d255d923f176fd15a56ed026a57b77
 
 gp12 = ggplot() +
   geom_sf(data = delta, alpha = 0.5)+
@@ -211,6 +243,7 @@ foo = grid.arrange(gp4, gp6, gp12, nrow = 1, ncol = 3)
 
 ```
 ## Join with EDSM regions
+<<<<<<< HEAD
 
 I want to see how closely the EDSM regions map to my clusters. 
 
@@ -218,6 +251,136 @@ I want to see how closely the EDSM regions map to my clusters.
 
 spas = st_join(stashap, edsm)
 stjoin = as.data.frame(spas)[,1:8]
+=======
+
+I want to see how closely the EDSM regions map to my clusters. Brian made one version of the shapefile that he tweaked a bit to cover more of the region. THen there is the EDSM subregions, teh EDSM regions, and the EDSM strata. Do any of them match our clusters? I'm using the 6-cluster grouping throughout.
+
+```{r}
+
+
+#read in shapefile of EDSM regions
+edsm = read_sf("EDSM_Subregions/EDSM_Subregions_03302020.shp")
+edsm2 = read_sf("EDSM_Subregions/Strata_1Dec2018_31Mar2019/Strata_1Dec2018_31Mar2019.shp")
+edsm3 = read_sf("EDSM_Subregions/Subregions Phase 1/Subregions_1Dec2018_present.shp")
+#reference system is UTMs
+st_crs(edsm) = 32610
+st_crs(edsm2) = 32610
+st_crs(edsm3) = 32610
+edsm = st_transform(edsm, 4326)
+edsm2 = st_transform(edsm2, 4326)
+edsm3 = st_transform(edsm3, 4326)
+
+#perform a spatial join between the stations and Sam's subregions
+spas = st_join(stashap, edsm)
+spas2 = st_join(stashap, edsm2)
+spas3 = st_join(stashap, edsm3)
+
+stjoin = as.data.frame(spas)[,1:8]
+stjoin2 = as.data.frame(spas2)[,1:8]
+stjoin3 = as.data.frame(spas3)[,1:8]
+stjoin = rename(stjoin, SamsSubregion = SubRegion, SamsRegion = Region)
+stjoin3 = rename(stjoin3, EDSMSubregion = SubRegion, EDSMRegion = Region)
+
+#put them all together into one master data frame for later use.
+allstas = left_join(stjoin, stjoin2) %>%
+  left_join(stjoin3) %>%
+  rename(cluster = grps6) %>%
+  dplyr::select(-geometry, -grps2, -grps4, -grps12, -SQM)
+
+#See how many stations are in each subregion.
+#regions = pivot_wider(stjoin, id_cols = c(Region, SubRegion), names_from = grps6, values_from = Station, values_fn = length)
+
+#set up a palette for graphing all the subregions
+mypal = c(brewer.pal(9, "Blues"), brewer.pal(9, "BuGn"), 
+          brewer.pal(9, "Greys"), brewer.pal(9, "PuBu"), 
+          brewer.pal(9, "YlGn"), brewer.pal(9, "BuPu"))
+
+#plot of Sam's regions
+gp6 = ggplot() +
+  geom_sf(data = edsm, mapping = aes(fill = Region, color = Region), alpha = 0.5)+
+  scale_fill_brewer(palette = "Set3")+
+  geom_sf(data = delta, alpha = 0.5)+
+  geom_sf(data = stashap, mapping =aes(color = as.factor(grps6)))+
+  scale_color_brewer(palette = "Set1")+
+  theme_bw() + guides(color = FALSE, fill = FALSE) + 
+  coord_sf(xlim = c(-122.2, -121), ylim = c(37.6, 38.8))+
+  ggtitle("Sam's Regions, 6 clusgters")
+
+gp6
+
+#plot of Sam's subregions
+gp6x = ggplot() +
+  geom_sf(data = edsm, mapping = aes(fill = SubRegion), alpha = 0.5)+
+  scale_fill_manual(values = mypal)+
+  geom_sf(data = delta, alpha = 0.5)+
+  geom_sf(data = stashap, mapping =aes(color = as.factor(grps6)))+
+  theme_bw() + guides(color = FALSE, fill = FALSE) + 
+  coord_sf(xlim = c(-122.2, -121), ylim = c(37.6, 38.8))+
+  ggtitle("Sam's SubRegions, 6 clusgters")
+
+gp6x
+
+#Plot of EDSM's strata 
+gp6a = ggplot() +
+  geom_sf(data = edsm2, mapping = aes(fill = Stratum), alpha = 0.5)+
+  geom_sf(data = delta, alpha = 0.5)+
+  geom_sf(data = stashap, mapping =aes(color = as.factor(grps6)))+
+  theme_bw() + guides(color = FALSE, fill = FALSE) + 
+  coord_sf(xlim = c(-122.2, -121), ylim = c(37.6, 38.8))+
+  ggtitle("EDSM strata, 6 clusters")
+
+gp6a
+
+#plot of ESM's subregions
+gp6b = ggplot() +
+  geom_sf(data = edsm3, mapping = aes(fill = SubRegion), alpha = 0.5)+
+  geom_sf(data = delta, alpha = 0.5)+
+  geom_sf(data = stashap, mapping =aes(color = as.factor(grps6)))+
+  theme_bw() + guides(color = FALSE, fill = FALSE) + 
+  coord_sf(xlim = c(-122.2, -121), ylim = c(37.6, 38.8))+
+  ggtitle("EDSM Subregions, 6 clusters")
+
+gp6b
+
+grid.arrange(gp6, gp6x, gp6a, gp6b, nrow = 1, ncol = 4)
+
+
+```
+OK, Now let's figure out what regions ALL the points are in (even the ones that don't have a complete data set from the past five years.. 
+
+I used a Leaflet app to draw polygons aroudn the regions.
+
+
+```{r}
+# read in the new region shapefile
+
+RosieReg = read_sf("RosieRegions/shpExport.shp")
+
+#The shiny app didn't actually allow me to add attributes, so I'll do it now
+RosieReg$notes = c("Suisun Marsh", "Suisun Bay", "Sac River", "North Delta", "Far North", "San Joaquin", "South")
+
+#perform a spatial join between the stations and my regions
+spasR = st_join(stashap, RosieReg)
+
+
+stashap = mutate(stashap, cluster = grps6)
+stashap$cluster[which(is.na(stashap$cluster))] = 7
+stashap$cluster = factor(stashap$cluster, labels = c("1","2","3","4","5","6","NA"))
+
+mypal2 = c(brewer.pal(6, "Dark2"), "grey")
+#plot of my regions
+gp6c = ggplot() +
+  geom_sf(data = RosieReg, mapping = aes(fill = notes), alpha = 0.5)+
+  geom_sf_label(aes(label = notes), RosieReg, nudge_y = .1) +
+  geom_sf(data = delta, alpha = 0.5)+
+  geom_sf(data = stashap, mapping =aes(color = cluster))+
+  scale_fill_brewer(palette = "Pastel2") + scale_color_manual(values = mypal2)+
+  theme_bw() + 
+  coord_sf(xlim = c(-122.2, -121), ylim = c(37.6, 38.8))+
+  ggtitle("Rosie's Regions, 6 clusters")
+
+gp6c
+>>>>>>> 64f6a845d7d255d923f176fd15a56ed026a57b77
 
 regions = pivot_wider(stjoin, id_cols = c(Region, SubRegion), names_from = grps6, values_from = Station, values_fn = length)
 

@@ -36,7 +36,7 @@ First we have to do some data manipulation to get everything into a spatial form
 
 ```{r}
 #read in shapefile of the delta
-delta = read_sf("deltashap/hydro_delta_marsh.shp")
+delta = read_sf("DeltaShapefile/hydro_delta_marsh.shp")
 
 #add lat/longs for the stations
 stas = read.csv("StationLatLongs.csv")
@@ -355,9 +355,15 @@ data = tempmax2.1, method = "REML")
 summary(g2)
 
 #now the interaction version
+<<<<<<< HEAD
 g3 = bam(Temp ~ s(julian) + s(Year) + 
            ti(Latitude, Longitude, Year) +
            ti(Latitude, Longitude, julian), 
+=======
+#curvalinierity
+g3 = bam(Temp ~ s(julian) + 
+           te(Latitude, Longitude, julian),
+>>>>>>> 64f6a845d7d255d923f176fd15a56ed026a57b77
 data = tempmax2.1, method = "REML")
 
 summary(g3)
@@ -383,9 +389,15 @@ acf_resid(g4, split_pred = c("Year"))
 
 #now do it with maximum temperatures
 
+<<<<<<< HEAD
 g3x = bam(maxTemp ~ s(julian) + s(Year) + 
            ti(Latitude, Longitude, Year) +
            ti(Latitude, Longitude, julian), 
+=======
+g3x = bam(maxTemp ~  
+           te(Latitude, Longitude, Year) +
+           te(Latitude, Longitude, julian), 
+>>>>>>> 64f6a845d7d255d923f176fd15a56ed026a57b77
 data = tempmax2.1, method = "REML")
 #calculate start value of Rho
 r1x = acf(resid(g3x), plot=FALSE)$acf[2]
@@ -403,8 +415,29 @@ acf_resid(g4x)
 vis.gam(g4x, view = c("Longitude", "Latitude"), plot.type = "contour",
         too.far = 0.1)
 
+<<<<<<< HEAD
 #gamtabs(g4x, type = 'html')
 
+=======
+
+g4x2 = bam(maxTemp ~ 
+           te(Latitude, Longitude, Year)+ 
+           te(Latitude, Longitude, julian), 
+data =testdat, method = "REML",  rho=r1x, AR.start=testdat$start.event)
+
+summary(g4x2)
+plot(g4x2)
+acf_resid(g4x2)
+
+vis.gam(g4x, view = c("Longitude", "Latitude"), plot.type = "contour",
+        too.far = 0.1)
+
+
+#gamtabs(g4x, type = 'html')
+
+#If I don't have a lot of stations with the long time series, ditch spatial structure and move to random effects. 
+
+>>>>>>> 64f6a845d7d255d923f176fd15a56ed026a57b77
 ```
 
 
