@@ -37,3 +37,5 @@ intercept[!is.na(intercept)] <- g$SDF$'(Intercept)'
 s <- stack(intercept, slope)
 names(s) <- c('intercept', 'slope')
 plot(s)
+
+
