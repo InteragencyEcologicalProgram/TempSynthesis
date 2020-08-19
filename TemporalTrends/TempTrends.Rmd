@@ -6,53 +6,60 @@ output: html_document
 editor_options: 
   chunk_output_type: console
 ---
+# Temperature Trends {.tabset}
 This code explores temporal trends existing in the integrated temperature dataset.
 
 
-
-```{r import}
+## Preparation 
+```{r import, include = FALSE, message = FALSE, warning = FALSE}
 library(tidyverse)
 library(lubridate)
-library(readr)
+library(viridis) # color palette
+library(plotly)
 
-setwd("C:/Users/cpien/OneDrive - California Department of Water Resources/Work/ClimateChange/R_code/TempSynthesis/")
-tempFilt <- readRDS("Data/Temp_filtered.rds")
+setwd("C:/Users/cpien/OneDrive - California Department of Water Resources/Work/ClimateChange/R_code/TempSynthesis")
+tempFilt0 <- readRDS("Data/Temp_filtered.rds")
+Regions <- read.csv("Data/Station_groupings_5AUG2020.csv")
+staInfo <- read.csv("Data/StationsMetadata.csv")
 
-str(tempFilt)
+str(tempFilt0)
 ```
 
-Variable editing
+#### Variable editing
 ```{r vars}
-tempFilt$Year = year(tempFilt$Date)
-tempFilt$Month = month(tempFilt$Date)
-tempFilt$yDay = yday(tempFilt$Date)
+tempFilt0 <- tempFilt0 %>%
+  mutate(Year = year(tempFilt0$Date),
+         Month = month(tempFilt0$Date),
+         yDay = yday(tempFilt0$Date))
+```
+
+#### Merge station info
+#### Merge regions
+```{r regions, message = FALSE, warning = FALSE}
+# subregions <- st_read("Data/EDSM_Subregions/EDSM_Subregions_03302020.shp")
+
+tempFilt <- left_join(tempFilt0, Regions, by = "Station") %>%
+  rename(Region = EDSMRegion) %>%
+  filter(!Station %in% c("CNT", "CPP", "DAR", "DMC", "DYR","ECD", "HBP", "ROR", "DV7"),
+         !is.na(Region)) 
 
 ```
 
-Merge station info
-Merge regions
-```{r regions}
-library(sf)
-library(sp)
-subregions <- st_read("Data/EDSM_Subregions/EDSM_Subregions_03302020.shp")
-staInfo <- read.csv()
-left_join(tempFilt, staInfo, by = "Station")
+## Mean, max, min, variance temperatures {.tabset}
 
-```
-
-## Mean, max, min temperatures 
-Create dataset for mean, max, and min, var for Monthly
-Filter for data that is represented for a whole year
-Create dataset for mean, max, min, var for Annual
-```{r meanmaxmin}
+### Heatmaps
+* Create dataset for mean, max, and min, var for Monthly
+* Filter for data that is represented for a whole year
+* Create dataset for mean, max, min, var for Annual
+```{r meanmaxmin, message = FALSE, warning = FALSE}
 tempMon <- tempFilt %>% 
-  group_by(Station, Year, Month) %>%
+  group_by(Region, Station, Year, Month) %>%
   summarize(maxTemp = max(Temp),
             minTemp = min(Temp),
             meanTemp = round(mean(Temp),1),
             sdTemp = round(sd(Temp),1))
 
-# Filter to only data that has temps from every month 
+# Filter to only data that has temps from every month so as not to skew the data that only has part of the year represented.
 
 nMon <- tempMon %>% group_by(Station, Year) %>%
   summarize (nMon = n())
@@ -62,48 +69,83 @@ tempAn <- left_join(tempFilt, nMon, by = c("Station", "Year")) %>%
   group_by(Station, Year) %>%
   summarize(maxTempAn = max(Temp),
             minTempAn = min(Temp),
-            meanTempAn = mean(Temp),
-            varTempAn = sd(Temp))
+            meanTempAn = round(mean(Temp),1),
+            varTempAn = round(sd(Temp),1))
 
 ```
 
-Functions
-```{r}
+##### Function for plotting heatmaps
+```{r plotfunctions}
 heatmapplot <-  function(data,fill, temp, l1, l2) {
     fill <- enquo(fill)
     temp <- enquo(temp)
   p <- data %>%
     ggplot(mapping = aes(Year, Station, fill = !! fill,
-                         text = paste("Station:", Station, "\nTemp:", !! temp)
+                         text = paste("Station:", Station, "\nTemp:", !! temp, "\nYear:", Year)
                          )) +
     geom_tile() +
       scale_fill_viridis(option = "cividis", limits = c(l1,l2)) + theme_minimal() + 
   theme(axis.text.x = element_text(angle = 90, hjust = 1),
         axis.title = element_text(size = 12))
   ggplotly(p, tooltip = "text") 
-  
 }  
 
+heatmapplotVar <-  function(data, fill, var, l1, l2) {
+    fill <- enquo(fill)
+    var <- enquo(var)
+  p <- data %>%
+    ggplot(mapping = aes(Year, Station, fill = !! fill,
+                         text = paste("Station:", Station, "\nVariation:", !! var, "\nYear:", Year)
+                         )) +
+    geom_tile() +
+      scale_fill_viridis(option = "cividis", limits = c(l1,l2)) + theme_minimal() + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1),
+        axis.title = element_text(size = 12))
+  ggplotly(p, tooltip = "text") 
+}  
+
+heatmapplotDays <-  function(data, fill, days, l1, l2) {
+    fill <- enquo(fill)
+    days <- enquo(days)
+  p <- data %>%
+    ggplot(mapping = aes(Year, Station, fill = !! fill,
+                         text = paste("Station:", Station, "\nHeatStressDays:", !! days, "\nYear:", Year)
+                         )) +
+    geom_tile() +
+      scale_fill_viridis(option = "magma", limits = c(l1,l2)) + theme_minimal() + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1),
+        axis.title = element_text(size = 12))
+  ggplotly(p, tooltip = "text") 
+}  
+
+
 ```
 
-
-Link Regions, Filter into smaller datasets
-```{r filter}
+##### Link Regions, Filter into smaller datasets
+##### Will probably change this later to reflect regions we choose. 
+```{r filter regions}
 # Split into regions? 
 # Test
-stations <- unique(tempFilt$Station)
-staSamp1 <- stations[1:40]
-staSamp2 <- stations[41:80]
-staSamp3 <- stations[81:129]
+unique(tempFilt$Region)
+stations <- unique(Regions$Station)
 
+staNorth <- filter(Regions, EDSMRegion == "North") 
+staNorth <- unique(staNorth$Station)
+
+staFarWest0 <- filter(Regions, EDSMRegion == "Far West")
+staFarWest <- unique(staFarWest0$Station)
+
+staWest0 <- filter(Regions, EDSMRegion == "West") 
+staWest <- unique(staWest0$Station)
+
+staSouth0 = filter(Regions, EDSMRegion == "South")
+staSouth <- unique(staSouth0$Station)
 ```
 
-## Heat map for maximum temps
-```{r heatmapMax}
-library(RColorBrewer)
-library(viridis)
-library(plotly)
-  
+#### Heat map for maximum temps
+* We have the absolute temperatures, and then standardized by Year and Station.
+
+```{r heatmapMax, message = FALSE, warning = FALSE}
 maxTemps <- tempAn %>%
   filter(!is.na(maxTempAn)) %>%
   ungroup() %>%
@@ -115,78 +157,44 @@ maxTemps <- tempAn %>%
   mutate(maxTempAn_sta = scale(maxTempAn)) %>%
   ungroup()
 
-str(maxTemps)
-
 # Smaller datasets
-maxAn1 <- filter(maxTemps, Station %in% staSamp1) 
-maxAn2 <- filter(maxTemps, Station %in% staSamp2) 
-maxAn3 <- filter(maxTemps, Station %in% staSamp3) 
-
+maxAn1 <- filter(maxTemps, Station %in% staNorth) 
+maxAn2 <- filter(maxTemps, Station %in% staSouth) 
+maxAn3 <- filter(maxTemps, Station %in% staWest | Station %in% staFarWest) 
 ##### Heat maps (absolute values)
 maxAn1$Year <- ordered(maxAn1$Year)
 maxAn2$Year <- ordered(maxAn2$Year)
 maxAn3$Year <- ordered(maxAn3$Year)
 
-heatmapplot(maxAn1, maxTempAn, maxTempAn, 20, 35)
-heatmapplot(maxAn2, maxTempAn, maxTempAn, 20, 35)
-heatmapplot(maxAn3, maxTempAn, maxTempAn, 20, 35)
+# Limits determined by looking at the data, but probably a way to code in min() and max()
+heatmapplot(maxAn1, maxTempAn, maxTempAn, 20, 35) #North
+heatmapplot(maxAn2, maxTempAn, maxTempAn, 20, 35) #South
+heatmapplot(maxAn3, maxTempAn, maxTempAn, 20, 35) #West/FarWest
+heatmapplot(maxTemps, maxTempAn, maxTempAn, 20, 35) #All
 
 ##### Scaled heatmaps
 
+# Kept scaling the same for all 3 plots so the three are comparable to each other
 # By station
-heatmapplot(maxAn1, maxTempAn_sta, maxTempAn,  -4.1, 4.1)
-heatmapplot(maxAn2, maxTempAn_sta, maxTempAn,  -4.1, 4.1)
-heatmapplot(maxAn3, maxTempAn_sta, maxTempAn,  -4.1, 4.1)
-heatmapplot(maxTemps, maxTempAn_sta, maxTempAn,  -4.1, 4.1)
+heatmapplot(maxAn1, maxTempAn_sta, maxTempAn,  -4.1, 4.1) #North
+heatmapplot(maxAn2, maxTempAn_sta, maxTempAn,  -4.1, 4.1) #South
+heatmapplot(maxAn3, maxTempAn_sta, maxTempAn,  -4.1, 4.1) #West/FarWest
+heatmapplot(maxTemps, maxTempAn_sta, maxTempAn,  -4.1, 4.1) #All
 
 ## By year
 heatmapplot(maxAn1, maxTempAn_yr, maxTempAn,  -4.1, 4.1)
 heatmapplot(maxAn2, maxTempAn_yr, maxTempAn,  -4.1, 4.1)
 heatmapplot(maxAn3, maxTempAn_yr, maxTempAn,  -4.1, 4.1)
 heatmapplot(maxTemps, maxTempAn_yr, maxTempAn,  -4.1, 4.1)
-
-#####################################################################
-
-# Spread data so you have a value for each space/time combo
-maxAn_w <- maxTemps %>% spread(key=Year, value=maxTempAn)
-
-# Assign stations as row names
-maxAn_w2 <- as.data.frame(maxAn_w)
-row.names(maxAn_w2) <- maxAn_w$Station
-
-# Matrix of max temp data
-maxAn_w2 <- maxAn_w2[,2:32]
-maxAn.m <- data.matrix(maxAn_w2)
-
-# Subset so there aren't too many stations per map
-maxAn.m1 <- maxAn.m[1:40,]
-maxAn.m2 <- maxAn.m[41:80,]
-maxAn.m3 <- maxAn.m[81:127,]
-
-# Make heatmap
-# Note you can either scale the heat map by column or row. 
-
-# Row: how do years compare?
-heatmap(maxAn.m1, Rowv = NA, Colv = NA, col = brewer.pal(9, "YlGnBu"), scale = "row")
-heatmap(maxAn.m2, Rowv = NA, Colv = NA, col = brewer.pal(9, "YlGnBu"), scale = "row")
-heatmap(maxAn.m3, Rowv = NA, Colv = NA, col = brewer.pal(9, "YlGnBu"), scale = "row")
-
-
-# Column: how do stations compare to each other?
-heatmap(maxAn.m1, Rowv = NA, Colv = NA, col = brewer.pal(9, "YlGnBu"), scale = "column")
-heatmap(maxAn.m2, Rowv = NA, Colv = NA, col = brewer.pal(9, "YlGnBu"), scale = "column")
-heatmap(maxAn.m3, Rowv = NA, Colv = NA, col = brewer.pal(9, "YlGnBu"), scale = "column")
-
-heatmaply(maxAn1)
 ```
+##### Hot stations: LIS, CCS, FLT, BLL, GLC
+##### Hotter max temp years: 2006, 2013, 2017, 2019
 
-## Heat map for mean temps
+
+#### Heat map for mean temps
+* We have the absolute temperatures, and then standardized by Year and Station.
+
 ```{r heatmapMean}
-library(heatmaply)
-library(RColorBrewer)
-library(viridis)
-library(plotly)
-
 meanTemps <- tempAn %>%
   filter(!is.na(meanTempAn)) %>%
   ungroup() %>%
@@ -198,29 +206,28 @@ meanTemps <- tempAn %>%
   mutate(meanTempAn_sta = scale(meanTempAn)) %>%
   ungroup()
 
-str(meanTemps)
-
 # Smaller datasets
-meanAn1 <- filter(meanTemps, Station %in% staSamp1) 
-meanAn2 <- filter(meanTemps, Station %in% staSamp2) 
-meanAn3 <- filter(meanTemps, Station %in% staSamp3) 
+meanAn1 <- filter(meanTemps, Station %in% staNorth) 
+meanAn2 <- filter(meanTemps, Station %in% staSouth) 
+meanAn3 <- filter(meanTemps, Station %in% staWest | Station %in% staFarWest) 
 
 ##### Heat maps (absolute values)
 meanAn1$Year <- ordered(meanAn1$Year)
 meanAn2$Year <- ordered(meanAn2$Year)
 meanAn3$Year <- ordered(meanAn3$Year)
 
-heatmapplot(meanAn1, meanTempAn, meanTempAn, 12, 20)
-heatmapplot(meanAn2, meanTempAn, meanTempAn, 12, 20)
-heatmapplot(meanAn3, meanTempAn, meanTempAn, 12, 20)
+heatmapplot(meanAn1, meanTempAn, meanTempAn, 12, 20) #North
+heatmapplot(meanAn2, meanTempAn, meanTempAn, 12, 20) #South
+heatmapplot(meanAn3, meanTempAn, meanTempAn, 12, 20)# West/FarWest
+heatmapplot(meanTemps, meanTempAn, meanTempAn, 12, 20) #All
 
 ##### Scaled heatmaps
 
 # By station
-heatmapplot(meanAn1, meanTempAn_sta, meanTempAn, -4.5, 4.5)
-heatmapplot(meanAn2, meanTempAn_sta, meanTempAn, -4.5, 4.5)
-heatmapplot(meanAn3, meanTempAn_sta, meanTempAn, -4.5, 4.5)
-heatmapplot(meanTemps, meanTempAn_sta, meanTempAn, -4.5, 4.5)
+heatmapplot(meanAn1, meanTempAn_sta, meanTempAn, -4.5, 4.5) #North
+heatmapplot(meanAn2, meanTempAn_sta, meanTempAn, -4.5, 4.5) #South
+heatmapplot(meanAn3, meanTempAn_sta, meanTempAn, -4.5, 4.5) #West/FarWest
+heatmapplot(meanTemps, meanTempAn_sta, meanTempAn, -4.5, 4.5) #All
 
 ## By year
 heatmapplot(meanAn1, meanTempAn_yr, meanTempAn, -4.5, 4.5)
@@ -229,14 +236,11 @@ heatmapplot(meanAn3, meanTempAn_yr, meanTempAn, -4.5, 4.5)
 heatmapplot(meanTemps, meanTempAn_yr, meanTempAn, -4.5, 4.5)
 
 ```
+##### Hot stations: LIS, most of the South Delta
+##### Hot years: 2014-2016
 
-## Heat map for min temps
-```{r heatmap}
-library(heatmaply)
-library(RColorBrewer)
-library(viridis)
-library(plotly)
-
+### Heat map for min temps
+```{r heatmapMin}
 minTemps <- tempAn %>%
   filter(!is.na(minTempAn)) %>%
   ungroup() %>%
@@ -248,12 +252,10 @@ minTemps <- tempAn %>%
   mutate(minTempAn_sta = scale(minTempAn)) %>%
   ungroup()
 
-str(minTemps)
-
 # Smaller datasets
-minAn1 <- filter(minTemps, Station %in% staSamp1) 
-minAn2 <- filter(minTemps, Station %in% staSamp2) 
-minAn3 <- filter(minTemps, Station %in% staSamp3) 
+minAn1 <- filter(minTemps, Station %in% staNorth) 
+minAn2 <- filter(minTemps, Station %in% staSouth) 
+minAn3 <- filter(minTemps, Station %in% staWest | Station %in% staFarWest) 
 
 ##### Heat maps (absolute values)
 minAn1$Year <- ordered(minAn1$Year)
@@ -263,6 +265,7 @@ minAn3$Year <- ordered(minAn3$Year)
 heatmapplot(minAn1, minTempAn, minTempAn, 1.5, 10)
 heatmapplot(minAn2, minTempAn, minTempAn, 1.5, 10)
 heatmapplot(minAn3, minTempAn, minTempAn, 1.5, 10)
+heatmapplot(minTemps, minTempAn, minTempAn, 1.5, 10)
 
 ##### Scaled heatmaps
 
@@ -279,14 +282,12 @@ heatmapplot(minAn3, minTempAn_yr, minTempAn, -3.5, 3.5)
 heatmapplot(minTemps, minTempAn_yr, minTempAn, -3.5, 3.5)
 
 ```
+##### Warmer min temp stations: FLT and CCS are especially cool - check to make sure these values are acurate? 
+##### Warmer min temp years: 2010, 2018
 
-Heat maps for sd
-```{r heatmap}
-library(heatmaply)
-library(RColorBrewer)
-library(viridis)
-library(plotly)
 
+### Heat maps for sd
+```{r heatmapSD}
 varTemps <- tempAn %>%
   filter(!is.na(varTempAn)) %>%
   ungroup() %>%
@@ -298,34 +299,420 @@ varTemps <- tempAn %>%
   mutate(varTempAn_sta = scale(varTempAn)) %>%
   ungroup()
 
-str(varTemps)
-
 # Smaller datasets
-varAn1 <- filter(varTemps, Station %in% staSamp1) 
-varAn2 <- filter(varTemps, Station %in% staSamp2) 
-varAn3 <- filter(varTemps, Station %in% staSamp3) 
+varAn1 <- filter(varTemps, Station %in% staNorth) 
+varAn2 <- filter(varTemps, Station %in% staSouth) 
+varAn3 <- filter(varTemps, Station %in% staWest | Station %in% staFarWest) 
 
 ##### Heat maps (absolute values)
 varAn1$Year <- ordered(varAn1$Year)
 varAn2$Year <- ordered(varAn2$Year)
 varAn3$Year <- ordered(varAn3$Year)
 
-heatmapplot(varAn1, varTempAn, varTempAn, 2, 7)
-heatmapplot(varAn2, varTempAn, varTempAn, 2, 7)
-heatmapplot(varAn3, varTempAn, varTempAn, 2, 7)
+heatmapplotVar(varAn1, varTempAn, varTempAn, 2, 7)
+heatmapplotVar(varAn2, varTempAn, varTempAn, 2, 7)
+heatmapplotVar(varAn3, varTempAn, varTempAn, 2, 7)
+heatmapplotVar(varTemps, varTempAn, varTempAn, 2, 7)
 
 ##### Scaled heatmaps
 
 # By station
-heatmapplot(varAn1, varTempAn_sta, varTempAn, -4.5, 4.5)
-heatmapplot(varAn2, varTempAn_sta, varTempAn, -4.5, 4.5)
-heatmapplot(varAn3, varTempAn_sta, varTempAn, -4.5, 4.5)
-heatmapplot(varTemps, varTempAn_sta, varTempAn, -4.5, 4.5)
+heatmapplotVar(varAn1, varTempAn_sta, varTempAn, -4.5, 4.5)
+heatmapplotVar(varAn2, varTempAn_sta, varTempAn, -4.5, 4.5)
+heatmapplotVar(varAn3, varTempAn_sta, varTempAn, -4.5, 4.5)
+heatmapplotVar(varTemps, varTempAn_sta, varTempAn, -4.5, 4.5)
 
 ## By year
-heatmapplot(varAn1, varTempAn_yr, varTempAn, -3, 3)
-heatmapplot(varAn2, varTempAn_yr, varTempAn, -3, 3)
-heatmapplot(varAn3, varTempAn_yr, varTempAn, -3, 3)
-heatmapplot(varTemps, varTempAn_yr, varTempAn, -3, 3)
+heatmapplotVar(varAn1, varTempAn_yr, varTempAn, -3, 3)
+heatmapplotVar(varAn2, varTempAn_yr, varTempAn, -3, 3)
+heatmapplotVar(varAn3, varTempAn_yr, varTempAn, -3, 3)
+heatmapplotVar(varTemps, varTempAn_yr, varTempAn, -3, 3)
 
 ```
+##### Greater sd: Stations: RSL, FLT, LIS, most of south delta
+##### Years: 2013, 2011, 2019
+
+### Heat maps for mean annual summer temperature (June - Sept)
+```{r summerMean}
+tempSum <- tempFilt %>% 
+  group_by(Region, Station, Year, Month) %>%
+  filter(Month > 5 & Month < 10)%>%
+  summarize(meanTemp = round(mean(Temp),1),
+            sdTemp = round(sd(Temp),1))
+
+# Filter to only data that has temps from every month so as not to skew the data that only has part of the year represented.
+
+nMonSum <- tempSum %>% group_by(Station, Year) %>%
+  summarize (nMon = n())
+
+tempSumAll <- left_join(tempFilt, nMonSum, by = c("Station", "Year")) %>%
+  filter(nMon == 4) %>%
+  group_by(Station, Year) %>%
+  summarize(meanTempSum = round(mean(Temp),1),
+            varTempSum = round(sd(Temp),1))
+
+# Calculate scaled values for year and station
+meanSum <- tempSumAll %>%
+  filter(!is.na(meanTempSum)) %>%
+  ungroup() %>%
+  dplyr::select(c(Year, Station, meanTempSum)) %>%
+  group_by(Station) %>%
+  mutate(meanTempSum_yr = scale(meanTempSum)) %>%
+  ungroup %>%
+  group_by(Year) %>%
+  mutate(meanTempSum_sta = scale(meanTempSum)) %>%
+  ungroup()
+
+# Smaller datasets
+meanSum1 <- filter(meanSum, Station %in% staNorth) 
+meanSum2 <- filter(meanSum, Station %in% staSouth) 
+meanSum3 <- filter(meanSum, Station %in% staWest | Station %in% staFarWest) 
+
+##### Heat maps (absolute values)
+meanSum1$Year <- ordered(meanSum1$Year)
+meanSum2$Year <- ordered(meanSum2$Year)
+meanSum3$Year <- ordered(meanSum3$Year)
+
+heatmapplot(meanSum1, meanTempSum, meanTempSum, 14, 22)
+heatmapplot(meanSum2, meanTempSum, meanTempSum, 14, 22)
+heatmapplot(meanSum3, meanTempSum, meanTempSum, 14, 22)
+heatmapplot(meanSum, meanTempSum, meanTempSum, 14, 22)
+
+ ##### Scaled heatmaps
+
+# By station
+heatmapplot(meanSum1, meanTempSum_sta, meanTempSum, -4.7, 4.7)
+heatmapplot(meanSum2, meanTempSum_sta, meanTempSum, -4.7, 4.7)
+heatmapplot(meanSum3, meanTempSum_sta, meanTempSum, -4.7, 4.7)
+heatmapplot(meanSum, meanTempSum_sta, meanTempSum, -4.7, 4.7)
+
+## By year
+heatmapplot(meanSum1, meanTempSum_yr, meanTempSum, -4, 4)
+heatmapplot(meanSum2, meanTempSum_yr, meanTempSum, -4, 4)
+heatmapplot(meanSum3, meanTempSum_yr, meanTempSum, -4, 4)
+heatmapplot(meanSum, meanTempSum_yr, meanTempSum, -4, 4)
+```
+
+
+### Heat maps for min annual summer temperature (June - Sept)
+```{r summerMin}
+tempSumMin <- tempFilt %>% 
+  group_by(Region, Station, Year, Month) %>%
+  filter(Month > 5 & Month < 10)%>%
+  summarize(minTemp = round(min(Temp),1),
+            sdTemp = round(sd(Temp),1))
+
+# Filter to only data that has temps from every month so as not to skew the data that only has part of the year represented.
+
+nMonMinSum <- tempSumMin %>% group_by(Station, Year) %>%
+  summarize(nMon = n()) %>%
+  ungroup()
+
+tempSumAll <- left_join(tempFilt, nMonMinSum, by = c("Station", "Year")) %>%
+  filter(nMon == 4) %>%
+  group_by(Station, Year) %>%
+  summarize(minTempSum = round(min(Temp),1),
+            varTempSum = round(sd(Temp),1))
+
+# Calculate scaled values for year and station
+minSum <- tempSumAll %>%
+  filter(!is.na(minTempSum)) %>%
+  ungroup() %>%
+  dplyr::select(c(Year, Station, minTempSum)) %>%
+  group_by(Station) %>%
+  mutate(minTempSum_yr = scale(minTempSum)) %>%
+  ungroup %>%
+  group_by(Year) %>%
+  mutate(minTempSum_sta = scale(minTempSum)) %>%
+  ungroup()
+
+# Smaller datasets
+minSum1 <- filter(minSum, Station %in% staNorth) 
+minSum2 <- filter(minSum, Station %in% staSouth) 
+minSum3 <- filter(minSum, Station %in% staWest | Station %in% staFarWest) 
+
+##### Heat maps (absolute values)
+minSum1$Year <- ordered(minSum1$Year)
+minSum2$Year <- ordered(minSum2$Year)
+minSum3$Year <- ordered(minSum3$Year)
+
+heatmapplot(minSum1, minTempSum, minTempSum, 1,15)
+heatmapplot(minSum2, minTempSum, minTempSum, 1, 15)
+heatmapplot(minSum3, minTempSum, minTempSum, 1, 15)
+heatmapplot(minSum, minTempSum, minTempSum, 1, 15)
+
+ ##### Scaled heatmaps
+
+# By station
+heatmapplot(minSum1, minTempSum_sta, minTempSum, -5.2, 5.2)
+heatmapplot(minSum2, minTempSum_sta, minTempSum, -5.2, 5.2)
+heatmapplot(minSum3, minTempSum_sta, minTempSum, -5.2, 5.2)
+heatmapplot(minSum, minTempSum_sta, minTempSum, -5.2, 5.2)
+
+## By year
+heatmapplot(minSum1, minTempSum_yr, minTempSum, -3.3, 3.3)
+heatmapplot(minSum2, minTempSum_yr, minTempSum, -3.3, 3.3)
+heatmapplot(minSum3, minTempSum_yr, minTempSum, -3.3, 3.3)
+heatmapplot(minSum, minTempSum_yr, minTempSum, -3.3, 3.3)
+```
+
+### GLM
+#### Effect of Region, Month, Year on Maximum Temperature 
+```{r glm max temps}
+library(pscl)
+library(visreg)
+library(lattice)
+
+tempSimp <- tempFilt %>%
+  select(c(Station, Year, Month, Temp, Region)) %>% 
+  mutate(Region = replace(Region, Region == "Far West", "West")) %>%
+  filter(Year > 2000)
+tempSimp2 <- distinct(tempSimp)
+
+maxJoin <- maxTemps %>%
+  rename(Temp = maxTempAn)
+
+maxT <- left_join(maxJoin, tempSimp2)
+m1 <- glm(Temp~Year*Region + Month, data = maxT)
+summary(m1)
+
+par(mfrow = c(2,2))
+plot(m1)
+visreg(m1)
+visreg(m1, "Year", by = "Region")
+par(mfrow = c(1,1))
+visreg(m1, "Year", by = "Region", overlay = "TRUE")
+
+m2 <- glm(Temp~Year*Region + Region*Month, data = maxT)
+summary(m2)
+
+par(mfrow = c(2,2))
+plot(m2)
+visreg(m2)
+visreg(m2, "Year", by = "Region")
+par(mfrow = c(1,1))
+visreg(m2, "Year", by = "Region", overlay = "TRUE")
+
+m3 <- glm(Temp~Year*Region, data = maxT)
+summary(m3)
+
+AIC(m1, m2, m3)
+```
+
+#### Effect of Region, Year on Annual Variation (standard deviation)
+```{r glm sd}
+tempSimp3 <- tempSimp2 %>% select(-Temp)
+tempSimp4 <- unique(tempSimp3)
+sdJoin <- left_join(varTemps, tempSimp4) %>%
+  select(c(Station, Year, Region, varTempAn)) %>%
+  rename(Var = varTempAn)
+
+# Data used for model
+varT <- unique(sdJoin)
+
+var1 <- glm(Var ~ Year*Region, data = varT)
+summary(var1)
+par(mfrow = c(2,2))
+plot(var1)
+visreg(var1, "Year", by = "Region")
+
+```
+
+##### Not sure why "Region" is just plotting three years?
+##### Significant effect of year, with greatest increase in variation by year in North, then South, then West.
+
+#### Effect of Region, Year on Mean Summer Temperature
+```{r glm mean summer temps}
+
+meanJoin <- left_join(meanSum, tempSimp4) %>%
+  select(c(Station, Year, Region, meanTempSum)) %>%
+  rename(Temp = meanTempSum) %>%
+  mutate(Year2 = ordered(Year))
+
+# Data used for model
+meanT <- unique(meanJoin)
+
+mean1 <- glm(Temp ~ Year*Region, data = meanT)
+summary(mean1)
+plot(mean1)
+visreg(mean1, "Year", by = "Region")
+
+```
+##### Significant effect of year, with greatest increase in mean temp in the South, followed by North, followed by West.
+
+#### Effect of Region, Year on Min Summer Temperature 
+```{r glm min summer temps}
+minJoin <- left_join(minSum, tempSimp4) %>%
+  select(c(Station, Year, Region, minTempSum)) %>%
+  rename(Temp = minTempSum)
+
+# Data used for model
+minT <- unique(minJoin)
+
+min1 <- glm(Temp ~ Year*Region, data = minT)
+summary(min1)
+plot(min1)
+visreg(min1, "Year", by = "Region")
+visreg(min1, "Region", by = "Year")
+```
+##### Significant effect of year, with greatest increase in min temperature in the North, similar trend in South, significantly lower increase in the West.
+
+## Stress Levels
+##### Calculate number of days per year at each stress level
+```{r heatevents}
+maxDaily <- tempFilt %>%
+  group_by(Region, Station, Year, Month, Date) %>%
+  summarize(maxT = max(Temp))
+
+# Flagging starting on Day 3 of high/med temps   
+heat <- maxDaily %>%
+  group_by(Region, Station) %>%
+  mutate(Thr25 = ifelse(maxT > 25, 1L, 0L),
+         Thr21 = ifelse(maxT > 21, 1L, 0L)) %>%
+  mutate(Stress = ifelse(Thr25 == lag(Thr25, 1) & Thr25 == lag(Thr25, 2) & Thr25 == 1L, "High", 
+                            ifelse(Thr21 == lag(Thr21, 1) & Thr21 == lag(Thr21, 2) & Thr21 == 1, "Med", 
+                                   "Low"))) %>%
+  select(-starts_with("Thr"))
+
+
+# Calculate number of days at heat levels 
+heatDaysSamp <- heat %>%
+  group_by(Region, Station, Year) %>%
+  summarize(total = n()) 
+  
+heatDays <- heat %>%
+  group_by(Region, Station, Year, Stress) %>%
+  summarize(ndays = n()) %>%
+  left_join(heatDaysSamp) %>%
+  mutate(propDays = round(ndays/total,3))
+```
+
+#### Heat map 
+```{r heatmap highstress}
+hdaysComp <- heatDays %>%
+  filter(!is.na(Stress)) %>%
+  ungroup%>%
+  complete(Stress, nesting(Station, Region, Year), fill = list(ndays = 0)) %>%
+  arrange(Station, Year, Stress) %>%
+  filter(Stress == "High") %>%
+  group_by(Station) %>%
+  mutate(ndays_yr = scale(ndays)) %>%
+  ungroup() %>%
+  group_by(Year) %>%
+  mutate(ndays_sta = scale(ndays)) %>%
+  ungroup()
+
+# Smaller datasets
+hdaysComp1 <- filter(hdaysComp, Station %in% staNorth) 
+hdaysComp2 <- filter(hdaysComp, Station %in% staSouth) 
+hdaysComp3 <- filter(hdaysComp, Station %in% staWest | Station %in% staFarWest)
+
+##### Heat maps (absolute values)
+hdaysComp1$Year <- ordered(hdaysComp1$Year)
+hdaysComp2$Year <- ordered(hdaysComp2$Year)
+hdaysComp3$Year <- ordered(hdaysComp3$Year)
+
+# Make heat map
+heatmapplotDays(hdaysComp1, ndays, ndays, 0, 85)
+heatmapplotDays(hdaysComp2, ndays, ndays, 0, 85)
+heatmapplotDays(hdaysComp3, ndays, ndays, 0, 85)
+heatmapplotDays(hdaysComp, ndays, ndays, 0, 85)
+
+# By station
+heatmapplotDays(hdaysComp1, ndays_sta, ndays, -2, 5.4)
+heatmapplotDays(hdaysComp2, ndays_sta, ndays, -2, 5.4)
+heatmapplotDays(hdaysComp3, ndays_sta, ndays, -2, 5.4)
+heatmapplotDays(hdaysComp, ndays_sta, ndays, -2, 5.4)
+
+## By year
+heatmapplotDays(hdaysComp1, ndays_yr, ndays, -2.1, 6)
+heatmapplotDays(hdaysComp2, ndays_yr, ndays, -2.1, 6)
+heatmapplotDays(hdaysComp3, ndays_yr, ndays, -2.1, 6)
+heatmapplotDays(hdaysComp, ndays_yr, ndays, -2.1, 6)
+
+```
+##### More in 2006, 2013, 2017, 2019
+##### LIS, CCS, WCI, VCU, RSL, OH4, ORI, MDM, FRP, BAC, FLT
+
+#### How has the proportion of high stress days changed over time? 
+```{r glm highstress}
+#Proportion at High
+heatDaysHigh <- heatDays %>%
+  filter(Stress == "High") 
+
+heat1 <- glm(propDays ~ Year*Region, family = binomial, data = heatDaysHigh)
+
+summary(heat1)
+par(mfrow = c(2,2))
+plot(heat1)
+visreg(heat1, "Year", by = "Region")
+```
+##### Looks like in the South, North, and Far West, proportion of high stress days has potentially increased, but not significantly. 
+
+#### Reran model after addding 0 for every year-station combo where there were NO high heat days - not sure if this is the right approach, didn't really change results.
+```{r completeHeatHigh}
+completeHeat <- heatDays %>%
+  filter(!is.na(Stress)) %>%
+  ungroup%>%
+  complete(Stress, nesting(Station, Region, Year), fill = list(propDays = 0)) %>%
+  arrange(Station, Year, Stress)
+
+# Filter for high heat proportions
+heatDaysHigh2 <- completeHeat %>%
+  filter(Stress == "High") 
+
+# Plot 
+ggplot(heatDaysHigh2, aes(x = Year, y = propDays)) + geom_point() + facet_wrap(~Region, scales = "free") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+# Model
+heat2 <- glm(propDays ~ Year*Region, family = binomial, data = heatDaysHigh2)
+
+summary(heat2)
+par(mfrow = c(2,2))
+plot(heat2)
+visreg(heat2, "Year", by = "Region")
+
+```
+##### qqplot needs some work.
+##### Increase in proportion of high heat days in the South and Far West, but not significantly.
+
+#### How has the proportion of low stress days changed over time? 
+```{r glm lowstress}
+heatDaysLow <- heatDays %>%
+  filter(Stress == "Low") %>%
+  filter(Year > 2000)
+lowheat1 <- glm(propDays ~ Year*Region, family = binomial, data = heatDaysLow)
+summary(lowheat1)
+par(mfrow = c(2,2))
+plot(lowheat1)
+visreg(lowheat1, "Year", by = "Region")
+```
+##### Some qqplot issues. 
+##### Looks like the proportion of low stress days has decreased in every region, though no significant results. 
+
+#### Reran model after addings 0s in.
+```{r completeHeatLow}
+# Filter for high heat proportions
+heatDaysLow2 <- completeHeat %>%
+  filter(Stress == "Low") 
+
+# Plot 
+ggplot(heatDaysLow2, aes(x = Year, y = propDays)) + geom_point() + facet_wrap(~Region, scales = "free") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+# Model
+lowheat2 <- glm(propDays ~ Year*Region, family = binomial, data = heatDaysLow2)
+
+summary(lowheat2)
+par(mfrow = c(2,2))
+plot(lowheat2)
+visreg(lowheat2, "Year", by = "Region")
+```
+##### Some qqplot issues.
+##### Slight decrease in proportion of days in low stress category for all, but not significant in model. Pretty much same as previous.
+
+#### Calculate number of hours per day fish are at each stress temperature, see how proportions change over time? 
+

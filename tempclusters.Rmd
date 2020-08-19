@@ -147,6 +147,33 @@ I trimmed the tree into different numbers of groups, so see what we get when we 
 delta = read_sf("DeltaShapefile/hydro_delta_marsh.shp")
 
 
+#read in shapefile of EDSM regions
+edsm = read_sf("EDSM_Subregions/EDSM_Subregions_03302020.shp")
+edsm2 = read_sf("03302020_shape/EDSM_Subregions_03302020.shp")
+#reference system is UTMs
+st_crs(edsm) = 32610
+st_crs(edsm2) = 32610
+edsm = st_transform(edsm, 4326)
+
+#for some reason they didn't include the strata in teh shapfile, so I"m attaching it seperately
+EDSM = read.csv("C:/Users/rhartman/OneDrive - California Department of Water Resources/salinity control gates/SMSCG/EDSM_KDTR.csv")
+
+
+foo1 =  sort(unique(EDSM$SubRegion))
+foo2 = sort(unique(edsm$SubRegion))
+
+foo3 = list(shapefile = foo2, EDI = foo1)
+
+
+EDSM = mutate(EDSM, Date = mdy(Date)) %>%
+  filter(year(Date) > 2018) %>%
+  group_by( Region, SubRegion, Stratum) %>%
+  summarize(count = length(Tow))
+
+edsm = left_join(edsm, EDSM)
+
+foo = select(as.data.frame(edsm), -geometry, -count)
+
 #add lat/longs for the stations
 stas = read.csv("StationLatLongs.csv")
 
@@ -169,10 +196,18 @@ gp4 = ggplot() +
   coord_sf(xlim = c(-122.2, -121), ylim = c(37.6, 38.8))+
   ggtitle("4 groups")
 
+library(RColorBrewer)
+mypal = c(brewer.pal(9, "Blues"), brewer.pal(9, "BuGn"), 
+          brewer.pal(9, "Greys"), brewer.pal(9, "PuBu"), brewer.pal(9, "YlGn"))
 gp6 = ggplot() +
+  geom_sf(data = edsm, mapping = aes(fill = Region, color = Region), alpha = 0.5)+
+  scale_fill_brewer(palette = "Set3")+
   geom_sf(data = delta, alpha = 0.5)+
   geom_sf(data = stashap, mapping =aes(color = as.factor(grps6)))+
+<<<<<<< HEAD
+=======
  # geom_sf_label(aes(label = Station), stashap) +
+>>>>>>> 64f6a845d7d255d923f176fd15a56ed026a57b77
   scale_color_brewer(palette = "Set1")+
   theme_bw() + guides(color = FALSE, fill = FALSE) + 
   coord_sf(xlim = c(-122.2, -121), ylim = c(37.6, 38.8))+
@@ -180,6 +215,18 @@ gp6 = ggplot() +
 
 gp6
 
+<<<<<<< HEAD
+gp6a = ggplot() +
+  geom_sf(data = edsm, mapping = aes(fill = Region), alpha = 0.5)+
+  geom_sf(data = delta, alpha = 0.5)+
+  geom_sf(data = stashap, mapping =aes(color = as.factor(grps6)))+
+  theme_bw() + guides(color = FALSE, fill = FALSE) + 
+  #coord_sf(xlim = c(-122.2, -121), ylim = c(37.6, 38.8))+
+  ggtitle("6 groups")
+
+gp6a
+=======
+>>>>>>> 64f6a845d7d255d923f176fd15a56ed026a57b77
 
 gp12 = ggplot() +
   geom_sf(data = delta, alpha = 0.5)+
@@ -196,6 +243,15 @@ foo = grid.arrange(gp4, gp6, gp12, nrow = 1, ncol = 3)
 
 ```
 ## Join with EDSM regions
+<<<<<<< HEAD
+
+I want to see how closely the EDSM regions map to my clusters. 
+
+```{r}
+
+spas = st_join(stashap, edsm)
+stjoin = as.data.frame(spas)[,1:8]
+=======
 
 I want to see how closely the EDSM regions map to my clusters. Brian made one version of the shapefile that he tweaked a bit to cover more of the region. THen there is the EDSM subregions, teh EDSM regions, and the EDSM strata. Do any of them match our clusters? I'm using the 6-cluster grouping throughout.
 
@@ -326,7 +382,9 @@ gp6c = ggplot() +
   ggtitle("Rosie's Regions, 6 clusters")
 
 gp6c
+>>>>>>> 64f6a845d7d255d923f176fd15a56ed026a57b77
 
+regions = pivot_wider(stjoin, id_cols = c(Region, SubRegion), names_from = grps6, values_from = Station, values_fn = length)
 
 ```
 
