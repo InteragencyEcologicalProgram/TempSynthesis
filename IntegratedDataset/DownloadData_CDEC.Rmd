@@ -1,0 +1,321 @@
+---
+title: "DownloadData_CDEC"
+author: "Catarina Pien"
+date: "7/6/2020"
+output: html_document
+---
+
+Water Temperature Synthesis
+Download code adapted from Travis Hinkelmann (Cramer Fish Sciences) and William Anderson (Water Board) (personal communication)
+This code downloads water temperature data from CDEC (http://cdec.water.ca.gov/)
+For this example, data are downloaded through 2019 and converted to hourly data
+
+Clear the environment
+
+```{r clear, include = FALSE}
+rm(list=ls(all=TRUE))
+```
+
+Load Packages
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(data.table) #rbindlist()
+library(lubridate) #today()
+library(CDECRetrieve) #cdec_datasets
+library(readr)
+
+# To get CDEC Retrieve initially:  
+# install roxygen2 (normal install method)
+# install.packages("https://cran.r-project.org/src/contrib/Archive/CDECRetrieve/CDECRetrieve_0.1.4.tar.gz", repos=NULL, method = "libcurl")
+# Or use winzip to unzip the files, copy folder into the .libPaths() specified (or go to Tools Install to check where lib is)
+# Easiest way: devtools::install_github("flowwest/CDECRetrieve")
+```
+
+
+Download information about what data are collected by stations (different sensors)
+Filter out which stations collect event/hourly temperature data
+
+```{r Station sensors, message = FALSE}
+
+# List of all stations
+sta_all<-c("BAC", "BET", "BLP", "CSE", "CYG", "FAL", "FLT", "FRK",
+          "GOD", "GYS", "GZB", "GZL", "HON", "HUN", "IBS", "MDM", "MHO", "MOK", "MRZ", "MSL",
+          "NMR", "OBI", "ODM", "OH4", "OLD", "OSJ", "PCO", "PPT", "ROR", "RSL", "RYC",
+          "SMR", "SNC", "SUR", "TEA", "VCU", "VOL", 
+          "BDL", "BLL", "DLC", "DWS", "FPT", "GES", "GLN", "GSS", "HWB", "LIB", "LIS", "MAL", "MIR", 
+          "NSL", "RCS", "RVB", "RYF", "RYI", "SDI", "SOI", "SRH", "SRV", "SSI", "SSS", "SUT", "SXS","TMS", "TSL",
+          "ANH", "BDT", "BIR", "DGL", "DSJ", "FCT", "GCT", "GLC", "GLE", "HLT", "HOL", "LPS",
+          "MAB", "MHR", "MRU", "MRX", "MSD", "MTB", "MUP", "OAD", "OBD", "OH1", "ORI", "ORM", 
+          "ORQ", "ORX", "PDC", "PRI", "RRI", "SGA", "SJC", "SJD", "SJG", "SJJ", "SJL", "SJR", 
+          "TPI", "TRN", "TWA", "TWI", "WCI", "RIP",
+          "DAR", "ECD", "MKN", "SR3", "SUS", "SWE", "VNS", "SJR",
+          "ANC", "BKS", "CCS", "CLL", "CNT", "CPP", "DMC", "EMM", "FRP", "HBP", "HLL",
+          "OBI", "JER", "PCT", "PTS", "RIV", "ROR", "SAL", "STI", "UNI", "VIC", "VOL", "MRZ",
+          "ANH", "BDL", "BLL", "DV7", "GLN", "MAL", "MSD", "MTB", "NSL", "VER", "RPN", "RVB", "SJL", "SRH",
+          "BKS", "CLC", "CPP", "DV7", "DYR", "HBP")
+
+# Filter out list of unique stations (some are in there multiple times)
+sta <- sort(unique(sta_all))
+
+### First download dataset info ---------------------------------------------
+
+# Loop to get info on what sensors are available for each station
+# Based on station list above
+sensordataset <- list() 
+for(i in 1:length(sta)){
+  dataset <- cdec_datasets(sta[i])
+  dataset$station <- sta[i]  # just for an identifier
+  sensordataset[[i]] <- dataset
+} 
+
+# Bind into dataframe 
+cdec_datasets_df <-rbindlist(sensordataset)   #** LIST INTO DATAFRAME **
+
+# Remove unnecessary objects to save space
+rm(dataset)
+rm(sensordataset)
+
+# Include only stations with event and hourly water temperature data
+# Sensor 25 = Temp_C
+# Sensor 146 = Temp_F
+cdec_temp <- cdec_datasets_df %>% 
+  filter(sensor_number == 25 | sensor_number == 146) %>% 
+  filter(duration !="daily") %>%
+  arrange(station) %>%
+  mutate(days = end-start)
+
+```
+
+Download Raw Data from CDEC
+These are at Pacific Daylight Time 
+See https://info.water.ca.gov/misc/sql_dates.html for information about how CDEC deals with Daylight Savings Time
+Split up into 4 sets of stations: 
+* Event/Fahrenheit
+* Event/Celsius
+* Hourly/Fahrenheit
+* Hourly/Celsius
+
+```{r Download, message = FALSE}
+
+###################################### Event Data - Fahrenheit ##############################
+
+### Define list of stations ----------------------------------
+
+# Delta/Mokelumne/East Bay, sacR, sanJR (these are designations from CDEC) - this is how stations 
+# are ordered below, and is why they are not in alphabetical order
+
+sta_Ev_F <- c("BAC", "BET", "BLP", "CSE", "CYG", "FAL", "FLT", "FRK",
+          "GOD", "GYS", "GZB", "GZL", "HON", "HUN", "IBS", "MDM", "MHO", "MOK", "MRZ", "MSL",
+          "NMR", "OBI", "ODM", "OH4", "OLD", "OSJ", "PCO", "PPT", "ROR", "RSL", "RYC",
+          "SMR", "SNC", "SUR", "TEA", "VCU", "VOL",
+          "BDL", "BLL", "DLC", "DWS", "FPT", "GES", "GLN", "GSS", "HWB", "LIB", "LIS", "MAL",
+          "MIR", "NSL", "RCS", "RVB", "RYF", "RYI", "SDI", "SOI", "SRH", "SRV", "SSI", "SSS", "SUT", "SXS",
+          "TMS", "TSL", "ANH", "BDT", "BIR", "DGL", "DSJ", "FCT", "GCT", "GLC", "GLE", "HLT", "HOL", "LPS",
+          "MAB", "MHR", "MRU", "MRX", "MSD", "MTB", "MUP", "OAD", "OBD", "OH1", "ORI", "ORM", 
+          "ORQ", "ORX", "PDC", "PRI", "RIP", "RRI", "SGA", "SJC", "SJD", "SJG", "SJJ", "SJL", "SJR",
+          "TPI", "TRN", "TWA", "TWI", "WCI", "RIP")
+
+### Define rest of the sensor information desired -------------
+# Start and end dates - these will remain the same throughout
+start <- "1986-01-01"
+end <- "2019-12-31"
+
+# Sensor number, time interval - these are different for each set of stations
+sensor1 <- "25" # Water Temperature, Celsius
+interval1 <- "E" # Event = every 15 minutes
+
+### Download data, bind, write --------------------------------------------
+Temp_Event_F_Raw <- lapply(sta_Ev_F, 
+                 function(x){
+                   cdec_query(station = x,
+                              sensor_num = sensor1,
+                              dur_code = interval1,
+                              start_date = start,
+                              end_date = end)
+                 })
+
+Temp_E_F_Raw_df <- bind_rows(Temp_Event_F_Raw) # bind rows into data frame
+write_csv(Temp_E_F_Raw_df, "Tempdata/Raw/Temp_E_F_raw.csv") #write data
+saveRDS(Temp_E_F_Raw_df, "Tempdata/Raw/Temp_E_F_raw.rds") #write rds
+
+###################################### Event Data - Celsius ##############################
+
+### Define stations, sensor, interval ------------------------------------------
+sta_Ev_C <- c("DAR", "ECD", "MKN", "SJR", "SR3", "SUS", "SWE", "VNS")
+
+# Sensor number, time interval
+sensor2 <- "146" # Water Temperature, Fahrenheit
+interval2 <- "E" # Event: every 15 minutes
+
+### Download data, bind, write --------------------------------------------
+Temp_Event_C_Raw <- lapply(sta_Ev_C, 
+                 function(x){
+                   cdec_query(station = x,
+                              sensor_num = sensor2,
+                              dur_code = interval2,
+                              start_date = start,
+                              end_date = end)
+                 })
+
+Temp_E_C_Raw_df <- bind_rows(Temp_Event_C_Raw) # bind into a data frame
+
+write_csv(Temp_E_C_Raw_df, "Tempdata/Raw/Temp_E_C_raw.csv") #write data
+saveRDS(Temp_E_C_Raw_df, "Tempdata/Raw/Temp_E_C_raw.rds") #write rds
+
+
+###################################### Hourly Data - Fahrenheit ##############################
+
+### Define stations, sensor, interval ------------------------------------------
+sta_H_F <- c("ANC", "ANH", "BAC", "BDL", "BLL", "CCS", "CLL", "CNT", "CPP", "DLC", "DMC", "DV7",
+             "EMM", "FRP", "GLC", "GLN", "GOD", "GYS", "HBP", "HLL", "HLT", "HUN", "IBS", 
+             "JER", "MAL", "MDM", "MRZ", "MSD", "MSL", "MTB", "NSL", 
+             "OBI", "OH1", "OH4", "OSJ", "PCT", "PPT", "PTS", "RIV", "ROR", "RPN", "RVB", 
+             "SAL", "SJL", "SJR", "SNC", "SRH", "STI", "UNI", "VER", "VIC", "VOL")
+
+# Specify sensor, time interval
+sensor3 <- "25" # 25 = Water Temperature, celsius
+interval3 <- "H" # H = Hourly data
+
+### Download data, bind, write --------------------------------------------
+Temp_Hourly_F_Raw <- lapply(sta_H_F, 
+                 function(x){
+                   cdec_query(station = x,
+                              sensor_num = sensor3,
+                              dur_code = interval3,
+                              start_date = start,
+                              end_date = end)
+                 })
+
+Temp_H_F_Raw_df <- bind_rows(Temp_Hourly_F_Raw) # bind into df
+write_csv(Temp_H_F_Raw_df, "Tempdata/Raw/Temp_H_F_raw.csv") #write data
+saveRDS(Temp_H_F_Raw_df, "Tempdata/Raw/Temp_H_F_raw.rds") #write rds
+
+
+###################################### Hourly Data - Celsius ##############################
+
+### Define stations, sensor, interval ------------------------------------------
+sta_H_C <- c("BKS", "CLC", "CPP", "DV7", "DYR", "HBP", "SJR")
+sensor4 <- "146" # Water Temperature, Fahrenheit
+interval4 <- "H" # Hourly interval
+
+
+### Download data, bind, write --------------------------------------------
+Temp_Hourly_C_Raw <- lapply(sta_H_C, 
+                 function(x){
+                   cdec_query(station = x,
+                              sensor_num = sensor4,
+                              dur_code = interval4,
+                              start_date = start,
+                              end_date = end)
+                 })
+
+Temp_H_C_Raw_df <- bind_rows(Temp_Hourly_C_Raw) # bind into df
+write_csv(Temp_H_C_Raw_df, "Tempdata/Raw/Temp_H_C_raw.csv") #write data
+saveRDS(Temp_H_C_Raw_df, "Tempdata/Raw/Temp_H_C_raw.rds") #write rds
+
+# Remove some files
+rm(Temp_Event_F_Raw, Temp_Event_C_Raw, Temp_Hourly_C_Raw, Temp_Hourly_F_Raw)
+```
+
+
+Standardize data to Celsius
+Merge data into one dataset
+Write file of merged data
+
+```{r Standardize data, message = FALSE}
+
+# Merge Fahrenheit event and hourly data together
+# Add column Temp (converts F to C) 
+# Remove and rename columns
+Temp_F <- rbind(Temp_E_F_Raw_df, Temp_H_F_Raw_df)
+Temp_FtoC <- Temp_F %>% mutate(Temp = round((parameter_value-32)/1.8,1))
+Temp_C_1 <- Temp_FtoC %>% 
+  select(-c(agency_cd, parameter_cd, parameter_value)) %>%
+  rename(station = location_id)
+
+# Merge Celsius event and hourly data together | Rm and rename columns
+Temp_C <- rbind(Temp_E_C_Raw_df, Temp_H_C_Raw_df)
+Temp_C_2 <- Temp_C %>% 
+  select(-c(agency_cd, parameter_cd)) %>% 
+  rename(station = location_id,
+         Temp = parameter_value)
+
+# Remove some files
+rm(Temp_F, Temp_FtoC, Temp_C)
+
+# Merge converted temp data frames together 
+Temp_all_std <- rbind(Temp_C_1, Temp_C_2)
+Temp_all_std <- rename(Temp_all_std,
+  Station =station,
+  Datetime = datetime)
+saveRDS(Temp_all_std, "Tempdata/Std/Temp_all_std.rds") # Write rds
+write_csv(Temp_all_std, "Tempdata/Std/Temp_all_std.csv") # write csv
+
+# This data was used as the raw table file for EDI.
+
+```
+
+
+Write individual files for each station
+CSV - includes event and hourly data all combined
+
+```{r Individual station files, message = FALSE}
+Temp_all_std$station <- as.factor(Temp_all_std$station) # need to factorize the "stations"
+#Get the list of unique station names
+for (name in levels(Temp_all_std$station)) {
+  #Subset the data station
+  tmp=subset(Temp_all_std,station==name)
+  #Create a new filename for each station. Designate the folder you want the files in.
+  fn=paste('Tempdata/Std/Individual/',name, "_std_sin.csv", sep="")
+  #Save the CSV file for each station
+  write_csv(tmp,fn)
+}
+```
+
+Convert data to hourly by picking the first value of each hour
+
+```{r Hourly}
+
+# In case you need to modify anything without re-downloading everything
+# Temp_all_std <- readRDS("Tempdata/Std/Temp_all_std.rds")
+
+# Add some columns to sort by date/time object types
+Temp_all_std$Station <- as.factor(Temp_all_std$Station)
+Temp_all_std$Date <- date(Temp_all_std$Datetime)
+Temp_all_std$year <- year(Temp_all_std$Datetime)
+Temp_all_std$month <- month(Temp_all_std$Datetime)
+Temp_all_std$hour <- hour(Temp_all_std$Datetime)
+Temp_all_std$minute <- minute(Temp_all_std$Datetime)
+
+# Remove any row where Temp = NA or datetime = NA
+temp_H_0 <- Temp_all_std %>%
+  filter(!is.na(Temp)) %>%
+  filter(!is.na(Datetime)) # need this for anomalize later or it won't run
+
+# Convert temperature data to hourly
+temp_H <- temp_H_0 %>%
+  group_by(Station, Date, hour) %>% #group (calculations) by these vars
+  arrange(Station, Date, hour, minute) %>% #arrange in order of these vars to visualize duplication
+  slice(1) %>% #keep only the first value for each station, date, hour group so 1 value/hour
+  ungroup()
+
+# Check that they are all good!
+check <- temp_H %>%
+  group_by(Station, Date, hour)%>%
+  summarize(vals = n())
+which(check$vals >1) # this should be 0
+
+# Remove extra variables 
+temp_H_f <- temp_H %>%
+  select(c(Station, Datetime, Temp, Date, hour)) %>%
+    rename(Hour = hour)
+
+# Write data
+saveRDS(temp_H_f, "Tempdata/Hourly/Temp_all_H.rds") # Write rds
+write_csv(temp_H_f, "Tempdata/Hourly/Temp_all_H.csv") # write csv
+
+```
+
