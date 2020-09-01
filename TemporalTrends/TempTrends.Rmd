@@ -19,7 +19,8 @@ library(plotly)
 
 setwd("C:/Users/cpien/OneDrive - California Department of Water Resources/Work/ClimateChange/R_code/TempSynthesis")
 tempFilt0 <- readRDS("Data/Temp_filtered.rds")
-Regions <- read.csv("Data/Station_groupings_5AUG2020.csv")
+RegionsEDSM <- read.csv("Data/Station_groupings_5AUG2020.csv")
+Regions <- read.csv("Data/Stations_wRosiesReg.csv")
 staInfo <- read.csv("Data/StationsMetadata.csv")
 
 str(tempFilt0)
@@ -39,7 +40,6 @@ tempFilt0 <- tempFilt0 %>%
 # subregions <- st_read("Data/EDSM_Subregions/EDSM_Subregions_03302020.shp")
 
 tempFilt <- left_join(tempFilt0, Regions, by = "Station") %>%
-  rename(Region = EDSMRegion) %>%
   filter(!Station %in% c("CNT", "CPP", "DAR", "DMC", "DYR","ECD", "HBP", "ROR", "DV7"),
          !is.na(Region)) 
 
@@ -129,17 +129,23 @@ heatmapplotDays <-  function(data, fill, days, l1, l2) {
 unique(tempFilt$Region)
 stations <- unique(Regions$Station)
 
-staNorth <- filter(Regions, EDSMRegion == "North") 
-staNorth <- unique(staNorth$Station)
+staFNorth0 <- filter(Regions, Region == "Far North") 
+staFNorth <- unique(staFNorth0$Station)
 
-staFarWest0 <- filter(Regions, EDSMRegion == "Far West")
-staFarWest <- unique(staFarWest0$Station)
+staSacR0 <- filter(Regions, Region == "Sac River")
+staSacR <- unique(staSacR0$Station)
 
-staWest0 <- filter(Regions, EDSMRegion == "West") 
-staWest <- unique(staWest0$Station)
+staSJ0 <- filter(Regions, Region == "San Joaquin") 
+staSJ <- unique(staSJ0$Station)
 
-staSouth0 = filter(Regions, EDSMRegion == "South")
+staSouth0 = filter(Regions, Region == "South")
 staSouth <- unique(staSouth0$Station)
+
+staSM0 = filter(Regions, Region == "Suisun Marsh")
+staSM <- unique(staSM0$Station)
+
+staSB0 = filter(Regions, Region == "Suisun Bay")
+staSB <- unique(staSB0$Station)
 ```
 
 #### Heat map for maximum temps
@@ -158,33 +164,55 @@ maxTemps <- tempAn %>%
   ungroup()
 
 # Smaller datasets
-maxAn1 <- filter(maxTemps, Station %in% staNorth) 
-maxAn2 <- filter(maxTemps, Station %in% staSouth) 
-maxAn3 <- filter(maxTemps, Station %in% staWest | Station %in% staFarWest) 
+maxAn1 <- filter(maxTemps, Station %in% staFNorth) 
+maxAn2 <- filter(maxTemps, Station %in% staND)
+maxAn3 <- filter(maxTemps, Station %in% staSacR)
+maxAn4 <- filter(maxTemps, Station %in% staSJ)
+maxAn5 <- filter(maxTemps, Station %in% staSouth) 
+maxAn6 <- filter(maxTemps, Station %in% staSB)
+maxAn7 <- filter(maxTemps, Station %in% staSM)
+
 ##### Heat maps (absolute values)
 maxAn1$Year <- ordered(maxAn1$Year)
 maxAn2$Year <- ordered(maxAn2$Year)
 maxAn3$Year <- ordered(maxAn3$Year)
+maxAn4$Year <- ordered(maxAn4$Year)
+maxAn5$Year <- ordered(maxAn5$Year)
+maxAn6$Year <- ordered(maxAn6$Year)
+maxAn7$Year <- ordered(maxAn7$Year)
 
 # Limits determined by looking at the data, but probably a way to code in min() and max()
-heatmapplot(maxAn1, maxTempAn, maxTempAn, 20, 35) #North
-heatmapplot(maxAn2, maxTempAn, maxTempAn, 20, 35) #South
-heatmapplot(maxAn3, maxTempAn, maxTempAn, 20, 35) #West/FarWest
-heatmapplot(maxTemps, maxTempAn, maxTempAn, 20, 35) #All
+heatmapplot(maxAn1, maxTempAn, maxTempAn, 19, 35) #FarNorth
+heatmapplot(maxAn2, maxTempAn, maxTempAn, 19, 35) #ND
+heatmapplot(maxAn3, maxTempAn, maxTempAn, 19, 35) #SacR
+heatmapplot(maxAn4, maxTempAn, maxTempAn, 19, 35) #SJ
+heatmapplot(maxAn5, maxTempAn, maxTempAn, 19, 35) #South
+heatmapplot(maxAn6, maxTempAn, maxTempAn, 19, 35) #SB
+heatmapplot(maxAn7, maxTempAn, maxTempAn, 19, 35) #SM
+
+heatmapplot(maxTemps, maxTempAn, maxTempAn, 19, 35) #All
 
 ##### Scaled heatmaps
 
 # Kept scaling the same for all 3 plots so the three are comparable to each other
 # By station
-heatmapplot(maxAn1, maxTempAn_sta, maxTempAn,  -4.1, 4.1) #North
-heatmapplot(maxAn2, maxTempAn_sta, maxTempAn,  -4.1, 4.1) #South
-heatmapplot(maxAn3, maxTempAn_sta, maxTempAn,  -4.1, 4.1) #West/FarWest
+heatmapplot(maxAn1, maxTempAn_sta, maxTempAn,  -4.1, 4.1) #FarNorth
+heatmapplot(maxAn2, maxTempAn_sta, maxTempAn,  -4.1, 4.1) #ND
+heatmapplot(maxAn3, maxTempAn_sta, maxTempAn,  -4.1, 4.1) #SacR
+heatmapplot(maxAn4, maxTempAn_sta, maxTempAn,  -4.1, 4.1) #SJ
+heatmapplot(maxAn5, maxTempAn_sta, maxTempAn,  -4.1, 4.1) #South
+heatmapplot(maxAn6, maxTempAn_sta, maxTempAn,  -4.1, 4.1) #SB
+heatmapplot(maxAn7, maxTempAn_sta, maxTempAn,  -4.1, 4.1) #SM
 heatmapplot(maxTemps, maxTempAn_sta, maxTempAn,  -4.1, 4.1) #All
 
 ## By year
 heatmapplot(maxAn1, maxTempAn_yr, maxTempAn,  -4.1, 4.1)
 heatmapplot(maxAn2, maxTempAn_yr, maxTempAn,  -4.1, 4.1)
 heatmapplot(maxAn3, maxTempAn_yr, maxTempAn,  -4.1, 4.1)
+heatmapplot(maxAn4, maxTempAn_yr, maxTempAn,  -4.1, 4.1)
+heatmapplot(maxAn5, maxTempAn_yr, maxTempAn,  -4.1, 4.1)
+heatmapplot(maxAn6, maxTempAn_yr, maxTempAn,  -4.1, 4.1)
+heatmapplot(maxAn7, maxTempAn_yr, maxTempAn,  -4.1, 4.1)
 heatmapplot(maxTemps, maxTempAn_yr, maxTempAn,  -4.1, 4.1)
 ```
 ##### Hot stations: LIS, CCS, FLT, BLL, GLC
@@ -327,7 +355,6 @@ heatmapplotVar(varAn1, varTempAn_yr, varTempAn, -3, 3)
 heatmapplotVar(varAn2, varTempAn_yr, varTempAn, -3, 3)
 heatmapplotVar(varAn3, varTempAn_yr, varTempAn, -3, 3)
 heatmapplotVar(varTemps, varTempAn_yr, varTempAn, -3, 3)
-
 ```
 ##### Greater sd: Stations: RSL, FLT, LIS, most of south delta
 ##### Years: 2013, 2011, 2019
@@ -465,7 +492,6 @@ library(lattice)
 
 tempSimp <- tempFilt %>%
   select(c(Station, Year, Month, Temp, Region)) %>% 
-  mutate(Region = replace(Region, Region == "Far West", "West")) %>%
   filter(Year > 2000)
 tempSimp2 <- distinct(tempSimp)
 
@@ -603,19 +629,32 @@ hdaysComp <- heatDays %>%
   ungroup()
 
 # Smaller datasets
-hdaysComp1 <- filter(hdaysComp, Station %in% staNorth) 
-hdaysComp2 <- filter(hdaysComp, Station %in% staSouth) 
-hdaysComp3 <- filter(hdaysComp, Station %in% staWest | Station %in% staFarWest)
+hdaysComp1 <- filter(hdaysComp, Station %in% staFNorth) 
+hdaysComp2 <- filter(hdaysComp, Station %in% staND) 
+hdaysComp3 <- filter(hdaysComp, Station %in% staSacR)
+hdaysComp4 <- filter(hdaysComp, Station %in% staSJ)
+hdaysComp5 <- filter(hdaysComp, Station %in% staSouth) 
+hdaysComp6 <- filter(hdaysComp, Station %in% staSB)
+hdaysComp7 <- filter(hdaysComp, Station %in% staSM)
 
 ##### Heat maps (absolute values)
 hdaysComp1$Year <- ordered(hdaysComp1$Year)
 hdaysComp2$Year <- ordered(hdaysComp2$Year)
 hdaysComp3$Year <- ordered(hdaysComp3$Year)
+hdaysComp4$Year <- ordered(hdaysComp4$Year)
+hdaysComp5$Year <- ordered(hdaysComp5$Year)
+hdaysComp6$Year <- ordered(hdaysComp6$Year)
+hdaysComp7$Year <- ordered(hdaysComp7$Year)
 
 # Make heat map
-heatmapplotDays(hdaysComp1, ndays, ndays, 0, 85)
-heatmapplotDays(hdaysComp2, ndays, ndays, 0, 85)
-heatmapplotDays(hdaysComp3, ndays, ndays, 0, 85)
+heatmapplotDays(hdaysComp1, ndays, ndays, 0, 150)
+heatmapplotDays(hdaysComp2, ndays, ndays, 0, 150)
+heatmapplotDays(hdaysComp3, ndays, ndays, 0, 150)
+heatmapplotDays(hdaysComp4, ndays, ndays, 0, 150)
+heatmapplotDays(hdaysComp5, ndays, ndays, 0, 150)
+heatmapplotDays(hdaysComp6, ndays, ndays, 0, 100)
+heatmapplotDays(hdaysComp7, ndays, ndays, 0, 100)
+
 heatmapplotDays(hdaysComp, ndays, ndays, 0, 85)
 
 # By station
@@ -649,7 +688,7 @@ visreg(heat1, "Year", by = "Region")
 ```
 ##### Looks like in the South, North, and Far West, proportion of high stress days has potentially increased, but not significantly. 
 
-#### Reran model after addding 0 for every year-station combo where there were NO high heat days - not sure if this is the right approach, didn't really change results.
+#### Reran model after adding 0 for every year-station combo where there were NO high heat days - not sure if this is the right approach, didn't really change results.
 ```{r completeHeatHigh}
 completeHeat <- heatDays %>%
   filter(!is.na(Stress)) %>%
