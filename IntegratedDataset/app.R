@@ -237,6 +237,8 @@ ui <- fluidPage(
                            leafletOutput("cdecmap")))
     )),
   
+  # Scale leaflet plot to fill more area
+  tags$head(tags$style("#cdecmap{height:80vh !important;}")),
   
   # Header: Loading Message. From ZoopSynth App.
   tags$head(tags$style(type="text/css",
