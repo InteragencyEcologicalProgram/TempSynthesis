@@ -7,20 +7,102 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(lubridate)
 ```
 
-This is what I'm doing
-
-```{r cars}
-summary(cars)
+### Read in data
+* Add date and time variables (lubridate:: month(), day(), year())
+* Order factors to be low-medium-high
+```{r import}
+depth <- readRDS("Data/depthdata_heatstress_20200728.rds")
 ```
 
-## Including Plots
 
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+Subset so all stations cover the same time period? (use filter)
+```{r}
+# Table of start and end dates
+dates <- depth %>%
+  group_by(Station, WaterCol) %>%
+  summarize(start = first(Date),
+            end = last(Date))
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+### Stress Events
+* Subset to June 1 - November 1
+* Subset to max daily temperature
+
+1. Calculate the number of days max daily temperature meets "high stress" criteria 
+  + By station
+  + By depth
+2. Calculate proportion of days in each of the stress categories 
+
+Visualization options: bar plot, proportional bar plot
+
+```{r}
+# Summarize data
+# I'm leaving this code (below) in to help you make plots, but it is not correctly representing proportion because the dates are only reflecting dates at each stress level. You will want to standardize dates (above), and then you probably don't need to do the proportions at all. I can help you with this if you'd like. 
+
+table <- depth %>%
+  group_by(Station, WaterCol, Stress) %>%
+  summarize(n = n(),
+            days = n/24,
+            start = first(Date), # first date in the dataset
+            end = last(Date),
+            span = as.numeric(end-start)+1,
+            prop = days/span) %>%
+  filter(!is.na(Stress),
+         WaterCol!="Middle")
+
+# Make a bar plot!
+# ndays in each stress category, faceted into station 
+ggplot(table, aes(x = Stress, y = prop)) + geom_col() +
+  facet_grid(WaterCol~Station)
+
+# Add stacked bar plot
+ggplot(table, aes(x = Stress, y = days, fill = WaterCol)) + geom_col(position = "fill") +
+  facet_wrap(~Station)
+
+```
+
+### Surface-bottom temperature difference
+* Convert data to wide format so that surface temps and bottom temps are in separate columns (google pivot_wider)
+* Calculate temperature difference (use mutate)
+* May have to do some averaging for variables below (use summarize)
+* Define season
+* Add water year type (use ifelse())
+1. Is there a temperature difference
+  + By station?
+  + By season/month? 
+  + By time of day?
+  + By water year type?
+  + By julian day?
+  + By year? 
+  + By combinations of these variables?
+  
+Visualization options: heatmap (esp month), bar plots
+```{r}
+
+```
+
+If there is a difference (above) can include absolute temperatures to see what those numbers actually are.
+
+```{r}
+
+```
+
+### Temperature variability 
+* Calculate daily temperature variation (either range, variance or standard deviation)
+1. Is there a difference in the daily deviation by depth
+  + By station
+  + By time of day? (usually wind in the afternoon)
+  + By season?
+  
+```{r}
+
+```
+
+### Other questions
+# How do results change if only 1+ day at different temperature thresholds?
+  # Number of days extra in each category if 1+ day, 2+ day, vs. 3+ day
