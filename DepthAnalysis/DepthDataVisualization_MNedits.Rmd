@@ -30,11 +30,8 @@ depth_filter
 View(depth_filter)
 
 
-
-
-
-
-## now in depth_filter the middle temp is taken out#control plus enter equals running
+# now in depth_filter the middle temp is taken out and is in the right timeframe for the data, may need to come back and adjust to be the exact subset of data as Brian M
+#control plus enter equals running
 ```
 
 ```{r}
@@ -126,8 +123,8 @@ table_Medstress <- temp_max %>%
   count(Stress)
 
 table_Medstress
-
-
+ggplot(table_Medstress, aes(x = Stress, y = n)) + geom_col() +
+  facet_grid(WaterCol~Station)
 
 
 ```
@@ -249,3 +246,30 @@ ggplot(depth_range, aes(x = Date, y = range, color = WaterCol)) + geom_point(siz
 ### Other questions
 # How do results change if only 1+ day at different temperature thresholds?
   # Number of days extra in each category if 1+ day, 2+ day, vs. 3+ day
+  
+```{r}
+
+
+```
+  
+  
+ Cat's recommendation to color code to hour
+
+Use lubridate::hour(Datetime) to get the hour of each point. 
+Use mutate and ifelse to say mutate(TOD = ifelse(hour>0 & hour <=6, “early”, ifelse(hour>6 & hour <=12, “earlymid”, ifelse….. NA)
+Then when you plot the data, color code by TOD (aka time of day) – feel free to name however you want. 
+From Britt:
+•	Can we figure out how to add colour by time of day? Wonder how the points will look and if trends? Not sure how to code this
+o	0:00-6:00 (blue)
+o	6:01-12:00 (yellow)
+o	12:01-18:00 (red)
+o	18:01-23:59 (green)
+Can we convert these points to boxplots? Average by bars?
+
+  
+  
+  
+  
+  
+  
+  
