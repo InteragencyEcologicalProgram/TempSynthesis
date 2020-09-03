@@ -198,7 +198,16 @@ depthDiff_w2 <- depthDiff_w %>%
   mutate(TempDiff = Bottom - Surface)
 
 
-ggplot(depthDiff_w2, aes(x = Date, y = TempDiff)) + geom_point() + labs(y="max tempdiff(c)") +
+ggplot(depthDiff_w2, aes(x = Date, y = TempDiff)) + geom_point(size=.2) + labs(y="max tempdiff(c)") +
+  facet_wrap(~Station) +geom_hline(yintercept = 0, color = "red")
+
+
+##subset just 1 year to look at +/- trends in bottom/top temps by season
+#create new columns for month number and year
+depthDiff_w2$Month=month(depthDiff_w2$Date)
+depthDiff_w2$Year=year(depthDiff_w2$Date)
+#plot my month
+ggplot(depthDiff_w2, aes(x = factor(Month), y = TempDiff)) + geom_point(size=.2) + labs(y="max tempdiff(c)") +
   facet_wrap(~Station) +geom_hline(yintercept = 0, color = "red")
 
 
@@ -230,7 +239,7 @@ depth_range <- depth_filter %>%
             range= maxtemp-mintemp)
   
 
-ggplot(depth_range, aes(x = Date, y = range, color = WaterCol)) + geom_point() + 
+ggplot(depth_range, aes(x = Date, y = range, color = WaterCol)) + geom_point(size=1) + 
   facet_wrap(~Station)
 
 ```
