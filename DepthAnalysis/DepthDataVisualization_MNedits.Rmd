@@ -24,17 +24,26 @@ depth_filter <- depth %>%
   filter(Datetime >= as.Date("2012-07-12")& Datetime <= as.Date("2019-12-27")) %>% 
   filter(WaterCol!="Middle")
 depth_filter
+
+View(depth_filter)
+
+
+
+
+
+
 ## now in depth_filter the middle temp is taken out#control plus enter equals running
 ```
 
 ```{r}
 Anhdata<- depth_filter %>% 
   filter(Station == "ANH") %>% 
-  filter(Stress == "High")
+  filter(Stress == "Med")
 
 Anhdata
 ```
 No data in ANH has any high stress events.
+
 Use the filter above and check on the MED for ANH, MAL, MRZ
 
 
@@ -81,6 +90,12 @@ temp_max
 ```
 above now for each day I now have the max temp!!
 
+let's Plot! 
+1. 
+2. take a single day and within a single day how much does that deviation change? so std? are temps at the bottom more stable? potentially at the surface you have higher deviation
+```{r}
+
+```
 
 
 1. Calculate the number of days max daily temperature meets "high stress" criteria 
@@ -97,9 +112,24 @@ table_highstress <- temp_max %>%
  
 table_highstress 
  ## so far high stress has only been at RRI none at any of the other stations
-  
-```
 
+
+## plot top and bottom max of each day
+ ## make some figures of the events 
+```
+```{r}
+table_Medstress <- temp_max %>% 
+ filter(Stress== "Med") %>% 
+  group_by(Station, WaterCol) %>%
+  count(Stress)
+
+table_Medstress
+
+
+
+
+```
+should I turn this into a graph?
 
 Visualization options: bar plot, proportional bar plot
 
@@ -115,7 +145,7 @@ table <- depth_filter %>%
             end = last(Date),
             span = as.numeric(end-start)+1,
             prop = days/span)
-#took this filter out because filtered at the top 
+#took this filter out because filtered at the top for na and for taking out the middle
 #The filter function below is showing how to get rid of something.
 # filter(!is.na(Stress), 
   #       WaterCol!="Middle")
@@ -146,8 +176,30 @@ ggplot(table, aes(x = Stress, y = days, fill = WaterCol)) + geom_col(position = 
   + By year? 
   + By combinations of these variables?
   
-Visualization options: heatmap (esp month), bar plots
+Visualization options: heatmap (esp month), bar plots 
+
+Plot: 
+Have a line at 0, plot a bar plot above and below zero
+
 ```{r}
+
+depthDiff <- depth_filter %>%
+  group_by(Station, WaterCol, Date) %>%
+  mutate(Year = year(Date)) %>%
+  summarize(maxtemp = max(Temp))
+
+depthDiff_w <- pivot_wider(depthDiff, names_from = WaterCol,   values_from = maxtemp)
+
+depthDiff_w2 <- depthDiff_w %>%
+  mutate(TempDiff = Bottom - Surface)
+
+
+ggplot(depthDiff_w2, aes(x = Date, y = TempDiff)) + geom_point() + labs(y="max tempdiff(c)") +
+  facet_wrap(~Station) +geom_hline(yintercept = 0, color = "red")
+
+
+geom_bar() 
+geom_col()
 
 ```
 
@@ -158,13 +210,25 @@ If there is a difference (above) can include absolute temperatures to see what t
 ```
 
 ### Temperature variability 
-* Calculate daily temperature variation (either range, variance or standard deviation)
+* Calculate daily temperature variation (either range, variance or standard deviation) max- min per day (could do per year, or like julian day and average over whole dataset)
 1. Is there a difference in the daily deviation by depth
   + By station
   + By time of day? (usually wind in the afternoon)
   + By season?
   
 ```{r}
+
+depth_range <- depth_filter %>%
+  group_by(Station, WaterCol, Date) %>% 
+  mutate(Year=year(Date)) %>%
+  filter(Year == 2015) %>%
+  summarize(maxtemp=max(Temp), 
+            mintemp=min(Temp),
+            range= maxtemp-mintemp)
+  
+
+ggplot(depth_range, aes(x = Date, y = range, color = WaterCol)) + geom_point() + 
+  facet_wrap(~Station)
 
 ```
 
