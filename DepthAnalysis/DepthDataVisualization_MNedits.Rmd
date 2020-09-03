@@ -1,0 +1,251 @@
+---
+title: "DepthAnalysisExploration"
+author: "Catarina Pien"
+date: "8/5/2020"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(lubridate)
+```
+
+### Read in data
+* Add date and time variables (lubridate:: month(), day(), year())
+* Order factors to be low-medium-high
+```{r import}
+depth <- readRDS("Data/depthdata_heatstress_20200728.rds")
+```
+# need to get all data in dataframe to be from 2012-07-12 to 2019-12-27 and
+Need to first take out the middle data from RRI
+```{r}
+depth_filter <- depth %>% 
+  filter(Datetime >= as.Date("2012-07-12")& Datetime <= as.Date("2019-12-27")) %>% 
+  filter(WaterCol!="Middle")
+depth_filter
+
+View(depth_filter)
+
+
+
+
+
+
+## now in depth_filter the middle temp is taken out#control plus enter equals running
+```
+
+```{r}
+Anhdata<- depth_filter %>% 
+  filter(Station == "ANH") %>% 
+  filter(Stress == "Med")
+
+Anhdata
+```
+No data in ANH has any high stress events.
+
+Use the filter above and check on the MED for ANH, MAL, MRZ
+
+
+```{r}
+dates_filter <- depth_filter %>%
+  group_by(Station, WaterCol) %>%
+  summarize(start = first(Date),
+            end = last(Date))
+dates_filter
+```
+
+
+Subset so all stations cover the same time period? (use filter)
+```{r}
+# Table of start and end dates
+dates <- depth %>%
+  group_by(Station, WaterCol) %>%
+  summarize(start = first(Date),
+            end = last(Date))
+dates 
+```
+```{r}
+
+
+
+
+```
+
+
+### Stress Events
+* Subset to June 1 - November 1 
+* Subset to max daily temperature
+```{r}
+# need to filter out for the summer stress event
+#need to get the maximum temp per day per station and per water column as well surface or bottom
+
+
+temp_max <- depth_filter %>% 
+  group_by(Station, WaterCol, Date, Stress) %>% 
+  summarise(max(Temp))
+  
+
+temp_max
+```
+above now for each day I now have the max temp!!
+
+let's Plot! 
+1. 
+2. take a single day and within a single day how much does that deviation change? so std? are temps at the bottom more stable? potentially at the surface you have higher deviation
+```{r}
+
+```
+
+
+1. Calculate the number of days max daily temperature meets "high stress" criteria 
+  + By station
+  + By depth
+2. Calculate proportion of days in each of the stress categories 
+```{r}
+## answer 1. calculate the number of days max meets high stress
+
+table_highstress <- temp_max %>% 
+ filter(Stress== "High") %>% 
+  group_by(Station, WaterCol) %>%
+  count(Stress)
+ 
+table_highstress 
+ ## so far high stress has only been at RRI none at any of the other stations
+
+
+## plot top and bottom max of each day
+ ## make some figures of the events 
+```
+```{r}
+table_Medstress <- temp_max %>% 
+ filter(Stress== "Med") %>% 
+  group_by(Station, WaterCol) %>%
+  count(Stress)
+
+table_Medstress
+
+
+
+
+```
+should I turn this into a graph?
+
+Visualization options: bar plot, proportional bar plot
+
+```{r}
+# Summarize data
+# I'm leaving this code (below) in to help you make plots, but it is not correctly representing proportion because the dates are only reflecting dates at each stress level. You will want to standardize dates (above), and then you probably don't need to do the proportions at all. I can help you with this if you'd like. 
+
+table <- depth_filter %>%
+  group_by(Station, WaterCol, Stress) %>%
+  summarize(n = n(),
+            days = n/24,
+            start = first(Date), # first date in the dataset
+            end = last(Date),
+            span = as.numeric(end-start)+1,
+            prop = days/span)
+#took this filter out because filtered at the top for na and for taking out the middle
+#The filter function below is showing how to get rid of something.
+# filter(!is.na(Stress), 
+  #       WaterCol!="Middle")
+table
+# Make a bar plot!
+# ndays in each stress category, faceted into station 
+library(ggplot2)
+ggplot(table_highstress, aes(x = Stress, y = n)) + geom_col() +
+  facet_grid(WaterCol~Station)
+
+# Add stacked bar plot
+ggplot(table, aes(x = Stress, y = days, fill = WaterCol)) + geom_col(position = "fill") +
+  facet_wrap(~Station)
+
+```
+
+### Surface-bottom temperature difference
+* Convert data to wide format so that surface temps and bottom temps are in separate columns (google pivot_wider)
+* Calculate temperature difference (use mutate)
+* May have to do some averaging for variables below (use summarize)
+* Define season
+* Add water year type (use ifelse())
+1. Is there a temperature difference
+  + By station?
+  + By season/month? 
+  + By time of day?
+  + By water year type?
+  + By julian day?
+  + By year? 
+  + By combinations of these variables?
+  
+Visualization options: heatmap (esp month), bar plots 
+
+Plot: 
+Have a line at 0, plot a bar plot above and below zero
+
+```{r}
+
+depthDiff <- depth_filter %>%
+  group_by(Station, WaterCol, Date) %>%
+  mutate(Year = year(Date)) %>%
+  summarize(maxtemp = max(Temp))
+
+library(tidyr)
+depthDiff_w <- pivot_wider(depthDiff, names_from = WaterCol,   values_from = maxtemp)
+
+depthDiff_w2 <- depthDiff_w %>%
+  mutate(TempDiff = Bottom - Surface)
+
+
+ggplot(depthDiff_w2, aes(x = Date, y = TempDiff)) + geom_point(size=.2) + labs(y="max tempdiff(c)") +
+  facet_wrap(~Station) +geom_hline(yintercept = 0, color = "red")
+
+
+##subset just 1 year to look at +/- trends in bottom/top temps by season
+#create new columns for month number and year
+depthDiff_w2$Month=month(depthDiff_w2$Date)
+depthDiff_w2$Year=year(depthDiff_w2$Date)
+#plot my month
+ggplot(depthDiff_w2, aes(x = factor(Month), y = TempDiff)) + geom_point(size=.2) + labs(y="Max TempDiff (c)") +geom_smooth(aes(group = factor(Station),  method = "loess", se = T))+
+  facet_wrap(~Station) +geom_hline(yintercept = 0, color = "red")
+
+#Sites by year and months
+ggplot(depthDiff_w2, aes(x = factor(Month), y = TempDiff)) + geom_point(size=.2) + labs(y="Max TempDiff (c)") +geom_smooth(aes(group = factor(Station),  method = "loess", se = T))+
+  facet_grid(Station~Year) +geom_hline(yintercept = 0, color = "red")
+
+
+```
+
+If there is a difference (above) can include absolute temperatures to see what those numbers actually are.
+
+```{r}
+
+```
+
+### Temperature variability 
+* Calculate daily temperature variation (either range, variance or standard deviation) max- min per day (could do per year, or like julian day and average over whole dataset)
+1. Is there a difference in the daily deviation by depth
+  + By station
+  + By time of day? (usually wind in the afternoon)
+  + By season?
+  
+```{r}
+
+depth_range <- depth_filter %>%
+  group_by(Station, WaterCol, Date) %>% 
+  mutate(Year=year(Date)) %>%
+  filter(Year == 2015) %>%
+  summarize(maxtemp=max(Temp), 
+            mintemp=min(Temp),
+            range= maxtemp-mintemp)
+  
+
+ggplot(depth_range, aes(x = Date, y = range, color = WaterCol)) + geom_point(size=1) + 
+  facet_wrap(~Station)
+
+```
+
+### Other questions
+# How do results change if only 1+ day at different temperature thresholds?
+  # Number of days extra in each category if 1+ day, 2+ day, vs. 3+ day
