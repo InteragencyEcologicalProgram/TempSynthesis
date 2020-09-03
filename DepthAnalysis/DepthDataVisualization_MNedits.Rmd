@@ -3,6 +3,8 @@ title: "DepthAnalysisExploration"
 author: "Catarina Pien"
 date: "8/5/2020"
 output: html_document
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
@@ -83,7 +85,7 @@ dates
 
 temp_max <- depth_filter %>% 
   group_by(Station, WaterCol, Date, Stress) %>% 
-  summarise(max(Temp)) %>% 
+  summarise(max(Temp))
   
 
 temp_max
@@ -152,6 +154,7 @@ table <- depth_filter %>%
 table
 # Make a bar plot!
 # ndays in each stress category, faceted into station 
+library(ggplot2)
 ggplot(table_highstress, aes(x = Stress, y = n)) + geom_col() +
   facet_grid(WaterCol~Station)
 
@@ -188,6 +191,7 @@ depthDiff <- depth_filter %>%
   mutate(Year = year(Date)) %>%
   summarize(maxtemp = max(Temp))
 
+library(tidyr)
 depthDiff_w <- pivot_wider(depthDiff, names_from = WaterCol,   values_from = maxtemp)
 
 depthDiff_w2 <- depthDiff_w %>%
@@ -198,8 +202,7 @@ ggplot(depthDiff_w2, aes(x = Date, y = TempDiff)) + geom_point() + labs(y="max t
   facet_wrap(~Station) +geom_hline(yintercept = 0, color = "red")
 
 
-geom_bar() 
-geom_col()
+
 
 ```
 
