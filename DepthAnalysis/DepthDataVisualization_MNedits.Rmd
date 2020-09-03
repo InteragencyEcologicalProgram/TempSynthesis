@@ -207,10 +207,12 @@ ggplot(depthDiff_w2, aes(x = Date, y = TempDiff)) + geom_point(size=.2) + labs(y
 depthDiff_w2$Month=month(depthDiff_w2$Date)
 depthDiff_w2$Year=year(depthDiff_w2$Date)
 #plot my month
-ggplot(depthDiff_w2, aes(x = factor(Month), y = TempDiff)) + geom_point(size=.2) + labs(y="max tempdiff(c)") +
+ggplot(depthDiff_w2, aes(x = factor(Month), y = TempDiff)) + geom_point(size=.2) + labs(y="Max TempDiff (c)") +geom_smooth(aes(group = factor(Station),  method = "loess", se = T))+
   facet_wrap(~Station) +geom_hline(yintercept = 0, color = "red")
 
-
+#Sites by year and months
+ggplot(depthDiff_w2, aes(x = factor(Month), y = TempDiff)) + geom_point(size=.2) + labs(y="Max TempDiff (c)") +geom_smooth(aes(group = factor(Station),  method = "loess", se = T))+
+  facet_grid(Station~Year) +geom_hline(yintercept = 0, color = "red")
 
 
 ```
