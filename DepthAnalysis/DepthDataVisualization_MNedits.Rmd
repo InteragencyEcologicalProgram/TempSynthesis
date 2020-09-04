@@ -240,6 +240,10 @@ ggplot(depthDiff_rel3, aes(x = factor(Month), y = RelTempDiff,colour=factor(TOD)
 ggplot(depthDiff_rel3, aes(x = factor(Month), y = RelTempDiff)) + geom_point(size=.2) + labs(y="Relative TempDiff (c)") +geom_smooth(aes(group = factor(Station),  method = "loess", se = T))+
   facet_grid(Station~Year) +geom_hline(yintercept = 0, color = "red")
 
+#plot my month
+ggplot(depthDiff_rel3, aes(x = Date, y = RelTempDiff,colour=factor(TOD))) + geom_point(size=.2, position=position_dodge(width=0.2)) + labs(y="Relative TempDiff (c)") +
+  facet_wrap(~Station) +geom_hline(yintercept = 0, color = "red")
+
 
 ```
 
