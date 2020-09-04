@@ -182,7 +182,7 @@ Plot:
 Have a line at 0, plot a bar plot above and below zero
 
 ```{r}
-
+#max temp difference at bottom/surface
 depthDiff <- depth_filter %>%
   group_by(Station, WaterCol, Date) %>%
   mutate(Year = year(Date)) %>%
@@ -209,6 +209,35 @@ ggplot(depthDiff_w2, aes(x = factor(Month), y = TempDiff)) + geom_point(size=.2)
 
 #Sites by year and months
 ggplot(depthDiff_w2, aes(x = factor(Month), y = TempDiff)) + geom_point(size=.2) + labs(y="Max TempDiff (c)") +geom_smooth(aes(group = factor(Station),  method = "loess", se = T))+
+  facet_grid(Station~Year) +geom_hline(yintercept = 0, color = "red")
+
+
+#relative difference each hour (similar to Brians)
+
+depthDiff_rel <- pivot_wider(depth_filter, names_from = WaterCol,   values_from = Temp)
+depthDiff_rel2 <- depthDiff_rel %>%
+  mutate(RelTempDiff = Bottom - Surface)
+
+ggplot(depthDiff_rel2, aes(x = Date, y = RelTempDiff)) + geom_point(size=.2) + labs(y="Relative TempDiff(c)") +
+  facet_wrap(~Station) +geom_hline(yintercept = 0, color = "red")
+
+
+##subset just 1 year to look at +/- trends in bottom/top temps by season
+#create new columns for month number and year
+depthDiff_rel2$Month=month(depthDiff_rel2$Date)
+depthDiff_rel2$Year=year(depthDiff_rel2$Date)
+depthDiff_rel2$Hour=hour(depthDiff_rel2$Datetime)
+
+#add daytime categories
+depthDiff_rel3 <- depthDiff_rel2 %>%
+  mutate(TOD= ifelse(Hour>0 & Hour <=6, 'early', ifelse(Hour>6 & Hour <=12, 'earlymid', ifelse(Hour>12 & Hour <=18, 'evening', ifelse(Hour>18 & Hour ==23, 'late' , NA)))))
+
+#plot my month
+ggplot(depthDiff_rel3, aes(x = factor(Month), y = RelTempDiff,colour=factor(TOD))) + geom_point(size=.2, position=position_dodge(width=0.2)) + labs(y="Relative TempDiff (c)") +geom_smooth(aes(group = factor(Station),  method = "loess", se = T))+
+  facet_wrap(~Station) +geom_hline(yintercept = 0, color = "red")
+
+#Sites by year and months
+ggplot(depthDiff_rel3, aes(x = factor(Month), y = RelTempDiff)) + geom_point(size=.2) + labs(y="Relative TempDiff (c)") +geom_smooth(aes(group = factor(Station),  method = "loess", se = T))+
   facet_grid(Station~Year) +geom_hline(yintercept = 0, color = "red")
 
 
