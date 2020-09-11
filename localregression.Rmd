@@ -15,6 +15,11 @@ if (!require("rspatial")) devtools::install_github('rspatial/rspatial')
 library(rspatial)
 library( spgwr )
 library(nlme)
+library(boot)
+library(itsadug)
+library(mgcv)
+library(raster)
+
 #load the data
 temps = readRDS("Temp_filtered (1).rds")
 
@@ -83,6 +88,8 @@ newpts <- rasterToPoints(rdelta2)
 newpts2 = as.data.frame(newpts)
 coordinates(newpts2) = ~ x  + y
 crs(newpts2) = alb
+
+save(newpts2, rdelta2, r, delta2, file = "spatialdata.RData")
 
 ```
 
@@ -196,8 +203,6 @@ pacf(lmtest$residuals)
 acf(resid(lmtest), plot=FALSE)$acf[2]
 
 # I'm confused and don't know what i'm diong
-library(itsadug)
-library(mgcv)
 
 lmtest2 = gls(maxTemp~ julian + Year, data = testdat, correlation = corAR1(form = ~ Date))
 
@@ -266,7 +271,7 @@ Estimate standard errors using bootstrapping
 bsm.res1 <- gwr.bootstrap(Temp~julian, kernel = "gaussian", sptx, R=99)
 bsm.res1
 
-library(boot)
+
 set.seed(4676)
 
 gwrcoef <- function(hpdf,i) gwr.basic, data=spt[i,], regression.points=newpts2, bw=bw, dMat=DM[i,],kernel='gaussian')$SDF$PROF
@@ -331,14 +336,14 @@ bsm.res1
 ## GAMs
 
 ```{r}
-tempmax2.1 = arrange(tempmax2.1, Station, Date) %>%
+tempmax2 = arrange(tempmax2, Station, Date) %>%
   filter(Year >1995)
 
-g1 = bam(Temp ~ s(julian) + s(Year) + s(Latitude, Longitude), 
-data = tempmax2.1, method = "REML")
+g1 = bam(Temp ~ s(julian, bs="cc" ) + s(Year) + s(Latitude, Longitude), 
+data = tempmax2, method = "REML")
 
 summary(g1)
-
+plot(g1)
 vis.gam(g1, view = c("Longitude", "Latitude"), plot.type = "contour",
         too.far = 0.1)
 
@@ -348,17 +353,17 @@ vis.gam(g1, view = c("Longitude", "Latitude"), plot.type = "persp",
 #use a tensor product smooth for an interaction between 
 #space and time
 
-g2 = bam(Temp ~ s(julian) + s(Year) + 
+g2 = bam(Temp ~ s(julian, bs="cc" ) + s(Year) + 
            te(Latitude, Longitude, Year), 
-data = tempmax2.1, method = "REML")
+data = tempmax2, method = "REML")
 
 summary(g2)
 
 #now the interaction version
-g3 = bam(Temp ~ s(julian) + s(Year) + 
+g3 = bam(Temp ~ s(julian, bs="cc" ) + s(Year) + 
            ti(Latitude, Longitude, Year) +
            ti(Latitude, Longitude, julian), 
-data = tempmax2.1, method = "REML")
+data = tempmax2, method = "REML")
 
 summary(g3)
 plot(g3)
@@ -371,9 +376,9 @@ try adding the temporal correlation term
 r1 = acf(resid(g3), plot=FALSE)$acf[2]
 
 #identify the start of the time series
-testdat = start_event(tempmax2.1, column="Date", event=c("Station", "Year"), label.event="Event")
+testdat = start_event(tempmax2, column="Date", event=c("Station", "Year"), label.event="Event")
 
-g4 = bam(Temp ~ s(julian) + s(Year) + 
+g4 = bam(Temp ~ s(julian, bs = "cc") + s(Year) + 
            ti(Latitude, Longitude, Year)+ 
            ti(Latitude, Longitude, julian), 
 data =testdat, method = "REML",  rho=r1, AR.start=testdat$start.event)
@@ -436,7 +441,7 @@ tempmax_sum = group_by(tempmax, Station) %>%
 tempmax_long = left_join(testdat, tempmax_sum) %>%
   filter(minyear < 2001)
 
-g3x2 = bam(maxTemp ~ s(julian) + s(Year), 
+g3x2 = bam(maxTemp ~ s(julian, bs = "cc") + s(Year), 
 
 data = tempmax_long, method = "REML")
 #calculate start value of Rho
@@ -445,7 +450,7 @@ r1x2 = acf(resid(g3x2), plot=FALSE)$acf[2]
 
 g4x2 = bam(maxTemp ~ 
            s(Year)+ 
-          s(julian), 
+          s(julian, bs = "cc"), 
 data =tempmax_long, method = "REML",  rho=r1x2, AR.start=tempmax_long$start.event)
 
 summary(g4x2)
@@ -464,10 +469,166 @@ save(testdat, file = "testdat.RData")
 load("testdat.RData")
 g4x2 = gamm(maxTemp ~ 
            s(Year)+ 
-           s(julian), 
+           s(julian, bs = "cc"), 
 data =tempmax_long, method = "REML", correlation = corAR1(form = ~1|Station))
-
+#Error: cannot allocate vector of size 10.0 Gb
+#meh
 ```
 
+We wouldn't expect to see a ton of change-over-time anyway. Maybe concentrate on spatial differences
+```{r}
+g5 =  bam(maxTemp ~ s(julian, bs = "cc") +  
+           te(Latitude, Longitude), 
+data =testdat, method = "REML")
 
+r5 = acf(resid(g5), plot=FALSE)$acf[2]
+
+
+
+g5 =  bam(maxTemp ~ s(julian, bs = "cc") +
+           te(Latitude, Longitude), 
+data =testdat, method = "REML",  rho=r5, AR.start=testdat$start.event)
+
+plot(g5)
+```
+
+I gotta figure out how to put these results on a map
+
+```{r}
+load("spatialdata.RData")
+regions = read_sf("RosieRegions/shpExport.shp")
+regions = st_transform(regions, crs = 4326)
+
+stas = read.csv("StationLatLongs.csv")
+coordinates(stas) = ~ Longitude + Latitude
+crs(stas) <- "+proj=longlat +datum=NAD83"
+
+
+delta2x = spTransform(delta2, CRS("+init=epsg:4326"))
+r <- raster(delta2x,  res=100)
+rdelta3 <- rasterize(delta2, r)
+newpts3 <- rasterToPoints(rdelta3)
+
+predict(newpts, g5)
+
+
+delta = st_transform(delta,crs=4326)
+stas = st_as_sf(stas) %>%
+  st_transform(stas, crs=4326)
+
+WQ_pred<-function(Full_data=Data,
+                  Delta_subregions = regions,
+                  Delta_water=delta,
+                  Stations = stas,
+                  n=100, 
+                  Years=round(seq(min(Full_data$Year)+2, max(Full_data$Year)-2, length.out=9)),
+                  Julian_days=yday(ymd(paste("2001", c(1,4,7,10), "15", sep="-"))) #Jan, Apr, Jul, and Oct 15 for a non-leap year
+
+){
+  
+  # Create point locations on a grid for predictions
+  Points<-st_make_grid(Delta_subregions, n=n)%>%
+    st_as_sf(crs=st_crs(Delta_subregions))%>%
+    st_join(Delta_water)%>% 
+    
+    # Joining a map of delta waterways (from my spacetools package) to ensure all these points are over water.
+        st_coordinates()%>%
+    as_tibble()%>%
+    mutate(Location=1:nrow(.))%>%
+    dplyr::select(Longitude=X, Latitude=Y, Location)
+  
+  
+  # Create full dataset for predictions
+  newdata<-expand.grid(Year= Years,
+                       Location=1:nrow(Points),
+                       Julian_day=Julian_days)%>% # Create all combinations of predictor variables
+    left_join(Points, by="Location")%>% #Add Lat/Longs to each location
+    mutate(Latitude_s=(Latitude-mean(Full_data$Latitude, na.rm=T))/sd(Full_data$Latitude, na.rm=T), # Standardize each variable based on full dataset for model
+           Longitude_s=(Longitude-mean(Full_data$Longitude, na.rm=T))/sd(Full_data$Longitude, na.rm=T),
+           Year_s=(Year-mean(Full_data$Year, na.rm=T))/sd(Full_data$Year, na.rm=T),
+           Julian_day_s = (Julian_day-mean(Full_data$julian, na.rm=T))/sd(Full_data$julian, na.rm=T),
+           Year_fac=factor(Year)) %>%
+    st_as_sf(coords=c("Longitude", "Latitude"), crs=4326, remove=FALSE)%>% # Turn into sf object
+      
+    st_transform(crs=st_crs(Delta_subregions))%>% # transform to crs of Delta shapefile
+      
+    st_join(Delta_subregions, join = st_intersects)
+
+  return(newdata)
+}
+
+
+newdata_year <- WQ_pred(Full_data=tempmax_long, 
+                        Julian_days = yday(ymd(paste("2001", 1:12, "15", sep="-"))),
+                        Years=round(min(tempmax_long$Year):max(tempmax_long$Year)))
+
+newdata_year = rename(newdata_year, julian = Julian_day)
+
+modellc4_predictions<-predict(g5, newdata=newdata_year, type="response", se.fit=TRUE, discrete=T) # Create predictions
+
+# Predictions stored as "modellc4_predictions.Rds"
+
+
+
+newdata<-newdata_year%>%
+  mutate(Prediction=modellc4_predictions$fit)%>%
+  mutate(SE=modellc4_predictions$se.fit,
+         L95=Prediction-SE*1.96,
+         U95=Prediction+SE*1.96)%>%
+  mutate(Date=as.Date(julian, origin=as.Date(paste(Year, "01", "01", sep="-")))) # Create Date variable from Julian Day and Year
+
+library(stars)
+# Function to rasterize all dates. Creates a 3D raster Latitude x Longitude x Date 
+Rasterize_all <- function(data, var, out_crs=4326, n=100){
+  var<-rlang::enquo(var)
+  rlang::as_name(var)
+  preds<-map(unique(data$Date), function(x) st_rasterize(data%>%
+                                                           filter(Date==x)%>%
+                                                           dplyr::select(!!var), 
+                                                         template=st_as_stars(st_bbox(delta2), dx=diff(st_bbox(delta2)[c(1, 3)])/n, dy=diff(st_bbox(delta2)[c(2, 4)])/n, values = NA_real_))%>%
+               st_warp(crs=out_crs))
+  
+  # Then bind all dates together into 1 raster
+  out <- exec(c, !!!preds, along=list(Date=unique(data$Date)))
+  return(out)
+}
+
+# Create full rasterization of all predictions for interactive visualizations
+rastered_preds<-Rasterize_all(newdata, Prediction)
+# Same for SE
+rastered_SE<-Rasterize_all(newdata, SE)
+# Bind SE and predictions together
+rastered_predsSE<-c(rastered_preds, rastered_SE)
+
+newdata_rast_season <- newdata%>%
+  mutate(Month=month(Date))%>%
+  filter(Year%in%round(seq(min(newdata$Year)+2, max(newdata$Year)-2, length.out=9)) & Month%in%c(1,4,7,10))
+
+
+
+raster_plot<-function(data, Years=unique(newdata$Year), labels="All"){
+  ggplot()+
+    geom_stars(data=data)+
+    facet_grid(Year~julian)+
+    scale_fill_viridis_c(name="Temperature", na.value="white", breaks=seq(6,26,by=1), labels= function(x) ifelse((x/2)==as.integer(x/2), as.character(x), ""),
+                         guide = guide_colorbar(direction="horizontal", title.position = "top", barwidth = 4, ticks.linewidth = 2,
+                                                barheight=0.4, title.hjust=0.5, label.position="bottom", label.theme=element_text(size=8), 
+                                                title.theme=element_text(size=10)))+
+    coord_sf()+
+    ylab("Latitude")+
+    xlab("Longitude")+
+    theme_bw()+
+    {if(labels%in%c("None", "Right")){
+      theme(axis.text.y = element_blank(), axis.ticks.y = element_blank(), axis.title.y = element_blank())
+    }}+
+    {if(labels%in%c("None", "Left")){
+      theme(strip.text.y=element_blank())
+    }}+
+    theme(axis.text.x = element_text(angle=45, hjust=1), plot.margin = margin(40,0,0,0), strip.background=element_blank(),
+          panel.grid=element_blank(), legend.position = c(0.5,1.05), legend.background = element_rect(color="black"))
+}
+
+raster_plot(rastered_preds)
+
+```
 
