@@ -29,9 +29,18 @@ tempmean = temps %>%
   filter(Date > as.Date("2014-1-1"), Station != "RYF") %>%
   mutate(julian = yday(Date)) %>%
   group_by(Station, julian) %>%
-  summarize(Tempave = mean(Temp, na.rm = T), TempMax = max(Temp, na.rm = T), TempMin = min(Temp, na.rm = T))
+  summarize(Tempave = mean(Temp, na.rm = T), TempMax = max(Temp, na.rm = T), 
+            TempMin = min(Temp, na.rm = T))
 
-save(tempmean, file = "tempmean.RData")
+
+tempmeanx = temps %>%
+  filter(Date > as.Date("2014-1-1"), Station != "RYF") %>%
+  mutate(julian = yday(Date), Year = year(Date)) %>%
+  group_by(Station, julian, Year, Date) %>%
+  summarize(Tempave = mean(Temp, na.rm = T), TempMax = max(Temp, na.rm = T), 
+            TempMin = min(Temp, na.rm = T), Temprange = TempMax-TempMin)
+
+save(tempmeanx, file = "tempmeanx.RData")
 
 ```
 
