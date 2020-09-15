@@ -27,7 +27,7 @@ stas = filter(stas, Station != "DV7")
 
 #attached lat/longs to mean temperature
 tempmean2 = left_join(tempmeanx, stas) %>%
-  filter(Station != "DV7") %>%
+  filter(Station != "DV7", Station != "RPN", Station != "RIP") %>%
   mutate(Year = year(Date)) %>%
   arrange(Station, Date) %>%
   ungroup()
@@ -39,29 +39,27 @@ alb <- CRS("+proj=aea +lat_1=34 +lat_2=40.5 +lat_0=0 +lon_0=-120 +x_0=0 +y_0=-40
 
 #basic model of max temp based on day and location
 
-g5 =  bam(TempMax ~ s(julian, bs = "cc") +  
-            te(Latitude, Longitude), 
+g5 =  bam(TempMax ~  
+            te(Latitude, Longitude, julian, bs = c("cr","cr", "cc")), 
           data =tempmean2, method = "REML")
 
 r5 = acf(resid(g5),  plot=FALSE)$acf[2]
-g5 =  bam(TempMax~ s(julian, bs = "cc") +  
-            te(Latitude, Longitude), 
+g5 =  bam(TempMax ~  
+            te(Latitude, Longitude, julian, bs = c("cr","cr", "cc")), 
           data =tempmean2, method = "REML")
-plot(g5)
-
 
 #basic model of mean temp based on day and location
 
-g5ave =  bam(Tempave ~ s(julian, bs = "cc") +  
-            te(Latitude, Longitude), 
+g5ave =  bam(Tempave  ~  
+               te(Latitude, Longitude, julian, bs = c("cr","cr", "cc")),
           data =tempmean2, method = "REML")
 
 r5ave = acf(resid(g5ave), plot=FALSE)$acf[2]
 
 
 
-g5ave =  bam(Tempave ~ s(julian, bs = "cc") +
-            te(Latitude, Longitude), 
+g5ave =  bam(Tempave  ~  
+               te(Latitude, Longitude, julian, bs = c("cr","cr", "cc")), 
           data =tempmean2, method = "REML",  rho=r5ave, AR.start=tempmean2$start.event)
 
 plot(g5ave)
@@ -69,33 +67,33 @@ plot(g5ave)
 
 #basic model of mean temp based on day and location
 
-g5min =  bam(TempMin ~ s(julian, bs = "cc") +  
-               te(Latitude, Longitude), 
+g5min =  bam(TempMin  ~  
+               te(Latitude, Longitude, julian, bs = c("cr","cr", "cc")),
              data =tempmean2, method = "REML")
 
 r5min = acf(resid(g5min), plot=FALSE)$acf[2]
 
 
 
-g5min =  bam(TempMin ~ s(julian, bs = "cc") +
-               te(Latitude, Longitude), 
+g5min =  bam(TempMin  ~  
+               te(Latitude, Longitude, julian, bs = c("cr","cr", "cc")),
              data =tempmean2, method = "REML",  rho=r5min, AR.start=tempmean2$start.event)
 
 #temperature range
 
 
-#basic model of mean temp based on day and location
+#basic model of temperature range based on day and location
 
-g5range =  bam(Temprange ~ s(julian, bs = "cc") +  
-               te(Latitude, Longitude), 
+g5range =  bam(Temprange  ~  
+                 te(Latitude, Longitude, julian, bs = c("cr","cr", "cc")), 
              data =tempmean2, method = "REML")
 
 r5range = acf(resid(g5range), plot=FALSE)$acf[2]
 
 
 
-g5range =  bam(Temprange ~ s(julian, bs = "cc") +
-               te(Latitude, Longitude), 
+g5range =  bam(Temprange ~  
+                 te(Latitude, Longitude, julian, bs = c("cr","cr", "cc")),
              data =tempmean2, method = "REML",  rho=r5range, AR.start=tempmean2$start.event)
 
 
@@ -112,7 +110,7 @@ crs(stas) <- "+proj=longlat +datum=NAD83"
 delta = st_transform(delta,crs=4326)
 stas = st_as_sf(stas) %>%
   st_transform(stas, crs=4326) %>%
-  filter(Station != "DV7")
+  filter(Station != "DV7", Station != "RIP", Station != "RPN")
 
 WQ_pred<-function(Full_data=Data,
                   Delta_subregions = regions,
@@ -167,6 +165,7 @@ newdataave<-newdata_year%>%
   mutate(SE=modellave_predictions$se.fit,
          L95=Prediction-SE*1.96,
          U95=Prediction+SE*1.96)
+
 
 #max temp model
 newdata<-newdata_year%>%
@@ -261,7 +260,6 @@ raster_plot2(rastered_preds, 4) + ggtitle("Max Temperature")
 raster_plot2(rastered_preds, 10) + ggtitle("Max Temperature")
 #It's treating the impact of space as constant accross time. I'd have to put in another interaction
 #if i want it to vary.
-
 
 #average temperatures
 raster_plot(rastered_predsave) + ggtitle("Mean Temperature")
