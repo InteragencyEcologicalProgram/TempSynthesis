@@ -20,7 +20,9 @@ library(plotly)
 tempFilt0 <- readRDS("Data/Temp_filtered.rds")
 RegionsEDSM <- read.csv("Data/Station_groupings_5AUG2020.csv")
 Regions <- read.csv("Data/Stations_wRosiesReg.csv")
-staInfo <- read.csv("Data/StationsMetadata.csv")
+staInfo <- read.csv("Data/StationsMetadata.csv") %>%
+  select(-c(StationName))
+WYType <- read.csv("Data/WYType.csv")
 
 str(tempFilt0)
 ```
@@ -38,9 +40,13 @@ tempFilt0 <- tempFilt0 %>%
 ```{r regions, message = FALSE, warning = FALSE}
 # subregions <- st_read("Data/EDSM_Subregions/EDSM_Subregions_03302020.shp")
 
-tempFilt <- left_join(tempFilt0, Regions, by = "Station") %>%
+tempFilt1 <- left_join(tempFilt0, Regions, by = "Station") %>%
   filter(!Station %in% c("CNT", "CPP", "DAR", "DMC", "DYR","ECD", "HBP", "ROR", "DV7"),
          !is.na(Region)) 
+tempFilt2 <- left_join(tempFilt1, staInfo, by = "Station") %>%
+  select(-c(StartDateDataset:County))
+tempFilt <- left_join(tempFilt2, WYType, by = "Year") %>%
+  mutate(Index_c = Index_Sac + Index_SJ)
 
 ```
 

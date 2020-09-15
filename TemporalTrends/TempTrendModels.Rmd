@@ -1,0 +1,451 @@
+---
+title: "TempTrendModels"
+author: "Catarina Pien"
+date: "9/10/2020"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+# Temperature Trend Analysis {.tabset}
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(lubridate)
+library(viridis) # color palette
+library(plotly)
+library(pscl)
+library(visreg)
+library(lattice)
+```
+
+## Data Prep and Exploration
+Data import
+```{r import, include = FALSE, message = FALSE, warning = FALSE}
+setwd("C:/Users/cpien/OneDrive - California Department of Water Resources/Work/ClimateChange/R_code/TempSynthesis/")
+
+tempFilt0 <- readRDS("Data/Temp_filtered.rds") %>%
+  select(-StationName) # temperature data 
+
+Regions <- read.csv("Data/Stations_wRosiesReg.csv") %>%
+  select(-c(Latitude, Longitude)) # Rosie's Regions
+
+staInfo <- read.csv("Data/StationsMetadata.csv") # Get habitat type here
+
+LatLon <- select(staInfo, c("Station", "StationName", "Latitude", "Longitude"))
+
+WYType <- read.csv("Data/WYType.csv") %>% # Get WY, WY type, Index 
+  select(-c(starts_with("Runoff"))) %>%
+  rename(WY = Year) %>%
+   mutate(Index_c = Index_Sac + Index_SJ) 
+
+WYSimple <- select(WYType, c("WY", "WYType2_Sac", "Index_c"))
+
+str(tempFilt0)
+```
+
+Add variables
+```{r vars}
+tempFilt0 <- tempFilt0 %>%
+  mutate(Year = year(tempFilt0$Date),
+         Month = month(tempFilt0$Date),
+         yDay = yday(tempFilt0$Date)) %>%
+  mutate(WY = ifelse(Month %in% c(10, 11, 12), Year+1, Year))
+```
+
+Merge regions, habitats, wytype
+```{r regions, message = FALSE, warning = FALSE}
+# subregions <- st_read("Data/EDSM_Subregions/EDSM_Subregions_03302020.shp")
+
+tempFilt1 <- left_join(tempFilt0, Regions, by = "Station") %>%
+  filter(!Station %in% c("CNT", "CPP", "DAR", "DMC", "DYR","ECD", "HBP", "ROR", "DV7"),
+         !is.na(Region)) 
+tempFilt2 <- left_join(tempFilt1, staInfo, by = "Station") %>%
+  select(-c(StartDateDataset:County))
+
+tempFilt <- left_join(tempFilt2, WYSimple, by = "WY") 
+```
+
+
+* Number of years of data per station per Region
+* Filter to years with >250 days of data
+
+```{r Filtering down }
+StationYearCombo <- tempFilt %>%
+  group_by(Region, Station, WY, Date) %>%
+  summarize(perDay = n()) %>%
+  ungroup() %>%
+  group_by(Region, Station, WY) %>%
+  summarize(totalDays = n()) %>%
+  ungroup()
+
+StationNyears <- StationYearCombo %>%
+  filter(totalDays>250) %>%
+  group_by(Region, Station) %>%
+  summarize(firstYear = first(WY),
+            lastYear = last(WY),
+            nYear = n()) %>%
+  ungroup()
+```
+
+Some exploratory plots to look at data
+```{r exploratory plots}
+tilerecord <- ggplot(StationYearCombo, aes(Station, ordered(WY), fill = totalDays)) + geom_tile() + labs(title = "Period of Record - Number of days each year for each station")
+ggplotly(tilerecord)
+
+nyears <- ggplot(StationNyears, aes(x = Region, y = nYear, color = Station)) + geom_point() +
+  labs(title = "Number of years of data by Region/Station, filtered for years with >200 days data")
+ggplotly(nyears)
+
+nYearBar <- ggplot(StationNyears, aes(y = ..count.., x = nYear)) + geom_bar() +
+  labs(title = "Count of Stations and number of years of data available")
+ggplotly(nYearBar)
+
+```
+
+Map showing distribution of data with number of years of data
+```{r map}
+library(leaflet)
+
+MapYears <- left_join(StationNyears, LatLon)
+
+# Palette from viridis
+  staPal <- colorNumeric("viridis", domain = MapYears$nYear)
+  
+MapYears %>%
+  leaflet() %>%
+  addTiles() %>%
+  addCircleMarkers(
+    color = ~staPal(nYear),
+    stroke = FALSE,
+    fillOpacity = 0.9,
+    lng = ~Longitude,
+    lat = ~Latitude,
+    labelOptions = labelOptions(noHide = F),
+    popup = ~paste(Station, ":", StationName, "<br/>", "nYears:", nYear, "<br/>",
+                   "Date Range:", firstYear, "-", lastYear)) %>%
+    addLegend(pal = staPal,
+            values = ~nYear,
+            position = "bottomright")
+```
+
+Map 10 years+ Data
+```{r}
+# Filter for those with 10 years + 
+MapYears2 <- MapYears %>% filter(nYear > 9)
+
+# Palette from viridis
+  staPal2 <- colorNumeric("magma", domain = MapYears2$nYear)
+  
+MapYears2 %>%
+  leaflet() %>%
+  addTiles() %>%
+  addCircleMarkers(
+    color = ~staPal2(nYear),
+    stroke = FALSE,
+    fillOpacity = 0.9,
+    lng = ~Longitude,
+    lat = ~Latitude,
+    labelOptions = labelOptions(noHide = F),
+    popup = ~paste(Station, ":", StationName, "<br/>", "nYears:", nYear, "<br/>",
+                   "Date Range:", firstYear, "-", lastYear)) %>%
+    addLegend(pal = staPal2,
+            values = ~nYear,
+            position = "bottomright")
+```
+
+Subset data to use to data that has at least 10 years of data, and that extends to 2019.
+Took out Far North Region. Should we add LIS somewhere else?
+```{r subset}
+DataYrSubset <- filter(StationNyears, nYear > 9 & lastYear == 2019) %>%
+  left_join(StationYearCombo) %>%
+  filter(totalDays>250)
+
+tempToUse <- inner_join(tempFilt, DataYrSubset, by = c("Region","Station", "WY")) %>%
+  filter(Region != "Far North")
+summary(tempToUse)
+```
+
+## Mean, Max, Min {.tabset}
+
+#### Overall Datasets 
+
+#### Data Wrangling 
+* Create dataset for mean, max, and min, var for Monthly
+* Filter for data that is represented for a whole year
+* Create datasets for mean, max, min
+
+
+Code to make sure every month has data
+```{r nMon}
+# Filter to only data that has temps from every month so as not to skew the data that only has part of the year represented.
+nMon <- tempMon %>% group_by(Station, Year) %>%
+  summarize (nMon = n())
+```
+
+Daily Temp
+```{r dailyoverall}
+tempDaily <- tempToUse %>%
+  group_by(Region, Station, HabitatType, WY, WYType2_Sac, Index_c, Date) %>%
+  summarize(maxDaily = max(Temp),
+            minDaily = min(Temp),
+            meanDaily = round(mean(Temp),1))
+```
+
+Monthly Temp
+```{r monthlyoverall, message = FALSE, warning = FALSE}
+tempMon <- tempToUse %>% 
+  group_by(Region, Station, HabitatType, WY, WYType2_Sac, Index_c, Month) %>%
+  summarize(maxTemp = max(Temp),
+            minTemp = min(Temp),
+            meanTemp = round(mean(Temp),1),
+            sdTemp = round(sd(Temp),1))
+```
+
+Annual Temp
+```{r annualoverall}
+tempAn <- tempToUse %>% 
+  group_by(Region, Station, HabitatType, WY, WYType2_Sac, Index_c) %>%
+  summarize(maxTemp = max(Temp),
+            minTemp = min(Temp),
+            meanTemp = round(mean(Temp),1),
+            sdTemp = round(sd(Temp),1))
+```
+
+
+### Max Temp {.tabset}
+
+Mean Max Temp
+```{r Mean Max}
+tempMaxAvMon0 <- tempToUse %>%
+  group_by(Region, Station, Year, WY, WYType2_Sac, Month, Date) %>%
+  summarize(maxTemp = max(Temp)) %>%
+  ungroup() %>%
+  group_by(Region, Station, Year, WY, WYType2_Sac,Month) %>%
+  summarize(maxAv = mean(maxTemp))
+```
+
+#### Models
+
+Daily Max
+```{r}
+tempDaily$yday = yday(tempDaily$Date)
+tempDaily$Year = ordered(year(tempDaily$Date))
+tempDaily$Month = ordered(month(tempDaily$Date))
+
+summary(M.maxDay1 <- glm(maxDaily~Region + Year + Month + HabitatType + WYType2_Sac + yday, data = tempDaily))
+summary(M.maxDay2 <- glm(maxDaily~Region + Year + Month + HabitatType + Index_c + yday, data = tempDaily))
+```
+
+Monthly Max
+```{r Models Max Monthly Temp}
+tempMaxAvMon$Year <- ordered(tempMaxAvMon$Year)
+tempMon$Year <- ordered(tempMon$Year)
+tempMon$Month <- ordered(tempMon$Month)
+tempMon$WY <- ordered(tempMon$WY)
+
+summary(M.max1 <- glm(maxTemp~Region + Year + Month + WYType2_Sac, data = tempMon))
+summary(M.max2 <- glm(maxTemp~Region*Year + Month + WYType2_Sac, data = tempMon))
+summary(M.max3 <- glm(maxTemp~Region*Month + Year + WYType2_Sac, data = tempMon))
+summary(M.max4 <- glm(maxTemp~Region*Year + Region*Month, data = tempMon))
+summary(M.max5 <- glm(maxTemp~Region*Year + Region*Month + Region*WYType2_Sac, data = tempMon))
+summary(M.max6 <- glm(maxTemp~Region*WYType2_Sac + Region*Month + Year, data = tempMon))
+
+AIC(M.max1, M.max2, M.max3, M.max4, M.max5, M.max6)
+
+par(mfrow = c( 2,2))
+plot(M.max5)
+
+visreg(M.max5)
+visreg(M.max5, "Year", by = "Region")
+visreg(M.max5, "Month", by = "Region")
+visreg(M.max5, "Region", by = "Year")
+visreg(M.max5, "Region", by = "WYType2_Sac")
+```
+
+Monthly Mean Max
+```{r}
+
+```
+
+Annual Max
+```{r Models Max Monthly Temp}
+tempAn$Year <- ordered(tempAn$Year)
+
+summary(M.maxAn1 <- glm(maxTempAn~Region + Year, data = tempAn))
+summary(M.maxAn2 <- glm(maxTempAn~Region*Year, data = tempAn))
+
+AIC(M.maxAn1, M.maxAn2)
+
+par(mfrow = c( 2,2))
+plot(M.maxAn1)
+
+visreg(M.maxAn1, "Year", by = "Region")
+visreg(M.maxAn1, "Region", by = "Year")
+```
+
+
+### Mean Temp{.tabset}
+#### Data Wrangling
+#### Models 
+
+### Min Temp{.tabset}
+#### Data Wrangling 
+#### Models 
+
+## Variance/Range {.tabset}
+### Data Wrangling
+### Models
+
+## Diel Variation {.tabset}
+### Data Wrangling 
+### Models 
+
+## Stress Levels {.tabset}
+### High Stress Days {.tabset}
+#### Data Wrangling 
+
+Identifying Heat Stress Level (High/Med/Low) 
+Identifying "StressAllDay" = when min daily temperature >25
+```{r heatevents}
+# Flagging starts on day 3 of >25C
+heat <- tempDaily %>%
+  select(-meanDaily, Year) %>%
+  group_by(Region, Station, HabitatType, WY) %>%
+  mutate(Thr25 = ifelse(maxDaily > 25, 1L, 0L),
+         Thr21 = ifelse(maxDaily > 21, 1L, 0L)) %>%
+  mutate(Stress = ifelse(Thr25 == lag(Thr25, 1) & Thr25 == lag(Thr25, 2) & Thr25 == 1L, "High", 
+                            ifelse(Thr21 == lag(Thr21, 1) & Thr21 == lag(Thr21, 2) & Thr21 == 1, "Med", 
+                                   "Low"))) %>%
+  ungroup() %>%
+  group_by(Region, Station, HabitatType, WY, Date) %>%
+  mutate(StressAllDay = ifelse(Stress == "High" & minDaily>25, "Y", "N")) %>%
+  select(-starts_with("Thr"))
+
+```
+
+Number of days at each stress level
+```{r}
+# Calculate number of samples in a year or water year
+heatDaysSamp <- heat %>%
+  group_by(Region, Station, HabitatType, WY) %>%
+  summarize(totalDays = n()) %>%
+  filter(totalDays > 250)
+
+# Calculate number of days and proportion of days at each stress level
+heatDays <- heat %>%
+  group_by(Region, Station, HabitatType, WY, WYType2_Sac, Stress) %>%
+  summarize(nDays = n()) %>%
+  left_join(heatDaysSamp) %>%
+  mutate(propDays = round(nDays/totalDays,3)) %>%
+  ungroup()
+
+```
+
+# High heat stress
+Remove Far North and WY < 2000
+```{r}
+# Count number of days at high heat
+HighHeat <- heatDays %>%
+  filter(Stress == "High",
+         Region != "Far North",
+         WY > 2009 & WY < 2020)
+#  complete(WY, nesting(Station, Region, HabitatType), fill = list(nDays = 0))
+
+summary(HighHeat)
+```
+
+
+#### Models {.tabset}
+
+
+```{r heatmodels}
+library(nlme)
+HighHeat$WY <- ordered(HighHeat$WY)
+HighHeat$Region <- factor(HighHeat$Region)
+HighHeat$WYType2_Sac <- factor(HighHeat$WYType2_Sac)
+HighHeat$HabitatType <- factor(HighHeat$HabitatType)
+
+# Model
+# Model 1
+heat1 <- glm(nDays ~ WY + HabitatType + Region * WYType2_Sac,  data = HighHeat)
+summary(heat1)
+
+par(mfrow = c(2,2))
+plot(heat1)
+E = resid(heat1)
+plot(HighHeat$WY, E)
+plot(HighHeat$Region, E)
+plot(HighHeat$WYType2_Sac, E)
+plot(HighHeat$HabitatType, E)
+
+visreg(heat1, "WY", by = "Region")
+visreg(heat1, "WYType2_Sac", by = "Region")
+
+M.heat1 <- gls(nDays~WY + Region*WYType2_Sac, data = HighHeat, na.action = na.omit,
+                control = list(singular.ok = TRUE))
+vf1 <- varIdent(form = ~1 | Region)
+M.heat1a <- gls(nDays ~ WY*Region + WYType2_Sac, 
+                weights = vf1, data = HighHeat, na.action = na.omit,
+                control = list(singular.ok = TRUE))
+
+anova(M.heat1, M.heat1a)
+
+
+# Model 2
+heat2 <- glm(propDays ~ WY + Region + WYType2_Sac, data = HighHeat)
+summary(heat2)
+
+par(mfrow = c(2,2))
+plot(heat2)
+visreg(heat2)
+
+# Model 3
+heat3 <- glm(propDays ~ WY*Region + WYType2_Sac, data = HighHeat)
+summary(heat3)
+
+par(mfrow = c(2,2))
+plot(heat3)
+visreg(heat3)
+
+AIC(heat1, heat2, heat3) # Go with Model 1
+
+# Model 4
+heat4 <- glm(propDays ~ WY + Region + Index_c + HabitatType, data = HighHeat)
+summary(heat4)
+
+par(mfrow = c(2,2))
+plot(heat4)
+visreg(heat4)
+
+# Model 5
+heat5 <- glm(propDays ~ WY + Region + Index_c, data = HighHeat)
+summary(heat5)
+
+par(mfrow = c(2,2))
+plot(heat5)
+visreg(heat5)
+
+# Model 6
+heat6 <- glm(propDays ~ WY*Region + Index_c, data = HighHeat)
+summary(heat6)
+
+par(mfrow = c(2,2))
+plot(heat6)
+visreg(heat6)
+
+AIC(heat4, heat5)
+
+AIC(heat1, heat4)
+```
+
+### High stress days no recovery {.tabset}
+```{r}
+heatNoRecovery <-  heat  %>%
+  group_by(Region, Station, HabitatType, WY, WYType2_Sac, Index_c, StressAllDay) %>%
+  summarize(NoRecovery = n())
+```
+
+#### Data Wrangling
+#### Models
