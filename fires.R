@@ -51,6 +51,8 @@ fires2.1 = st_transform(fires2, 4326)
 firesclose = st_intersection(Chipps2, fires2.1)
 ggplot() + geom_sf(data = firesclose, aes(fill = YEAR_))
 
+write.csv(firesclose, "fires_within_400K.csv")
+
 #Now I just need to turn this into a time series
 
 #this works, but it can't handle more than one decade at a time.
@@ -93,6 +95,8 @@ fireTS = distinct(rbind(test, test60s, test70s, test73s, test77s,
 
 
 fireTS2 = left_join(df, fireTS)
+fireTS2$acres[which(is.na(fireTS2$acres))] = 0
+write.csv(fireTS2, "fire_TS.csv")
 
 #probably just want the summer for analysis, since that's when most
 #of the fires are and that's when the highest chlorophyll occurs
@@ -161,3 +165,5 @@ fireEMPhigh = filter(fireEMP2, Firecat == "High")
 lm2 = lmer(logCh~ acres_scaled + Year + (1|StationCode), data = fireEMPhigh)
 summary(lm2)
 visreg(lm2)
+
+ggplot(data = fireEMPhigh, aes(x = acres, y = logCh)) + geom_point() +geom_smooth(method = "lm")
