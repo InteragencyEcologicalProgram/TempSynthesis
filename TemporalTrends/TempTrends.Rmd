@@ -16,7 +16,7 @@ library(tidyverse)
 library(lubridate)
 library(viridis) # color palette
 library(plotly)
-
+setwd("C:/Users/cpien/OneDrive - California Department of Water Resources/Work/ClimateChange/R_code/TempSynthesis/")
 tempFilt0 <- readRDS("Data/Temp_filtered.rds")
 RegionsEDSM <- read.csv("Data/Station_groupings_5AUG2020.csv")
 Regions <- read.csv("Data/Stations_wRosiesReg.csv")
@@ -351,6 +351,7 @@ lapply(var.df.list, heatmapplotVar, fill = varTempAn_yr, var = varTempAn, l1 = -
 
 ### Heat maps for mean annual summer temperature (June - Sept)
 ```{r summerMean}
+tempFilt$Month <- as.numeric(tempFilt$Month)
 tempSum <- tempFilt %>% 
   group_by(Region, Station, Year, Month) %>%
   filter(Month > 5 & Month < 10)%>%
