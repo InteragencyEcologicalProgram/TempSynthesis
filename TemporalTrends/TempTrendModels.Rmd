@@ -2,9 +2,11 @@
 title: "TempTrendModels"
 author: "Catarina Pien"
 date: "9/10/2020"
-output: html_document
-editor_options: 
-  chunk_output_type: console
+output: 
+  html_document:
+    code_folding: hide
+    editor_options: 
+      chunk_output_type: console
 ---
 # Temperature Trend Analysis {.tabset}
 
@@ -205,7 +207,6 @@ tempMon <- tempToUse %>%
             rangeTemp = maxTemp-minTemp) %>%
   ungroup()
 
-
 ```
 
 Annual Temp
@@ -259,7 +260,7 @@ Best Model: summary(M.maxDay3 <- glm(maxDaily~Region*Year + Month + HabitatType 
 tempDaily <- filter(tempDaily, WY > 2009 & WY < 2020)
 tempDaily$yday = yday(tempDaily$Date)
 tempDaily$Year = ordered(year(tempDaily$Date))
-tempDaily$Month = ordered(month(tempDaily$Date))
+tempDaily$Month = month(tempDaily$Date)
 tempDailyM <- left_join(tempDaily, nMon) %>%
   filter(nMon == 12)
 
@@ -300,7 +301,6 @@ tempMonM <- left_join(tempMon, nMon) %>%
   filter(nMon == 12)
 
 tempMonM$WY <- ordered(tempMonM$WY)
-tempMonM$Month <- ordered(tempMonM$Month)
 
 summary(M.max1 <- glm(maxTemp~Region + Month + WYType2_Sac + HabitatType, data = tempMonM))
 summary(M.max2 <- glm(maxTemp~Region + WY + Month + HabitatType, data = tempMonM))
@@ -388,15 +388,11 @@ Mean Monthly
 Best Model: summary(M.meanMon7 <- glm(meanTemp~Region * WY + Region * Month + HabitatType, data = tempMon))
 ```{r MonthlyMeanModels}
 summary(M.meanMon1 <- glm(meanTemp~Region + Month + WYType2_Sac + HabitatType, data = tempMon))
-
 summary(M.meanMon2 <- glm(meanTemp~Region + WY + Month + HabitatType, data = tempMon))
-
 AIC(M.meanMon1, M.meanMon2)
 
 summary(M.meanMon3 <- glm(meanTemp~Region*Month + WY + HabitatType, data = tempMon))
-
 summary(M.meanMon4 <- glm(meanTemp~Region*WY + Month + HabitatType, data = tempMon))
-
 summary(M.meanMon5 <- glm(meanTemp~Region*WYType2_Sac + Month + HabitatType, data = tempMon))
 summary(M.meanMon6 <- glm(meanTemp~Region*WYType2_Sac + Region*Month + HabitatType, data = tempMon))
 summary(M.meanMon7 <- glm(meanTemp~Region*WY + Region*Month + HabitatType, data = tempMon))
@@ -415,17 +411,79 @@ visreg(M.meanMon7, "Region", by = "WY")
 
 ```
 
+Mean Annual 
+```{r Models Mean Annual Temp}
+
+summary(M.meanAn1 <- glm(meanTemp~Region + WY + WYType2_Sac + HabitatType, data = tempAn))
+summary(M.meanAn2 <- glm(meanTemp~Region + WY + WYType2_Sac, data = tempAn))
+summary(M.meanAn3 <- glm(meanTemp~Region * WYType2_Sac + WY+ HabitatType, data = tempAn))
+summary(M.meanAn4 <- glm(meanTemp~Region * WY + HabitatType + WYType2_Sac, data = tempAn))
+summary(M.meanAn5 <- glm(meanTemp~Region * WYType2_Sac +  Region * WY + HabitatType , data = tempAn))
+
+AIC(M.meanAn1, M.meanAn2, M.meanAn3, M.meanAn4, M.meanAn5)
+
+par(mfrow = c( 2,2))
+plot(M.meanAn3)
+
+visreg(M.meanAn3, "WY", by  = "Region")
+visreg(M.meanAn3, "WYType2_Sac", by = "Region")
+visreg(M.meanAn3, "Region", by = "WYType2_Sac")
+```
+
+
 ### Min Temp{.tabset}
 #### Data Wrangling 
 #### Models 
-```{r}
 
+Min Monthly
+```{r}
+summary(M.minMon1 <- glm(minTemp~Region + Month + WYType2_Sac + HabitatType, data = tempMon))
+summary(M.minMon2 <- glm(minTemp~Region + WY + Month + HabitatType, data = tempMon))
+AIC(M.minMon1, M.minMon2)
+
+summary(M.minMon3 <- glm(minTemp~Region*Month + WY + HabitatType, data = tempMon))
+summary(M.minMon4 <- glm(minTemp~Region*WY + Month + HabitatType, data = tempMon))
+summary(M.minMon5 <- glm(minTemp~Region*WYType2_Sac + Month + HabitatType, data = tempMon))
+summary(M.minMon6 <- glm(minTemp~Region*WYType2_Sac + Region*Month + HabitatType, data = tempMon))
+summary(M.minMon7 <- glm(minTemp~Region*WY + Region*Month + HabitatType, data = tempMon))
+summary(M.minMon8 <- glm(minTemp~Region*WY + Region*Month, data = tempMon))
+summary(M.minMon9 <- glm(minTemp~Region*WY + Region*Month + Region * WYType2_Sac + HabitatType, data = tempMon))
+
+AIC(M.minMon1, M.minMon2, M.minMon3, M.minMon4, M.minMon5, M.minMon6, M.minMon7, M.minMon8, M.minMon9)
+
+par(mfrow = c( 2,2))
+plot(M.minMon7)
+
+visreg(M.minMon7)
+visreg(M.minMon7, "WY", by = "Region")
+visreg(M.minMon7, "Month", by = "Region")
+visreg(M.minMon7, "Region", by = "WY")
+```
+
+
+Min Annual
+```{r}
+summary(M.minAn1 <- glm(minTemp~Region + WY + WYType2_Sac + HabitatType, data = tempAn))
+summary(M.minAn2 <- glm(minTemp~Region + WY + WYType2_Sac, data = tempAn))
+summary(M.minAn3 <- glm(minTemp~Region * WYType2_Sac + WY+ HabitatType, data = tempAn))
+summary(M.minAn4 <- glm(minTemp~Region * WY + HabitatType + WYType2_Sac, data = tempAn))
+summary(M.minAn5 <- glm(minTemp~Region * WYType2_Sac +  Region * WY + HabitatType , data = tempAn))
+
+AIC(M.minAn1, M.minAn2, M.minAn3, M.minAn4, M.minAn5)
+
+par(mfrow = c( 2,2))
+plot(M.minAn3)
+
+visreg(M.minAn3, "WY", by  = "Region")
+visreg(M.minAn3, "WYType2_Sac", by = "Region")
+visreg(M.minAn3, "Region", by = "WYType2_Sac")
 ```
 
 
 ## Variance/Range {.tabset}
 ### Data Wrangling
 ### Models
+Monthly Range
 ```{r RangeModel}
 summary(M.range1 <- glm(rangeTemp~Region + Month + WYType2_Sac + HabitatType, data = tempMonM))
 summary(M.range2 <- glm(rangeTemp~Region + WY + Month + HabitatType, data = tempMonM))
@@ -446,6 +504,25 @@ visreg(M.range7, "Month", by = "Region")
 visreg(M.range7, "Region", by = "WY")
 visreg(M.range7, "WY", by = "HabitatType")
 ```
+
+Annual Range
+```{r}
+summary(M.rangeAn1 <- glm(rangeTemp~Region + WY + WYType2_Sac + HabitatType, data = tempAn))
+summary(M.rangeAn2 <- glm(rangeTemp~Region + WY + WYType2_Sac, data = tempAn))
+summary(M.rangeAn3 <- glm(rangeTemp~Region * WYType2_Sac + WY+ HabitatType, data = tempAn))
+summary(M.rangeAn4 <- glm(rangeTemp~Region * WY + HabitatType + WYType2_Sac, data = tempAn))
+summary(M.rangeAn5 <- glm(rangeTemp~Region * WYType2_Sac +  Region * WY + HabitatType , data = tempAn))
+
+AIC(M.rangeAn1, M.rangeAn2, M.rangeAn3, M.rangeAn4, M.rangeAn5)
+
+par(mfrow = c( 2,2))
+plot(M.rangeAn3)
+
+visreg(M.rangeAn3, "WY", by  = "Region")
+visreg(M.rangeAn3, "WYType2_Sac", by = "Region")
+visreg(M.rangeAn3, "Region", by = "WYType2_Sac")
+```
+
 
 ## Diel Variation {.tabset}
 ### Data Wrangling 
@@ -492,7 +569,8 @@ heatDays <- heat %>%
 
 ```
 
-# High heat stress
+
+High heat stress
 Remove Far North and WY < 2000
 ```{r}
 # Count number of days at high heat
@@ -505,21 +583,6 @@ HighHeat$WY <- ordered(HighHeat$WY)
 #  complete(WY, nesting(Station, Region, HabitatType), fill = list(nDays = 0))
 
 summary(HighHeat)
-```
-
-### High stress days no recovery {.tabset}
-```{r no recovery}
-heatNoRecovery <-  heat  %>%
-  group_by(Region, Station, HabitatType, WY, WYType2_Sac, Index_c, StressAllDay) %>%
-  summarize(NoRecovery = n())
-
-heatNoRecoverySum <- filter(heatNoRecovery,
-                 StressAllDay == "Y") 
-hotSta <- unique(heatNoRecoverySum$Station)
-hmapNoRecov <- ggplot(heatNoRecoverySum, aes(x = WY, y = Station, fill = NoRecovery )) + geom_tile() +
-  scale_fill_viridis(option = "cividis") + labs(title = "Number of unrecovered high stress days per year")
-ggplotly(hmapNoRecov)
-
 ```
 
 #### Models {.tabset}
@@ -570,6 +633,23 @@ visreg(heat2, "Region", by = "WYType2_Sac")
 visreg(heat2, "WYType2_Sac", by = "Region")
 ```
 
+### High stress days no recovery {.tabset}
+#### Heatmap
+```{r no recovery}
+heatNoRecovery <-  heat  %>%
+  group_by(Region, Station, HabitatType, WY, WYType2_Sac, Index_c, StressAllDay) %>%
+  summarize(NoRecovery = n())
+
+heatNoRecoverySum <- filter(heatNoRecovery,
+                 StressAllDay == "Y") 
+hotSta <- unique(heatNoRecoverySum$Station)
+hmapNoRecov <- ggplot(heatNoRecoverySum, aes(x = WY, y = Station, fill = NoRecovery )) + geom_tile() +
+  scale_fill_viridis(option = "cividis") + labs(title = "Number of unrecovered high stress days per year")
+ggplotly(hmapNoRecov)
+
+```
+
+#### Models
 Stress All Day
 Best Model: summary(heatA <- glm(NoRecovery ~ Region + WYType2_Sac + HabitatType, data = heatNoRecoverySum))
 To Solve: 
@@ -577,12 +657,6 @@ To Solve:
 * Use nDays vs propDays
 * Add 0s in to years with 0 days? --> different distribution? 
 
-#### Data Wrangling
-```{r}
-
-```
-
-#### Models
 ```{r stressAllDay Models}
 summary(heatA <- glm(NoRecovery ~ Region + WYType2_Sac + HabitatType, data = heatNoRecoverySum))
 
