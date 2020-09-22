@@ -71,6 +71,7 @@ tempFilt <- left_join(tempFilt2, WYSimple, by = "WY")
 tempFilt$Region <- as.factor(tempFilt$Region)
 tempFilt$HabitatType <- as.factor(tempFilt$HabitatType)
 
+# saveRDS(tempFilt, "Data/tempFilt.rds")
 
 ```
 
@@ -173,7 +174,7 @@ tempToUse <- inner_join(tempFilt, DataYrSubset, by = c("Region","Station", "WY")
 
 tempToUse$WY = as.numeric(tempToUse$WY)
 today = format(today(), "%Y%m%d")
-# saveRDS(tempToUse, paste0("Data/temp10years_", today, ".rds"))
+#saveRDS(tempToUse, paste0("Data/temp10years_", today, ".rds"))
 ```
 
 ## Mean, Max, Min {.tabset}
@@ -195,6 +196,7 @@ tempDaily <- tempToUse %>%
             rangeTemp = maxDaily-minDaily) %>%
   ungroup()
 tempDaily$WY <- as.numeric(tempDaily$WY)
+#saveRDS(tempDaily, "Data/tempDaily.rds")
 ```
 
 Monthly Temp
@@ -206,7 +208,7 @@ tempMon <- tempToUse %>%
             meanTemp = round(mean(Temp),1),
             rangeTemp = maxTemp-minTemp) %>%
   ungroup()
-
+#saveRDS(tempMon, "Data/tempMonthly.rds")
 ```
 
 Annual Temp
@@ -218,6 +220,7 @@ tempAn <- tempToUse %>%
             meanTemp = round(mean(Temp),1),
             rangeTemp = maxTemp-minTemp) %>%
   ungroup()
+#saveRDS(tempAn, "Data/tempAnnual.rds")
 ```
 
 Code to make sure every month has data - currently is not being used (need to join with above)
@@ -537,7 +540,7 @@ Identifying "StressAllDay" = when min daily temperature >25 (could change this)
 ```{r heatevents}
 # Flagging starts on day 3 of >25C
 heat <- tempDaily %>%
-  select(-meanDaily, Year) %>%
+  select(-meanDaily) %>%
   group_by(Region, Station, HabitatType, WY) %>%
   mutate(Thr25 = ifelse(maxDaily > 25, 1L, 0L),
          Thr21 = ifelse(maxDaily > 21, 1L, 0L)) %>%
@@ -549,6 +552,7 @@ heat <- tempDaily %>%
   mutate(StressAllDay = ifelse(Stress == "High" & minDaily>25, "Y", "N")) %>%
   select(-starts_with("Thr"))
 
+# saveRDS(heat, "Data/heatstressDaily.rds")
 ```
 
 Number of days at each stress level
