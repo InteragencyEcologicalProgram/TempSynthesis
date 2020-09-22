@@ -58,15 +58,16 @@ tempDaily$WYType2_Sac = as.factor(tempDaily$WYType2_Sac)
 
 #basic model of max temp based on day and location
 
-g5 =  bam(TempMax ~ s(julian, bs = "cc") +  
-            te(Latitude, Longitude), 
-          data =tempmean2, method = "REML")
+g1 =  bam(maxDaily ~ s(yday, bs = "cc") +  
+            Region, 
+          data =tempDaily, method = "REML")
 
-r5 = acf(resid(g5),  plot=FALSE)$acf[2]
-g5 =  bam(TempMax~ s(julian, bs = "cc") +  
-            te(Latitude, Longitude), 
-          data =tempmean2, method = "REML")
-plot(g5)
+r1 = acf(resid(g1),  plot=FALSE)$acf[2]
+
+g2 =  bam(maxDaily~ s(yday, bs = "cc") +  
+          Month + Region,
+          data =tempDaily, method = "REML")
+plot(g2, pages = 1, all.terms = TRUE)
 
 ```
 
