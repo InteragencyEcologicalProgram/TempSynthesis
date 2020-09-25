@@ -17,7 +17,7 @@ library(lubridate)
 * Add date and time variables (lubridate:: month(), day(), year())
 * Order factors to be low-medium-high
 ```{r import}
-depth <- readRDS("Data/depthdata_heatstress_20200728.rds")
+depth <- readRDS("DepthAnalysis/Data/depthdata_heatstress_20200728.rds")
 ```
 # need to get all data in dataframe to be from 2012-07-12 to 2019-12-27 and
 Need to first take out the middle data from RRI
@@ -160,6 +160,50 @@ ggplot(table, aes(x = Stress, y = days, fill = WaterCol)) + geom_col(position = 
   facet_wrap(~Station)
 
 ```
+
+### Cat - Find the mean time of the max temp 
+
+```{r}
+Max.time <- depth_filter %>%
+  group_by(Station, WaterCol, Date) %>%
+  mutate(Max.temp = max(Temp),
+         Month = month(Datetime),
+         Hour = hour(Datetime)) %>%
+  filter(Temp == Max.temp) %>%
+  ungroup()
+
+Max.time.summary = Max.time %>%
+  group_by(Station, WaterCol, Month) %>%
+  summarize(Mean.max.hour = mean(Hour))
+
+ggplot(Max.time.summary, aes(x= ordered(Month), y = Mean.max.hour)) + facet_grid(Station~WaterCol) + geom_col() +
+  theme_bw() + 
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        strip.text = element_text(size = 15))
+
+Max.time.summary2 = Max.time %>%
+  group_by(Station, WaterCol) %>%
+  summarize(Mean.max.hour = mean(Hour))
+
+ggplot(Max.time.summary2, aes(x= Station, y = Mean.max.hour)) + facet_grid(~WaterCol) + geom_col() + 
+  theme_bw() + 
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        strip.text = element_text(size = 15))
+
+ggplot(Max.time.summary, aes(x= Station, y = Mean.max.hour)) + facet_grid(~WaterCol) + geom_boxplot() + 
+  theme_bw() + 
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        strip.text = element_text(size = 15))
+
+
+Max.time.summary3 = Max.time %>%
+  summarize(Mean.max.hour = mean(Hour))
+
+```
+
 
 ### Surface-bottom temperature difference
 * Convert data to wide format so that surface temps and bottom temps are in separate columns (google pivot_wider)
