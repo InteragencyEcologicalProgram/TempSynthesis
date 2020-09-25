@@ -295,6 +295,64 @@ visreg(M.maxDay3, "Year", by = "WYType2_Sac")
 
 ```
 
+#### ADDED ####
+```{r}
+
+# yday as quadratic
+summary(M.maxDay3A <- glm(maxDaily~I(yday^2) + Region + Month + HabitatType + WYType2_Sac, data = tempDaily, na.action = na.omit))
+
+visreg(M.maxDay3)
+par(mfrow = c(2,2))
+plot(M.maxDay3)
+
+# not quadratic
+summary(M.maxDay3B <- glm(maxDaily~yday + Region + Month + HabitatType + WYType2_Sac, data = tempDaily, na.action = na.omit))
+
+AIC(M.maxDay3A, M.maxDay3B) # quadratic better
+
+
+library(lme4)
+library(lmerTest)
+summary(M.maxDay3C <- lmer(maxDaily~I(yday^2) + Region + (1|Year) + Month + HabitatType + WYType2_Sac, data = tempDaily, na.action = na.omit))
+
+
+# Account for Temporal Autocorrelation 
+tempDaily <- tempDaily %>% 
+    group_by(Region, Station) %>%
+  mutate(maxDailylag = lag(maxDaily, 1)) %>%
+  ungroup() %>%
+  mutate(yday_s = scale(yday),
+         maxDailylag_s = scale(maxDailylag))
+
+summary(M.maxDay3D <- lmer(maxDaily~I(yday_s^2) + maxDailylag_s + Region + (1|Year) + HabitatType + WYType2_Sac, data = tempDaily, na.action = na.omit))
+
+summary(M.maxDay3D)
+summary(M.maxDay3E <- lmer(maxDaily~I(Month^2) + maxDailylag_s + Region + (1|Year) +  HabitatType + WYType2_Sac, data = tempDaily, na.action = na.omit))
+
+AIC(M.maxDay3D, M.maxDay3E) # yday just barely better
+
+visreg(M.maxDay3D)
+par(mfrow = c(2,2))
+plot(M.maxDay3D)
+```
+
+Interactions - If you don't see it in the main effects, try interactions
+
+Region*Month/yday
+WYType2_Sac*Month/yday
+Region*WYType2_Sac
+* lower max temps in Suisun Bay
+```{r}
+
+tempDaily_s <- sample(tempDaily_s, 500)
+ggplot(tempDaily, aes(x = yday, y = maxDaily, color = WYType2_Sac)) + geom_point()
+
+```
+
+
+
+
+
 Monthly Max
 Best Model: maxTemp ~ Region * WY + Region * Month + Habitat Type
 ```{r Models Max Monthly Temp}
@@ -579,7 +637,8 @@ Remove Far North and WY < 2000
 ```{r}
 # Count number of days at high heat
 HighHeat <- heatDays %>%
-  filter(Stress == "High",
+  mutate(DaysNotHigh = totalDays-nDays) %>%
+           filter(Stress == "High",
          Region != "Far North",
          WY > 2009 & WY < 2020)
 

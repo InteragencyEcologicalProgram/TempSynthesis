@@ -45,12 +45,15 @@ nMon <- tempMon %>% group_by(Station, WY) %>%
 nMon$WY <- as.numeric(nMon$WY)
 ```
 
-
+GAM for Daily Max
+bs = "cc" for month and yday (cyclic cubic regression splines)
+https://stat.ethz.ch/R-manual/R-patched/library/mgcv/html/smooth.terms.html
 ```{r Models Daily Max}
 tempDaily <- filter(tempDaily, WY > 2009 & WY < 2020)
 tempDaily$yday = yday(tempDaily$Date)
 tempDaily$Year = ordered(year(tempDaily$Date))
 tempDaily$Month = month(tempDaily$Date)
+tempDaily$MonthF = ordered(tempDaily$Month)
 tempDailyM <- left_join(tempDaily, nMon) %>%
   filter(nMon == 12)
 
@@ -58,20 +61,41 @@ tempDaily$WYType2_Sac = as.factor(tempDaily$WYType2_Sac)
 
 #basic model of max temp based on day and location
 
-g1 =  bam(maxDaily ~ s(yday, bs = "cc") +  
-            Region, 
+gdmax1 =  bam(maxDaily ~ s(yday, bs = "cc") +  
+          MonthF + Region + WYType2_Sac, 
           data =tempDaily, method = "REML")
+summary(gdmax1)
 
-r1 = acf(resid(g1),  plot=FALSE)$acf[2]
+r1 = acf(resid(gdmax1),  plot=FALSE)$acf[2]
+plot(gdmax1, pages = 1, all.terms = TRUE, se = TRUE)
 
-g2 =  bam(maxDaily~ s(yday, bs = "cc") +  
-          Month + Region,
+gdmax2 =  bam(maxDaily~ s(yday, bs = "cc") +  
+          s(Month, bs = "cc") + Region + WYType2_Sac,
           data =tempDaily, method = "REML")
-plot(g2, pages = 1, all.terms = TRUE)
+summary(gdmax2)
+plot(gdmax2, pages = 1, all.terms = TRUE, se = TRUE)
+
+gdmax3 =  bam(maxDaily~ s(yday, bs = "cc") +  
+          s(Month, bs = "cc") + Region + WYType2_Sac + HabitatType + Year,
+          data =tempDaily, method = "REML")
+summary(gdmax3)
+plot(gdmax3, pages = 1, all.terms = TRUE, se = TRUE)
+
+par(mfrow = c(2,2))
+gam.check(gdmax3)
+
+gdmax4 =  bam(maxDaily~ s(yday, bs = "cc") +  
+          s(Month, bs = "cc", by = WYType2_Sac) + Region + HabitatType + Year,
+          data =tempDaily, method = "REML")
+summary(gdmax4)
+plot(gdmax4, pages = 1, all.terms = TRUE, se = TRUE)
+
+par(mfrow = c(2,2))
+gam.check(gdmax4)
 
 ```
 
-Monthly Max
+GAM for monthly max
 Best Model: maxTemp ~ Region * WY + Region * Month + Habitat Type
 ```{r Models Max Monthly Temp}
 tempMon$WY <- as.numeric(tempMon$WY)
@@ -81,46 +105,25 @@ tempMonM <- left_join(tempMon, nMon) %>%
 
 tempMonM$WY <- ordered(tempMonM$WY)
 
-summary(M.max1 <- glm(maxTemp~Region + Month + WYType2_Sac + HabitatType, data = tempMonM))
-summary(M.max2 <- glm(maxTemp~Region + WY + Month + HabitatType, data = tempMonM))
-summary(M.max3 <- glm(maxTemp~Region*Month + WY + HabitatType, data = tempMonM))
-summary(M.max4 <- glm(maxTemp~Region*WY + Month + HabitatType, data = tempMonM))
-summary(M.max5 <- glm(maxTemp~Region*WYType2_Sac + Region*Month + HabitatType, data = tempMonM))
-summary(M.max6 <- glm(maxTemp~Region*WYType2_Sac + Region*Month + HabitatType, data = tempMonM))
-summary(M.max7 <- glm(maxTemp~Region*WY + Region*Month + HabitatType, data = tempMonM, na.action =na.omit))
-summary(M.max8 <- glm(maxTemp~Region*WY + Region*Month, data = tempMonM))
+gmmax4 =  bam(maxTemp~s(Month, bs = "cc") + Region + HabitatType + WY,
+          data =tempMonM, method = "REML")
+summary(gmmax4)
+plot(gmmax4, pages = 1, all.terms = TRUE, se = TRUE)
 
-AIC(M.max1, M.max2, M.max3, M.max4, M.max5, M.max6, M.max7, M.max8)
-
-par(mfrow = c( 2,2))
-plot(M.max7)
-
-visreg(M.max7, "WY", by = "Region")
-visreg(M.max7, "Month", by = "Region")
-visreg(M.max7, "Region", by = "WY")
-visreg(M.max7, "WY", by = "HabitatType")
-
+par(mfrow = c(2,2))
+gam.check(gmmax4)
 ```
 
-Annual Max
-Best model: summary(M.maxAn3 <- glm(maxTemp~Region * WYType2_Sac + WY+ HabitatType, data = tempAn))
-```{r Models Max Annual Temp}
-tempAn$WY <- ordered(tempAn$WY)
+GAM for monthly mean
+Best Model: maxTemp ~ Region * WY + Region * Month + Habitat Type
+```{r Models Max Monthly Temp}
+gmmean4 =  bam(meanTemp~s(Month, bs = "cc") + Region + HabitatType + WY,
+          data =tempMonM, method = "REML")
+summary(gmmean4)
+plot(gmmean4, pages = 1, all.terms = TRUE, se = TRUE)
 
-summary(M.maxAn1 <- glm(maxTemp~Region + WY + WYType2_Sac + HabitatType, data = tempAn))
-summary(M.maxAn2 <- glm(maxTemp~Region + WY + WYType2_Sac, data = tempAn))
-summary(M.maxAn3 <- glm(maxTemp~Region * WYType2_Sac + WY+ HabitatType, data = tempAn))
-summary(M.maxAn4 <- glm(maxTemp~Region * WY + HabitatType + WYType2_Sac, data = tempAn))
-summary(M.maxAn5 <- glm(maxTemp~Region * WYType2_Sac +  Region * WY + HabitatType , data = tempAn))
-
-AIC(M.maxAn1, M.maxAn2, M.maxAn3, M.maxAn4, M.maxAn5)
-
-par(mfrow = c( 2,2))
-plot(M.maxAn3)
-
-visreg(M.maxAn3, "WY", by  = "Region")
-visreg(M.maxAn3, "WYType2_Sac", by = "Region")
-visreg(M.maxAn3, "Region", by = "WYType2_Sac")
+par(mfrow = c(2,2))
+gam.check(gmmean4)
 ```
 
 Number of days at each stress level
