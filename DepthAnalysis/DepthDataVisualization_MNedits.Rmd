@@ -18,8 +18,35 @@ library(lubridate)
 * Order factors to be low-medium-high
 ```{r import}
 depth <- readRDS("DepthAnalysis/Data/depthdata_heatstress_20200728.rds")
-depth$Datetime <- attr(depth$Datetime, "tzone") <- "PDT"
+#depth$Datetime <- attr(depth$Datetime, "tzone") <- "PDT"
 ```
+
+### Check timezone
+```{r timezone}
+library(readr)
+depth2 <- read_rds("DepthAnalysis/Data/depthdata_heatstress_20200728.rds") %>%
+  filter(WaterCol == "Bottom",
+         Station == "ANH")
+
+ANH1 <- read_csv("DepthAnalysis/Data/ANH_07122020_12312019_BottomTemp.csv")
+ANH2 <- read_csv("DepthAnalysis/Data/ANH_07122020_12312019_BottomTemp.csv",
+                 col_types = cols( DATE = col_character())) %>%
+  mutate(Temp2 = round(VALUE,1),
+         Datetime = parse_datetime(DATE, format = "%m/%d/%Y %H:%M"),
+         Minute = minute(Datetime),
+         Hour = hour(Datetime)) %>%
+  filter(Minute == 0,
+         Temp2 >5 & Temp < 40) %>%
+  select(-c(1:8))
+
+CheckANH <- left_join(depth2, ANH2)
+
+library(plotly)
+ANHp <- ggplot(ANH2, aes(x = Datetime, y = Temp2, color = factor(Hour))) + geom_point()
+ggplotly(ANHp)
+```
+
+
 # need to get all data in dataframe to be from 2012-07-12 to 2019-12-27 and
 Need to first take out the middle data from RRI
 ```{r}
@@ -35,6 +62,7 @@ View(depth_filter)
 #control plus enter equals running
 ```
 
+ANH Data
 ```{r}
 Anhdata<- depth_filter %>% 
   filter(Station == "ANH") %>% 
@@ -45,8 +73,6 @@ Anhdata
 No data in ANH has any high stress events.
 
 Use the filter above and check on the MED for ANH, MAL, MRZ
-
-
 ```{r}
 dates_filter <- depth_filter %>%
   group_by(Station, WaterCol) %>%
@@ -65,13 +91,6 @@ dates <- depth %>%
             end = last(Date))
 dates 
 ```
-```{r}
-
-
-
-
-```
-
 
 ### Stress Events
 * Subset to June 1 - November 1 
