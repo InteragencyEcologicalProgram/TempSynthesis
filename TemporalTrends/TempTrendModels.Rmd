@@ -244,6 +244,20 @@ tempMaxAvMon0 <- tempToUse %>%
   summarize(maxAv = mean(maxTemp))
 ```
 
+########### Written files from above ###############
+Read in 
+```{r}
+setwd("C:/Users/cpien/OneDrive - California Department of Water Resources/Work/ClimateChange/R_code/TempSynthesis/")
+
+tempFilt <- readRDS("Data/tempFilt.rds") 
+tempToUse <- readRDS("Data/temp10years_20200922.rds")
+tempAn <- readRDS("Data/tempAnnual.rds")
+tempMon <- readRDS("Data/tempMonthly.rds")
+tempDaily <- readRDS("Data/tempDaily.rds")
+tempHeat <- readRDS("Data/heatstressDaily.rds")
+```
+
+
 #### Models
 * Region
 * Habitat Type
@@ -299,55 +313,187 @@ visreg(M.maxDay3, "Year", by = "WYType2_Sac")
 ```{r}
 
 # yday as quadratic
-summary(M.maxDay3A <- glm(maxDaily~I(yday^2) + Region + Month + HabitatType + WYType2_Sac, data = tempDaily, na.action = na.omit))
+summary(M.maxDay5A <- glm(maxDaily~I(yday^2) + Region + HabitatType + WYType2_Sac, data = tempDaily, na.action = na.omit))
 
-visreg(M.maxDay3)
 par(mfrow = c(2,2))
-plot(M.maxDay3)
+plot(M.maxDay5A)
 
 # not quadratic
-summary(M.maxDay3B <- glm(maxDaily~yday + Region + Month + HabitatType + WYType2_Sac, data = tempDaily, na.action = na.omit))
+summary(M.maxDay5B <- glm(maxDaily~yday + Region +  HabitatType + WYType2_Sac, data = tempDaily, na.action = na.omit))
 
-AIC(M.maxDay3A, M.maxDay3B) # quadratic better
+AIC(M.maxDay5A, M.maxDay5B) # quadratic better
 
 
+
+```
+
+Add random effect of year
+Account for Temporal autocorrelation
+
+```{r}
 library(lme4)
 library(lmerTest)
-summary(M.maxDay3C <- lmer(maxDaily~I(yday^2) + Region + (1|Year) + Month + HabitatType + WYType2_Sac, data = tempDaily, na.action = na.omit))
-
 
 # Account for Temporal Autocorrelation 
 tempDaily <- tempDaily %>% 
     group_by(Region, Station) %>%
-  mutate(maxDailylag = lag(maxDaily, 1)) %>%
+  mutate(maxDailylag1 = lag(maxDaily, 1),
+         maxDailylag2 = lag(maxDaily, 2),
+         minDailylag1 = lag(minDaily, 1),
+         minDailylag2 = lag(minDaily, 2)) %>%
   ungroup() %>%
   mutate(yday_s = scale(yday),
-         maxDailylag_s = scale(maxDailylag))
+         maxDailylag1_s = scale(maxDailylag1),
+         maxDailylag2_s = scale(maxDailylag2),
+         minDailylag1_s = scale(minDailylag1),
+         minDailylag2_s = scale(minDailylag2))
 
-summary(M.maxDay3D <- lmer(maxDaily~I(yday_s^2) + maxDailylag_s + Region + (1|Year) + HabitatType + WYType2_Sac, data = tempDaily, na.action = na.omit))
+# Model no lag, lag(1), lag(2)
+summary(M.maxDay6A <- lmer(maxDaily~I(yday^2) + Region + (1|Year) + WYType2_Sac, data = tempDaily, na.action = na.omit))
 
-summary(M.maxDay3D)
-summary(M.maxDay3E <- lmer(maxDaily~I(Month^2) + maxDailylag_s + Region + (1|Year) +  HabitatType + WYType2_Sac, data = tempDaily, na.action = na.omit))
+summary(M.maxDay6B <- lmer(maxDaily~I(yday_s^2) + maxDailylag1_s + Region + (1|Year) + WYType2_Sac, data = tempDaily, na.action = na.omit))
 
-AIC(M.maxDay3D, M.maxDay3E) # yday just barely better
+summary(M.maxDay6C <- lmer(maxDaily~I(yday_s^2) + maxDailylag1_s + maxDailylag2_s + Region + (1|Year) + WYType2_Sac, data = tempDaily, na.action = na.omit))
 
-visreg(M.maxDay3D)
+# Check temporal autocorrelation
+# How correlated day 1 is to day 2, 3, etc. 
+acf(residuals(M.maxDay6A))
+acf(residuals(M.maxDay6B))
+acf(residuals(M.maxDay6C))
+
+summary(M.maxDay7 <- lmer(maxDaily~I(Month^2) + maxDailylag1_s + maxDailylag2_s + Region + (1|Year) +  WYType2_Sac, data = tempDaily, na.action = na.omit))
+
+AIC(M.maxDay6C, M.maxDay7) # yday better
+
+# What is the right diagnostic plot for lmer?
+visreg(M.maxDay6C)
 par(mfrow = c(2,2))
-plot(M.maxDay3D)
+plot(M.maxDay6C)
+# significant but small diff ~0.03 degC
+
+### Basic plot mean, max, min temp by region, WY
 ```
 
 Interactions - If you don't see it in the main effects, try interactions
 
-Region*Month/yday
+Region*yday
 WYType2_Sac*Month/yday
 Region*WYType2_Sac
 * lower max temps in Suisun Bay
 ```{r}
+tempDaily_s <-sample_n(tempDaily, 50000)
+ggplot(tempDaily_s, aes(x = yday, y = maxDaily, color = WYType2_Sac)) + geom_point() + scale_color_viridis(discrete = TRUE)
 
-tempDaily_s <- sample(tempDaily_s, 500)
-ggplot(tempDaily, aes(x = yday, y = maxDaily, color = WYType2_Sac)) + geom_point()
+# WYType:yday
+# WY type trend differs by yday (similar in winter, not similar in summer)
+ggplot(tempDaily_s) + 
+  geom_point(aes(x = yday, y = maxDaily, color = WYType2_Sac), alpha = 0.2) + 
+  stat_smooth(aes(x = yday, y = maxDaily, color = WYType2_Sac),method = "lm", formula = y ~ x + I(x^2), size = 2, se = TRUE)+ 
+  scale_color_viridis(discrete = TRUE)
+
+# Region:yday
+# Regional trend seems to differ by yday?
+ggplot(tempDaily_s) + 
+  geom_point(aes(x = yday, y = maxDaily, color = Region), alpha = 0.2) + 
+  stat_smooth(aes(x = yday, y = maxDaily, color = Region),method = "lm", formula = y ~ x + I(x^2), size = 2, se = TRUE)+ 
+  scale_color_viridis(discrete = TRUE)
+
+# Region:WY Type - perhaps not. Dry always highest, followed by Mid, follow by wet. Interaction for variability though, possibly.
+ggplot(tempDaily_s) + 
+  geom_boxplot(aes(x = Region, y = maxDaily, fill = WYType2_Sac)) + 
+  scale_fill_viridis(discrete = TRUE)
 
 ```
+
+# Add Interactions into model
+```{r}
+summary(M.maxDay8 <- lmer(maxDaily~I(yday_s^2) + maxDailylag1_s + maxDailylag2_s + Region + (1|Year) + WYType2_Sac + yday:Region + yday:WYType2_Sac, data = tempDaily, na.action = na.omit))
+
+AIC(M.maxDay6C, M.maxDay8) # Model with interactions better
+
+# How should I plot this?
+# Next time - work on this interpretation
+visreg(M.maxDay8, "yday", by = "Region")
+visreg(M.maxDay8, "yday", by = "WYType2_Sac")
+par(mfrow = c(2,2))
+plot(M.maxDay8)
+```
+
+###### Min daily
+Add random effect of year
+Account for Temporal autocorrelation
+
+```{r}
+library(lme4)
+library(lmerTest)
+
+# Model no lag, lag(1), lag(2)
+summary(M.minDay6A <- lmer(minDaily~I(yday^2) + Region + (1|Year) + WYType2_Sac, data = tempDaily, na.action = na.omit))
+
+summary(M.minDay6B <- lmer(minDaily~I(yday_s^2) + minDailylag1_s + Region + (1|Year) + WYType2_Sac, data = tempDaily, na.action = na.omit))
+
+summary(M.minDay6C <- lmer(minDaily~I(yday_s^2) + minDailylag1_s + minDailylag2_s + Region + (1|Year) + WYType2_Sac, data = tempDaily, na.action = na.omit))
+
+# Check temporal autocorrelation
+acf(residuals(M.minDay6A))
+acf(residuals(M.minDay6B))
+acf(residuals(M.minDay6C))
+
+summary(M.minDay7 <- lmer(minDaily~I(Month^2) + minDailylag1_s + minDailylag2_s + Region + (1|Year) +  WYType2_Sac, data = tempDaily, na.action = na.omit))
+
+AIC(M.minDay6C, M.minDay7) # yday better
+
+visreg(M.minDay6C)
+par(mfrow = c(2,2))
+plot(M.minDay6C)
+```
+
+Interactions - If you don't see it in the main effects, try interactions
+
+Region*yday
+WYType2_Sac*Month/yday
+Region*WYType2_Sac
+* lower max temps in Suisun Bay
+```{r}
+tempDaily_s <-sample_n(tempDaily, 50000)
+ggplot(tempDaily_s, aes(x = yday, y = minDaily, color = WYType2_Sac)) + geom_point() + scale_color_viridis(discrete = TRUE)
+
+# WYType:yday
+# WY type trend differs by yday (similar in winter, not similar in summer)
+ggplot(tempDaily_s) + 
+  geom_point(aes(x = yday, y = minDaily, color = WYType2_Sac), alpha = 0.2) + 
+  stat_smooth(aes(x = yday, y = minDaily, color = WYType2_Sac),method = "lm", formula = y ~ x + I(x^2), size = 2, se = TRUE)+ 
+  scale_color_viridis(discrete = TRUE)
+
+# Region:yday
+# Regional trend seems to differ by yday?
+ggplot(tempDaily_s) + 
+  geom_point(aes(x = yday, y = minDaily, color = Region), alpha = 0.2) + 
+  stat_smooth(aes(x = yday, y = minDaily, color = Region),method = "lm", formula = y ~ x + I(x^2), size = 2, se = TRUE)+ 
+  scale_color_viridis(discrete = TRUE)
+
+# Region:WY Type - perhaps not. Dry always highest, followed by Mid, follow by wet. Interaction for variability though, possibly.
+ggplot(tempDaily_s) + 
+  geom_boxplot(aes(x = Region, y = minDaily, fill = WYType2_Sac)) + 
+  scale_fill_viridis(discrete = TRUE)
+
+```
+
+# Add Interactions into model
+```{r}
+summary(M.minDay8 <- lmer(minDaily~I(yday_s^2) + minDailylag1_s + minDailylag2_s + Region + (1|Year) + WYType2_Sac + yday:Region + yday:WYType2_Sac, data = tempDaily, na.action = na.omit))
+
+AIC(M.minDay6C, M.minDay8) # Model with interactions better
+
+# How should I plot this?
+visreg(M.minDay8, "yday", by = "Region")
+visreg(M.minDay8, "yday", by = "WYType2_Sac")
+par(mfrow = c(2,2))
+plot(M.minDay8)
+```
+
+
+
 
 
 
