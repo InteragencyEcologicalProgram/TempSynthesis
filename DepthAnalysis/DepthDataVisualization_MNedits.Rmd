@@ -11,39 +11,77 @@ editor_options:
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(lubridate)
+library(readr)
 ```
 
 ### Read in data
 * Add date and time variables (lubridate:: month(), day(), year())
 * Order factors to be low-medium-high
 ```{r import}
-depth <- readRDS("DepthAnalysis/Data/depthdata_heatstress_20200728.rds")
+depth <- readRDS("Data/depthdata_heatstress_20201005.rds")
 #depth$Datetime <- attr(depth$Datetime, "tzone") <- "PDT"
 ```
 
 ### Check timezone
 ```{r timezone}
-library(readr)
-depth2 <- read_rds("DepthAnalysis/Data/depthdata_heatstress_20200728.rds") %>%
+depth2 <- read_rds("Data/depthdata_heatstress_20201005.rds") %>%
   filter(WaterCol == "Bottom",
+         Station == "ANH") %>%
+  mutate(Date = date(Datetime)) 
+
+# Look at when max temp hour occurs
+depth2a <- depth2 %>%
+  group_by(Date) %>%
+   summarize(max.Temp = max(Temp),
+            n = n()) %>%
+  filter(n>20) %>%
+  left_join(depth2) %>%
+  filter(Temp == max.Temp) %>%
+  mutate(Month = month(Date),
+         Hour = hour(Datetime))
+
+# Make surface dataset 
+# Compared with CDEC - now the same (PST)
+ANH_surf <- depth%>%
+  filter(WaterCol == "Surface",
          Station == "ANH")
 
+# Matches Excel File - same when reading as character vs. not.
 ANH1 <- read_csv("DepthAnalysis/Data/ANH_07122020_12312019_BottomTemp.csv")
-ANH2 <- read_csv("DepthAnalysis/Data/ANH_07122020_12312019_BottomTemp.csv",
-                 col_types = cols( DATE = col_character())) %>%
-  mutate(Temp2 = round(VALUE,1),
-         Datetime = parse_datetime(DATE, format = "%m/%d/%Y %H:%M"),
+ANH1a <- read_csv("DepthAnalysis/Data/ANH_07122020_12312019_BottomTemp.csv",
+                 col_types = cols( DATE = col_character()))
+
+# Changing names, inputs
+ANH2 <- ANH1a %>%
+  mutate(Datetime = parse_datetime(DATE, format = "%m/%d/%Y %H:%M"),
+         Temp2 = round(VALUE,1),
          Minute = minute(Datetime),
-         Hour = hour(Datetime)) %>%
+         Hour = hour(Datetime),
+         Date = date(Datetime)) %>%
   filter(Minute == 0,
-         Temp2 >5 & Temp < 40) %>%
+         Temp2 >5 & Temp2 < 40) %>%
   select(-c(1:8))
 
-CheckANH <- left_join(depth2, ANH2)
+# Looking at when max temps occur
+ANH2a <- ANH2 %>%
+  group_by(Date) %>%
+  summarize(max.Temp = max(Temp2),
+            n = n()) %>%
+  filter(n>20) %>%
+  left_join(ANH2) %>%
+  filter(Temp2 == max.Temp) %>%
+  mutate(Month = month(Date))
 
+# Plot max temp by hour
 library(plotly)
-ANHp <- ggplot(ANH2, aes(x = Datetime, y = Temp2, color = factor(Hour))) + geom_point()
-ggplotly(ANHp)
+# Using Excel file
+ANHp3 <- ggplot(ANH2a, aes(x = ordered(Hour), y = max.Temp, color = factor(Month)), alpha = 0.6) + geom_jitter()
+ggplotly(ANHp3)
+
+# Using depth dataset
+ANHp4 <- ggplot(depth2a, aes(x = ordered(Hour), y = max.Temp, color = factor(Month)), alpha = 0.6) + geom_jitter()
+ggplotly(ANHp4)
+
 ```
 
 
@@ -99,12 +137,10 @@ dates
 # need to filter out for the summer stress event
 #need to get the maximum temp per day per station and per water column as well surface or bottom
 
-
 temp_max <- depth_filter %>% 
   group_by(Station, WaterCol, Date, Stress) %>% 
   summarise(max(Temp))
   
-
 temp_max
 ```
 above now for each day I now have the max temp!!
@@ -121,6 +157,7 @@ table_highstress <- temp_max %>%
  filter(Stress== "High") %>% 
   group_by(Station, WaterCol) %>%
   count(Stress)
+
  
 table_highstress 
  ## so far high stress has only been at RRI none at any of the other stations
@@ -197,7 +234,7 @@ ggplot(Max.time.summary, aes(x= ordered(Month), y = Mean.max.hour)) + facet_grid
 
 Max.time.summary2 = Max.time %>%
   group_by(Station, WaterCol) %>%
-  summarize(Mean.max.hour = round(mean(Hour),1))
+  summarize(Median.max.hour = round(median(Hour),1))
 
 ggplot(Max.time.summary2, aes(x= Station, y = Mean.max.hour)) + facet_grid(~WaterCol) + geom_col() + 
   theme_bw() + 
@@ -211,9 +248,9 @@ ggplot(Max.time.summary, aes(x= Station, y = Mean.max.hour)) + facet_grid(~Water
         axis.title = element_text(size = 15),
         strip.text = element_text(size = 15))
 
+Max.time.summary3 <- Max.time %>%
+  summarize(median.max = median(Hour))
 
-Max.time.summary3 = Max.time %>%
-  summarize(Mean.max.hour = mean(Hour))
 
 ```
 
@@ -243,10 +280,12 @@ Have a line at 0, plot a bar plot above and below zero
 depthDiff <- depth_filter %>%
   group_by(Station, WaterCol, Date) %>%
   mutate(Year = year(Date)) %>%
-  summarize(maxtemp = max(Temp))
+  summarize(maxtemp = max(Temp))%>%
+  ungroup()
 
 library(tidyr)
-depthDiff_w <- pivot_wider(depthDiff, names_from = WaterCol,   values_from = maxtemp)
+############# Not accurately lined up Bottom-Surface
+depthDiff_w <- pivot_wider(depthDiff,  names_from = WaterCol,   values_from = maxtemp)
 
 depthDiff_w2 <- depthDiff_w %>%
   mutate(TempDiff = Bottom - Surface)
@@ -255,8 +294,6 @@ depthDiff_w2 <- depthDiff_w %>%
 ggplot(depthDiff_w2, aes(x = Date, y = TempDiff)) + geom_point(size=.2) + labs(y="max tempdiff(c)") +
   facet_wrap(~Station) +geom_hline(yintercept = 0, color = "red")
 
-
-##subset just 1 year to look at +/- trends in bottom/top temps by season
 #create new columns for month number and year
 depthDiff_w2$Month=month(depthDiff_w2$Date)
 depthDiff_w2$Year=year(depthDiff_w2$Date)
@@ -271,19 +308,15 @@ ggplot(depthDiff_w2, aes(x = factor(Month), y = TempDiff)) + geom_point(size=.2)
 #Sites by year and months
 ggplot(depthDiff_w2, aes(x = factor(Month), y = TempDiff)) + geom_point(size=.2) + labs(y="Max TempDiff (c)") +geom_smooth(aes(group = factor(Station),  method = "loess", se = T))+
   facet_grid(Station~Year) +geom_hline(yintercept = 0, color = "red")
+###################################################################
 
-
-#relative difference each hour (similar to Brians)
-
-depthDiff_rel <- pivot_wider(depth_filter, names_from = WaterCol,   values_from = Temp)
+depthDiff_rel <- pivot_wider(depth_filter,  names_from = WaterCol, values_from = Temp)
 depthDiff_rel2 <- depthDiff_rel %>%
   mutate(RelTempDiff = Bottom - Surface)
 
-ggplot(depthDiff_rel2, aes(x = Date, y = RelTempDiff)) + geom_point(size=.2) + labs(y="Relative TempDiff(c)") +
+ggplot(depthDiff_rel2, aes(x = Date, y = RelTempDiff)) + geom_point(size=.8) + labs(y="Relative TempDiff(c)") +
   facet_wrap(~Station) +geom_hline(yintercept = 0, color = "red")
 
-
-##subset just 1 year to look at +/- trends in bottom/top temps by season
 #create new columns for month number and year
 depthDiff_rel2$Month=month(depthDiff_rel2$Date)
 depthDiff_rel2$Year=year(depthDiff_rel2$Date)
@@ -297,7 +330,7 @@ depthDiff_rel3 <- depthDiff_rel2 %>%
 depthDiff_rel3$TOD<-factor(depthDiff_rel3$TOD, levels=c("Early:1-6","Morning:6-12","Afternoon:12-18", "Evening:18-24"))
 
 #plot by month
-ggplot(depthDiff_rel3, aes(x = factor(Month), y = RelTempDiff,colour=factor(TOD))) + geom_point(size=.4, position=position_dodge(width=0.2)) + labs(y="Relative TempDiff (c)") +geom_smooth(aes(group = factor(TOD), colour=factor(TOD), method = "gam", se = T))+
+ggplot(depthDiff_rel3, aes(x = factor(Month), y = RelTempDiff,colour=factor(TOD))) + geom_point(size=.4, position=position_dodge(width=0.2)) + labs(y="Relative TempDiff (c)") +geom_smooth(aes(group = factor(TOD), colour=factor(TOD), method = "gam", se = TRUE))+
   facet_wrap(~Station) +geom_hline(yintercept = 0, color = "black",linetype='dashed') +
     theme_bw() + 
   theme(axis.text = element_text(size = 15),
@@ -305,6 +338,13 @@ ggplot(depthDiff_rel3, aes(x = factor(Month), y = RelTempDiff,colour=factor(TOD)
         strip.text = element_text(size = 15))
 
 
+check <- depthDiff_rel3 %>%
+
+  filter(Station == "MRZ")%>%
+  filter(is.na(RelTempDiff)) 
+
+check2 <- depth_filter %>%
+  filter(Station == "MRZ")
 
 #Sites by year and months
 ggplot(depthDiff_rel3, aes(x = factor(Month), y = RelTempDiff)) + geom_point(size=.2) + labs(y="Relative TempDiff (c)") +geom_smooth(aes(group = factor(Station),  method = "loess", se = T))+
