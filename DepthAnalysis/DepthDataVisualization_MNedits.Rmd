@@ -18,7 +18,9 @@ library(readr)
 * Add date and time variables (lubridate:: month(), day(), year())
 * Order factors to be low-medium-high
 ```{r import}
-depth <- readRDS("Data/depthdata_heatstress_20201005.rds")
+dir <- getwd() # Run this then check your dir (type dir in console).
+setwd(paste0(dir, "/DepthAnalysis/")) # If your "dir" does not include the DepthAnalysis folder run this line. If it does ignore this line.
+depth <- readRDS("Data/depthdata_heatstress_20201005.rds") # Run this
 #depth$Datetime <- attr(depth$Datetime, "tzone") <- "PDT"
 ```
 
@@ -213,7 +215,7 @@ ggplot(table, aes(x = Stress, y = days, fill = WaterCol)) + geom_col(position = 
 
 ### Cat - Find the mean time of the max temp 
 
-```{r}
+```{r meanmaxtemphour}
 Max.time <- depth_filter %>%
   group_by(Station, WaterCol, Date) %>%
   mutate(Max.temp = max(Temp),
@@ -222,11 +224,21 @@ Max.time <- depth_filter %>%
   filter(Temp == Max.temp) %>%
   ungroup()
 
+Max.time.n <- depth_filter %>%
+  group_by(Station, WaterCol, Date) %>%
+  mutate(Max.temp = max(Temp),
+         Month = month(Datetime),
+         Hour = hour(Datetime)) %>%
+  filter(Temp == Max.temp) %>%
+    summarize(n = n()) %>%
+  ungroup()
+
 Max.time.summary = Max.time %>%
   group_by(Station, WaterCol, Month) %>%
-  summarize(Mean.max.hour = mean(Hour))
+  summarize(Median.max.hour = median(Hour))
 
-ggplot(Max.time.summary, aes(x= ordered(Month), y = Mean.max.hour)) + facet_grid(Station~WaterCol) + geom_col() + 
+# By month
+ggplot(Max.time.summary, aes(x= ordered(Month), y = Median.max.hour)) + facet_grid(Station~WaterCol) + geom_col() + 
   theme_bw() + 
   theme(axis.text = element_text(size = 15),
         axis.title = element_text(size = 15),
@@ -234,15 +246,17 @@ ggplot(Max.time.summary, aes(x= ordered(Month), y = Mean.max.hour)) + facet_grid
 
 Max.time.summary2 = Max.time %>%
   group_by(Station, WaterCol) %>%
-  summarize(Median.max.hour = round(median(Hour),1))
+  summarize(Median.max.hour = round(median(Hour),1),
+            n = n())
 
-ggplot(Max.time.summary2, aes(x= Station, y = Mean.max.hour)) + facet_grid(~WaterCol) + geom_col() + 
+# By station/watercol
+ggplot(Max.time.summary2, aes(x= Station, y = Median.max.hour)) + facet_grid(~WaterCol) + geom_col() + 
   theme_bw() + 
   theme(axis.text = element_text(size = 15),
         axis.title = element_text(size = 15),
         strip.text = element_text(size = 15))
 
-ggplot(Max.time.summary, aes(x= Station, y = Mean.max.hour)) + facet_grid(~WaterCol) + geom_boxplot() + 
+ggplot(Max.time.summary, aes(x= Station, y = Median.max.hour)) + facet_grid(~WaterCol) + geom_boxplot() + 
   theme_bw() + 
   theme(axis.text = element_text(size = 15),
         axis.title = element_text(size = 15),
@@ -278,8 +292,8 @@ Have a line at 0, plot a bar plot above and below zero
 ```{r}
 #max temp difference at bottom/surface
 depthDiff <- depth_filter %>%
-  group_by(Station, WaterCol, Date) %>%
   mutate(Year = year(Date)) %>%
+  group_by(Station, WaterCol, Year, Date) %>%
   summarize(maxtemp = max(Temp))%>%
   ungroup()
 
@@ -309,20 +323,37 @@ ggplot(depthDiff_w2, aes(x = factor(Month), y = TempDiff)) + geom_point(size=.2)
 ggplot(depthDiff_w2, aes(x = factor(Month), y = TempDiff)) + geom_point(size=.2) + labs(y="Max TempDiff (c)") +geom_smooth(aes(group = factor(Station),  method = "loess", se = T))+
   facet_grid(Station~Year) +geom_hline(yintercept = 0, color = "red")
 ###################################################################
+depth_filter$WaterCol <- as.factor(depth_filter$WaterCol)
 
-depthDiff_rel <- pivot_wider(depth_filter,  names_from = WaterCol, values_from = Temp)
+depthDiff_rel <- pivot_wider(depth_filter, names_from = WaterCol, values_from = Temp) %>%
+  arrange(Station, Datetime)
+
+# Missing data - RRI 
+RRI_rel <- depthDiff_rel %>%
+  filter(Station == "RRI") %>%
+  mutate(Bottom = Bottom - 5)
+
+ggplot(RRI_rel) +
+  geom_point(aes(x = Datetime, y = Surface), color = "red", alpha = 0.5) +
+  geom_point(aes(x = Datetime, y = Bottom), color = "green", alpha = 0.5)
+
 depthDiff_rel2 <- depthDiff_rel %>%
   mutate(RelTempDiff = Bottom - Surface)
 
-ggplot(depthDiff_rel2, aes(x = Date, y = RelTempDiff)) + geom_point(size=.8) + labs(y="Relative TempDiff(c)") +
-  facet_wrap(~Station) +geom_hline(yintercept = 0, color = "red")
+# Overall rel temp diff by station and date
+ggplot(depthDiff_rel2, aes(x = Date, y = RelTempDiff)) + geom_point(size=.8) + labs(y="Relative TempDiff(C)") +
+  facet_wrap(~Station) +geom_hline(yintercept = 0, color = "red") +
+    theme_bw() + 
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        strip.text = element_text(size = 15))
 
 #create new columns for month number and year
 depthDiff_rel2$Month=month(depthDiff_rel2$Date)
 depthDiff_rel2$Year=year(depthDiff_rel2$Date)
 depthDiff_rel2$Hour=hour(depthDiff_rel2$Datetime)
 
-#add daytime categories
+#add daytime categories for time of day
 depthDiff_rel3 <- depthDiff_rel2 %>%
   mutate(TOD= ifelse(Hour>0 & Hour <=6, 'Early:1-6', ifelse(Hour>6 & Hour <=12, 'Morning:6-12', ifelse(Hour>12 & Hour <=18, 'Afternoon:12-18', ifelse(Hour>18 & Hour <=23, 'Evening:18-24' ,ifelse(Hour<1 & Hour >=0, 'Evening:18-24' , NA))))))
 
@@ -330,16 +361,22 @@ depthDiff_rel3 <- depthDiff_rel2 %>%
 depthDiff_rel3$TOD<-factor(depthDiff_rel3$TOD, levels=c("Early:1-6","Morning:6-12","Afternoon:12-18", "Evening:18-24"))
 
 #plot by month
-ggplot(depthDiff_rel3, aes(x = factor(Month), y = RelTempDiff,colour=factor(TOD))) + geom_point(size=.4, position=position_dodge(width=0.2)) + labs(y="Relative TempDiff (c)") +geom_smooth(aes(group = factor(TOD), colour=factor(TOD), method = "gam", se = TRUE))+
-  facet_wrap(~Station) +geom_hline(yintercept = 0, color = "black",linetype='dashed') +
-    theme_bw() + 
+ggplot(depthDiff_rel3, aes(x = factor(Month), y = RelTempDiff,colour=factor(TOD))) + 
+  geom_point(size=.4, position=position_dodge(width=0.2)) + 
+  labs(y="Relative TempDiff (c)") +
+  geom_smooth(aes(group = factor(TOD), colour=factor(TOD), method = "gam", se = TRUE))+
+  facet_wrap(~Station) +
+  geom_hline(yintercept = 0, color = "black",linetype='dashed') +
+  theme_bw() + 
   theme(axis.text = element_text(size = 15),
         axis.title = element_text(size = 15),
-        strip.text = element_text(size = 15))
+        strip.text = element_text(size = 15),
+        legend.text = element_text(size = 12),
+        legend.title = element_text(size = 12),
+        legend.position = "bottom")
 
 
 check <- depthDiff_rel3 %>%
-
   filter(Station == "MRZ")%>%
   filter(is.na(RelTempDiff)) 
 
@@ -347,18 +384,22 @@ check2 <- depth_filter %>%
   filter(Station == "MRZ")
 
 #Sites by year and months
-ggplot(depthDiff_rel3, aes(x = factor(Month), y = RelTempDiff)) + geom_point(size=.2) + labs(y="Relative TempDiff (c)") +geom_smooth(aes(group = factor(Station),  method = "loess", se = T))+
+ggplot(depthDiff_rel3, aes(x = factor(Month), y = RelTempDiff)) + 
+  geom_point(size=.2) + 
+  labs(y="Relative TempDiff (C)") +
+  geom_smooth(aes(group = factor(Station),method = "loess", se = TRUE))+
   facet_grid(Station~Year) +geom_hline(yintercept = 0, color = "red") 
 
 #plot by year
-ggplot(depthDiff_rel3, aes(x = Date, y = RelTempDiff,colour=factor(TOD))) + geom_point(size=.2, position=position_dodge(width=0.2)) + labs(y="Relative TempDiff (c)") +
+ggplot(depthDiff_rel3, aes(x = Date, y = RelTempDiff,colour=factor(TOD))) + geom_point(size=.5, position=position_dodge(width=0.2)) + labs(y="Relative TempDiff (C)") +
   facet_wrap(~Station) +geom_hline(yintercept = 0, color = "black", linetype='dashed') +
     theme_bw() +
       theme(axis.text = element_text(size = 15),
         axis.title = element_text(size = 15),
         strip.text = element_text(size = 15),
         legend.position = "bottom",
-        legend.text = element_text(size = 13))
+        legend.text = element_text(size = 12),
+        legend.title = element_text(size = 12))
   
 
 #only regressions
@@ -372,15 +413,15 @@ ggplot(depthDiff_rel3, aes(x = Date, y = RelTempDiff,colour=factor(TOD)))+ labs(
         legend.text = element_text(size = 13))
 
 #only regressions plot by month
-ggplot(depthDiff_rel3, aes(x = factor(Month), y = RelTempDiff,colour=factor(TOD)))+ labs(y="Relative TempDiff (c)") +geom_smooth(aes(group = factor(TOD), colour=factor(TOD), method = "loess", se = T))+
+ggplot(depthDiff_rel3, aes(x = factor(Month), y = RelTempDiff,colour=factor(TOD)))+ labs(y="Relative TempDiff (C)") +geom_smooth(aes(group = factor(TOD), colour=factor(TOD), method = "loess", span = 2, se = TRUE))+
   facet_grid(Year~Station) +geom_hline(yintercept = 0, color = "black",linetype='dashed') +
         theme_bw() + 
   theme(axis.text = element_text(size = 15),
         axis.title = element_text(size = 15),
         strip.text = element_text(size = 15),
         legend.position = "bottom",
-        legend.text = element_text(size = 13))
-
+        legend.text = element_text(size = 12),
+        legend.title = element_text(size = 12))
 
 ```
 
