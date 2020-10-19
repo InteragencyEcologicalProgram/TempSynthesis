@@ -1,0 +1,146 @@
+---
+title: "TempModelsMonthly"
+author: "Catarina Pien"
+date: "10/14/2020"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(lubridate)
+library(viridis) # color palette
+library(plotly)
+library(pscl)
+library(visreg)
+library(lattice)
+library(lme4)
+library(lmerTest)
+```
+
+
+Read in 
+```{r}
+setwd("C:/Users/cpien/OneDrive - California Department of Water Resources/Work/ClimateChange/R_code/TempSynthesis/")
+
+# tempFilt <- readRDS("Data/tempFilt.rds") 
+# tempToUse <- readRDS("Data/temp10years_20200922.rds")
+# tempAn <- readRDS("Data/tempAnnual.rds")
+tempMon <- readRDS("Data/tempMonthly.rds")
+# tempDaily <- readRDS("Data/tempDaily.rds")
+# tempHeat <- readRDS("Data/heatstressDaily.rds")
+```
+
+## Filter and alter variables
+```{r}
+tempMon$WY <- as.numeric(tempMon$WY)
+tempMon <- filter(tempMon, WY > 2008 & WY < 2020)
+tempMonM <- left_join(tempMon, nMon) %>%
+  filter(nMon == 12)
+
+tempMonM$WY <- ordered(tempMonM$WY)
+#tempMonM$Month <- ordered(tempMonM$Month)
+```
+
+## Monthly Max
+Best Model: maxTemp ~ Region * WY + Region * Month + Habitat Type
+```{r Models Max Monthly Temp}
+summary(M.max1 <- glm(maxTemp~Region + Month + WYType2_Sac + HabitatType, data = tempMonM))
+summary(M.max2 <- glm(maxTemp~Region + WY + Month + HabitatType, data = tempMonM))
+summary(M.max3 <- glm(maxTemp~Region*Month + WY + HabitatType, data = tempMonM))
+summary(M.max4 <- glm(maxTemp~Region*WY + Month + HabitatType, data = tempMonM))
+summary(M.max5 <- glm(maxTemp~Region*WYType2_Sac + Region*Month + HabitatType, data = tempMonM))
+summary(M.max6 <- glm(maxTemp~Region*WYType2_Sac + Region*Month + HabitatType, data = tempMonM))
+summary(M.max7 <- glm(maxTemp~Region*WY + Region*Month + HabitatType, data = tempMonM, na.action =na.omit))
+summary(M.max8 <- glm(maxTemp~Region*WY + Region*Month, data = tempMonM))
+
+AIC(M.max1, M.max2, M.max3, M.max4, M.max5, M.max6, M.max7, M.max8)
+
+par(mfrow = c( 2,2))
+plot(M.max7)
+
+visreg(M.max7, "WY", by = "Region")
+visreg(M.max7, "Month", by = "Region")
+visreg(M.max7, "Region", by = "WY")
+visreg(M.max7, "WY", by = "HabitatType")
+
+```
+
+## Monthly Min
+* Plot data
+* Variables: Year, Month, Region, WYType
+* Other thoughts: Season
+* Not included: Habitat Type
+
+Do we see an annual trend in minimum temperature by month? 
+* Light greens (October, November) - trend upward
+* July - slight trend
+```{r}
+library(plotly)
+p1 <- ggplot(tempMonM) + 
+  geom_point(aes(x = WY, y = minTemp, color = ordered(Month)), size = 3)+
+  stat_smooth(aes(x = as.numeric(WY), y = minTemp, color = ordered(Month)),method = "lm", formula = y ~ x, size = 2, se = TRUE)+ 
+  scale_color_viridis(option = "viridis", discrete = TRUE) + 
+  theme_bw() + theme(axis.text = element_text(size = 14),
+                     axis.title = element_text(size =14),
+                     legend.text = element_text(size = 14),
+                     legend.title = element_text(size = 14))
+ggplotly(p1)
+p1
+
+```
+
+Make models
+Normal GLM
+```{r}
+summary(M.min1 <- glm(minTemp~Region + I(Month^2) + WYType2_Sac + Year, data = tempMonM))
+summary(M.min2 <- glm(minTemp~Region + I(Month^2 + WYType2_Sac ), data = tempMonM))
+summary(M.min3 <- glm(minTemp~Region + I(Month^2) + WY , data = tempMonM))
+
+
+
+AIC(M.min1, M.min2, M.min3)
+```
+
+
+Mixed Model
+```{r}
+
+```
+
+
+Look at interaction potential
+* Region * WYType
+* Month * WYType
+* Month * Region
+```{r}
+ggplot(tempMonM, aes(x = Month, y = minTemp, color = WYType2_Sac)) + geom_point() + scale_color_viridis(discrete = TRUE)
+
+# WYType:yday
+# WY type trend differs by yday (similar in winter, not similar in summer)
+ggplot(tempMonM) + 
+  geom_point(aes(x = Month, y = minTemp, color = WYType2_Sac)) + 
+  stat_smooth(aes(x = Month, y = minTemp, color = WYType2_Sac),method = "lm", formula = y ~ x + I(x^2), size = 2, se = TRUE)+ 
+  scale_color_viridis(option = "viridis", discrete = TRUE) + theme_bw()
+
+# Region:Month
+# Regional trend seems to differ by Month
+ggplot(tempMonM) + 
+  geom_point(aes(x = Month, y = minTemp, color = Region)) + 
+  stat_smooth(aes(x = Month, y = minTemp, color = Region),method = "lm", formula = y ~ x + I(x^2), size = 2, se = TRUE)+ 
+  scale_color_viridis(option = "viridis", discrete = TRUE) + theme_bw()
+
+# Region:WY Type - possibly Suisun Marsh has a different pattern, but maybe not worth pursuing. 
+ggplot(tempMonM) + 
+  geom_boxplot(aes(x = Region, y = minTemp, fill = WYType2_Sac)) + 
+  scale_fill_viridis(option = "viridis", discrete = TRUE) + theme_bw()
+```
+
+Make new models
+```{r}
+
+```
+
