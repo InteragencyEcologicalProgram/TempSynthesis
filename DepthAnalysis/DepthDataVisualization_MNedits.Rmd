@@ -450,7 +450,7 @@ RRI_depth <- depth_filter %>%
                                      ifelse(Hour<1 & Hour >=0, 'Evening:18-24' , NA))))))
 
 #look at absolute temp differences for MRZ
-ggplot() + geom_point(data = MRZ_depth,aes(x = Date, y = Temp, color = WaterCol), alpha = 0.5, size = 0.5) + facet_wrap(~factor(TOD)) + labs(title = "MRZ Absolute Temps", y="Water Temp (C)") +
+ggplot() + geom_point(data = MRZ_depth,aes(x = Date, y = Temp, color = WaterCol), alpha = 0.5, size = 1) + facet_wrap(~factor(TOD)) + labs(title = "MRZ Absolute Temps", y="Water Temp (C)") +
   geom_hline(yintercept = 25, color = "black", linetype='dashed') +
   geom_hline(yintercept = 22, color = "magenta", linetype='dashed') +
   scale_color_brewer(palette = "Dark2") +
@@ -462,7 +462,7 @@ ggplot() + geom_point(data = MRZ_depth,aes(x = Date, y = Temp, color = WaterCol)
         legend.text = element_text(size = 13))
 
 # look at absolute temp differences for RRI
-ggplot() + geom_point(data = RRI_depth,aes(x = Date, y = Temp, color = WaterCol), alpha = 0.5, size = 0.5) + facet_wrap(~factor(TOD)) + labs(title = "RRI Absolute Temps", y="Water Temp (C)") +
+ggplot() + geom_point(data = RRI_depth,aes(x = Date, y = Temp, color = WaterCol), alpha = 0.5, size = 1) + facet_wrap(~factor(TOD)) + labs(title = "RRI Absolute Temps", y="Water Temp (C)") +
   geom_hline(yintercept = 25, color = "black", linetype='dashed') +
     scale_color_brewer(palette = "Dark2") +
     theme_bw() +
@@ -522,14 +522,18 @@ ggplot(range_data, aes(x = as.factor(Month), y = range, color = WaterCol)) +
   scale_color_brewer(palette="Dark2") + theme_bw() + 
   theme(axis.text = element_text(size = 15),
         axis.title = element_text(size = 15),
-        strip.text = element_text(size = 15))
+        strip.text = element_text(size = 15),
+        legend.text = element_text(size = 13),
+        legend.position = "bottom")
 
 ggplot(range_data, aes(x = as.factor(Month), y = range, color = WaterCol)) + 
   facet_grid(Station~., scales = "free") + geom_boxplot() +  
   scale_color_brewer(palette = "Dark2")+ theme_bw() + 
   theme(axis.text = element_text(size = 15),
         axis.title = element_text(size = 15),
-        strip.text = element_text(size = 15))
+        strip.text = element_text(size = 15),
+        legend.text = element_text(size = 13),
+        legend.position = "bottom")
 
 ```
 
