@@ -240,22 +240,22 @@ nMon <- tempMon %>% group_by(Station, WY) %>%
 nMon$WY <- as.numeric(nMon$WY)
 ```
 
-### Max Temp {.tabset}
-
-Mean Max Temp
+Mean Max and Min Temp
 ```{r Mean Max}
-tempMaxAvMon0 <- tempToUse %>%
+tempAvMon0 <- tempToUse %>%
   group_by(Region, Station, Year, WY, WYType2_Sac, Month, Date) %>%
-  summarize(maxTemp = max(Temp)) %>%
+  summarize(maxTemp = max(Temp),
+            minTemp = min(Temp)) %>%
   ungroup() %>%
   group_by(Region, Station, Year, WY, WYType2_Sac,Month) %>%
-  summarize(maxAvTemp = round(mean(maxTemp),1))
+  summarize(maxAvTemp = round(mean(maxTemp),1),
+            minAvTemp = round(mean(minTemp),1))
+
+tempMon <- left_join(tempMon0, tempAvMon0) %>%
+  select(Region, Station, HabitatType,Year,  WY, WYType2_Sac, Index_c, Month, maxTemp, maxAvTemp, minAvTemp, everything())
 
 
-tempMon <- left_join(tempMon0, tempMaxAvMon0) %>%
-  select(Region, Station, HabitatType,Year,  WY, WYType2_Sac, Index_c, Month, maxTemp, maxAvTemp, everything())
-
-# saveRDS(tempMon, "Data/tempMonthly.rds")
+#saveRDS(tempMon, "Data/tempMonthly.rds")
 ```
 
 ########### Written files from above ###############
@@ -282,6 +282,7 @@ tempHeat <- readRDS("Data/heatstressDaily.rds")
 * Month
 * Year (can sometimes conflict) or WY if leaving WYType in model
 * Julian day (yday)
+### Max Temp {.tabset}
 
 Daily Max
 Best Model: summary(M.maxDay3 <- glm(maxDaily~Region*Year + Month + HabitatType + WYType2_Sac, data = tempDaily, na.action = na.omit))
