@@ -149,20 +149,49 @@ tempMonM <- left_join(tempMon, nMon) %>%
 
 # Make new annual datasets
 ```{r}
-tempSum <- tempMonM %>% filter(Month %in% c(5,6,7,8,9,10)) %>%
+tempSum0 <- tempMonM %>% filter(Month %in% c(5,6,7,8,9,10)) %>%
   group_by(Region, Station, WY, WYType2_Sac) %>%
   summarize(maxT = mean(maxTemp),
             meanT = mean(meanTemp),
             minT = mean(minTemp),
             rangeT = mean(rangeTemp)) %>%
-  ungroup()
-tempWet <- tempMonM %>% filter(Month %in% c(11,12,1,2,3,4)) %>%
+  ungroup() 
+  
+tempWet0 <- tempMonM %>% filter(Month %in% c(11,12,1,2,3,4)) %>%
     group_by(Region, Station, WY, WYType2_Sac) %>%
   summarize(maxT = mean(maxTemp),
             meanT = mean(meanTemp),
             minT = mean(minTemp),
             rangeT = mean(rangeTemp)) %>%
   ungroup()
+
+tempSum <- left_join(tempAn0, nYear) %>%
+  filter(nYear == 11)
+```
+
+# Shrink annual dataset to full dataset
+```{r include = FALSE}
+
+nYearSum <- tempSum %>%
+  group_by(Station, WY) %>%
+  summarize(n()) %>%
+  ungroup() %>%
+  group_by(Station) %>%
+  summarize(nYear = n())
+
+tempSum <- left_join(tempSum0, nYearSum) %>%
+  filter(nYear == 11)
+
+nYearWet <- tempWet %>%
+  group_by(Station, WY) %>%
+  summarize(n()) %>%
+  ungroup() %>%
+  group_by(Station) %>%
+  summarize(nYear = n())
+
+tempWet <- left_join(tempWet0, nYearWet) %>%
+  filter(nYear == 11)
+
 ```
 
 
@@ -217,19 +246,26 @@ mycolors <- list(category = mycolors)
 # Heat map
 # Order years
 tempSum_yearorder <- tempSumWide1 %>%
-  select(c("2009", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018"))
+  select(c("2009", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019"))
 
 ```
 
+Unscaled, year order
+```{r, fig.dim = c(7,8)}
+pheatmap(tempSum_yearorder, annotation_row = row_annotSum, cluster_cols = F, main = "Summer Means")
+```
+
+
 Cluster of stations, organized by WY order
 ```{r, fig.dim = c(7,8)}
-pheatmap(tempSum_yearorder, scale = "column", annotation_row = row_annotSum, cluster_cols = F, main = "Summer Means scaled by column")
+pheatmap(tempSum_yearorder, scale = "column", annotation_row = row_annotSum,
+         annotation_col = col_annotSum,cluster_cols = F, main = "Summer Means scaled by WY")
 ```
 
 
 ```{r fig.dim = c(7,8)}
 pheatmap(tempSum_yearorder, scale = "row", annotation_row = row_annotSum,  annotation_col = col_annotSum,
-         cluster_cols = F, main = "Summer Means scaled by row")
+         cluster_cols = F, main = "Summer Means scaled by Station")
 ```
 
 
@@ -237,11 +273,11 @@ Include year cluster (years organized by cluster)
 
 ```{r fig.dim = c(7,8)}
 pheatmap(tempSumWide1, scale = "row", annotation_col = col_annotSum, annotation_row = row_annotSum,
-         main = "Summer means - scaled by station")
+         main = "Summer means - scaled by Station")
 ```
 
 ```{r fig.dim = c(7,8)}
-pheatmap(tempSumWide1, scale = "row", annotation_col = col_annotSum, annotation_row = row_annotSum,
+pheatmap(tempSumWide1, scale = "column", annotation_col = col_annotSum, annotation_row = row_annotSum,
          main = "Summer means - scaled by WY")
 ```
 
@@ -293,23 +329,29 @@ mycolors <- list(category = mycolors)
 # Heat map
 # Order years
 tempWet_yearorder <- tempWetWide1 %>%
-  select(c("2009", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018"))
+  select(c("2009", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019"))
 
 ```
 
+Absolute temps
+```{r fig.dim = c(7,8)}
+pheatmap(tempWet_yearorder,  annotation_row = row_annotWet,
+         annot_col = col_annotWet, 
+         cluster_cols = F, main = "Winter/Spring Means")
+```
 
 Organized by year order
 
 ```{r fig.dim = c(7,8)}
 pheatmap(tempWet_yearorder, scale = "column", annotation_row = row_annotWet,
-         annot_col = col_annotWet, 
-         cluster_cols = F, main = "Wet Season Means scaled by year")
+         annotation_col = col_annotWet,
+         cluster_cols = F, main = "Winter/Spring Means scaled by WY")
 ```
 
 
 ```{r fig.dim = c(7,8)}
 pheatmap(tempWet_yearorder, scale = "row", annotation_row = row_annotWet,  annotation_col = col_annotWet,
-         cluster_cols = F, main = "Wet Season Means scaled by station")
+         cluster_cols = F, main = "Winter/Spring Means scaled by station")
 
 ```
 
@@ -317,12 +359,12 @@ Include year cluster (years organized by cluster)
 
 ```{r fig.dim = c(7,8)}
 pheatmap(tempWetWide1, scale = "row", annotation_col = col_annotWet, annotation_row = row_annotWet,
-         main = "Scaled by Station - Look at year differences")
+         main = "Winter/Spring Means scaled by Station")
 ```
 
 
 ```{r fig.dim = c(7,8)}
 pheatmap(tempWetWide1, scale = "column", annotation_col = col_annotWet, annotation_row = row_annotWet,
-         main = "Scaled by Year - Look at station differences")
+         main = "Winter/Spring Means scaled by WY")
 ```
 
