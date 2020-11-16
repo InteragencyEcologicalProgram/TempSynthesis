@@ -15,19 +15,56 @@ library(mgcv)
 library(raster)
 library(stars)
 
+
+#############################################################################
+#let's check and see how long things have been around and how many samples from each month
+
+
+#load the data
+temps = readRDS("Temp_filtered (1).rds")
+
+tempmeanx2 = temps %>%
+  filter(Date > as.Date("2010-1-1"), Station != "RYF",
+         Station != "DV7", Station != "RPN", Station != "RIP", Station != "RCS") %>%
+  mutate(julian = yday(Date), Year = year(Date), Month = month(Date)) %>%
+  group_by(Station, julian, Year, Month, Date) %>%
+  summarize(Tempave = mean(Temp, na.rm = T), TempMax = max(Temp, na.rm = T), 
+            TempMin = min(Temp, na.rm = T), Temprange = TempMax-TempMin, n = length(Temp))
+
+tempmonth = tempmeanx2 %>%
+  mutate(monthyear = paste(Year, Month)) %>%
+  group_by(Station, Month, Year, monthyear) %>%
+  summarize(Tempave = mean(Tempave, na.rm = T), TempMax = max(TempMax, na.rm = T), 
+            TempMin = min(TempMin, na.rm = T), Temprange = TempMax-TempMin, n = sum(n))
+
+tempN = tempmonth %>%
+  group_by(Station) %>%
+  summarize(nx = sum(n)) %>%
+  filter(nx >30000)
+
+ggplot(tempmonth) + geom_tile(aes(x = monthyear, y = Station, fill = n))
+
+#Maybe drop anything with less than 30000 samples? Or a higher cutoff?
+
+tempmonth2 = merge(tempmonth, tempN)
+
+ggplot(tempmonth2) + geom_tile(aes(x = monthyear, y = Station, fill = n))
+
+###############################################################################
 #load teh data we need to run the models
 load("tempmeanx.RData")
+
+#merge it to subset teh stations we want
+tempmeanx = merge(tempmeanx, tempN)
 
 #read in shapefile of the delta
 delta = read_sf("DeltaShapefile/hydro_delta_marsh.shp")
 
 #add lat/longs for the stations
 stas = read.csv("StationLatLongs.csv")
-stas = filter(stas, Station != "DV7")
 
 #attached lat/longs to mean temperature
 tempmean2 = left_join(tempmeanx, stas) %>%
-  filter(Station != "DV7", Station != "RPN", Station != "RIP") %>%
   mutate(Year = year(Date)) %>%
   arrange(Station, Date) %>%
   ungroup()
@@ -79,6 +116,10 @@ g5min =  bam(TempMin  ~
                te(Latitude, Longitude, julian, bs = c("cr","cr", "cc")),
              data =tempmean2, method = "REML",  rho=r5min, AR.start=tempmean2$start.event)
 
+
+
+
+
 #temperature range
 
 
@@ -110,7 +151,7 @@ crs(stas) <- "+proj=longlat +datum=NAD83"
 delta = st_transform(delta,crs=4326)
 stas = st_as_sf(stas) %>%
   st_transform(stas, crs=4326) %>%
-  filter(Station != "DV7", Station != "RIP", Station != "RPN")
+  filter(Station != "DV7", Station != "RIP", Station != "RPN", Station != "RCS")
 
 WQ_pred<-function(Full_data=Data,
                   Delta_subregions = regions,
@@ -263,16 +304,25 @@ raster_plot2(rastered_preds, 10) + ggtitle("Max Temperature")
 
 #average temperatures
 raster_plot(rastered_predsave) + ggtitle("Mean Temperature")
-raster_plot2(rastered_predsave, 3) + ggtitle("Mean Temperature")
+raster_plot2(rastered_predsave, 3) + ggtitle("Mean Temperature - March")
+raster_plot2(rastered_predsave, 6) + ggtitle("Mean Temperature - June")
+raster_plot2(rastered_predsave, 9) + ggtitle("Mean Temperature - September")
+raster_plot2(rastered_predsave, 12) + ggtitle("Mean Temperature - December")
 
 
 #minimum temps
 raster_plot(rastered_predsmin) + ggtitle("minimum temperature")
-raster_plot2(rastered_predsmin, 3) + ggtitle("minimum Temperature")
+raster_plot2(rastered_predsmin, 3) + ggtitle("minimum Temperatur -March")
+raster_plot2(rastered_predsmin, 6) + ggtitle("minimum Temperatur -June")
+raster_plot2(rastered_predsmin, 9) + ggtitle("minimum Temperatur -September")
+raster_plot2(rastered_predsmin, 12) + ggtitle("minimum Temperatur -December")
 
 #temp range
 raster_plot(rastered_predsrange) + ggtitle("daily temperature range")
-raster_plot2(rastered_predsrange, 3) + ggtitle("daily temperature range")
+raster_plot2(rastered_predsrange, 3) + ggtitle("daily temperature range - March")
+raster_plot2(rastered_predsrange, 6) + ggtitle("daily temperature range - June")
+raster_plot2(rastered_predsrange, 9) + ggtitle("daily temperature range - Sep")
+raster_plot2(rastered_predsrange, 12) + ggtitle("daily temperature range - Dec")
 
 
 #OK, there are some very high "rang" and "maxtemp" predictions for some reason. Let's fiture this out.
@@ -289,3 +339,18 @@ geom_st(rastered_max)+ geom_sf(data = stas) +   geom_sf_label(data = stas, aes(l
 
 test = st_crop(rastered_preds, delta)
 plot(test)
+
+#the places with the highest max tempsa nd greatest daily range are in the east delta and upper Suisun Marsh
+#but I'm a little skeptical. Let's dig in.
+
+foo = filter(newdatarange, Prediction >6)
+foo2 = filter(tempmean2, Temprange >6)
+
+#For some reason station FLT, which is near Martinez, has the highest range. It also has a
+#lot of high max temps
+
+foo3 = filter(newdata, Prediction >30)
+foo4 = filter(tempmean2, TempMax >30)
+
+#station RCS also has a lot of really high max temps and high range values. 
+#that's the one all the way up at Kights' landing we were talking about dropping.
