@@ -1,0 +1,370 @@
+---
+title: "ClusterHeatmap"
+author: "Catarina Pien"
+date: "10/21/2020"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(lubridate)
+library(tidyverse)
+library(vegan)
+library(sf)
+library(RColorBrewer)
+library(gridExtra)
+library(scales)
+library(ggmap)
+# tempFilt <- readRDS("Data/tempFilt.rds") 
+# tempToUse <- readRDS("Data/temp10years_20200922.rds")
+tempAn0 <- readRDS("Data/tempAnnual.rds")
+tempMon <- readRDS("Data/tempMonthly.rds")
+# tempDaily <- readRDS("Data/tempDaily.rds")
+# tempHeat <- readRDS("Data/heatstressDaily.rds")
+
+```
+
+# Shrink annual dataset to full dataset
+```{r include = FALSE}
+tempAn0 <- filter(tempAn0, WY > 2008 & WY < 2020) 
+
+nYear <- tempAn0 %>%
+  group_by(Station, WY) %>%
+  summarize(n()) %>%
+  ungroup() %>%
+  group_by(Station) %>%
+  summarize(nYear = n())
+
+tempAn <- left_join(tempAn0, nYear) %>%
+  filter(nYear == 11)
+```
+
+# Make wide datasets and cluster
+
+```{r warning=FALSE, include = FALSE, message=FALSE, fig.width=12}
+
+#put it into wide format for the cluster analysis
+tempAnwide = pivot_wider(tempAn, id_cols = c(Station), 
+                       names_from = WY, values_from = meanTemp)
+tempAnwide2 = pivot_wider(tempAn, id_cols = c(Station), 
+                         names_from = WY, values_from = minTemp)
+tempAnwide3 = pivot_wider(tempAn, id_cols = c(Station), 
+                         names_from = WY, values_from = maxTemp)
+tempAnwide4 = pivot_wider(tempAn, id_cols = c(Station), 
+                         names_from = WY, values_from = rangeTemp)
+
+tempAnwide5 = cbind(tempAnwide[-1], tempAnwide2[,-1], tempAnwide3[,-1], tempAnwide4[,-1])
+
+row.names(tempAnwide) = tempAnwide$Station
+
+#calculate distance and cluster
+tempdist = dist(tempAnwide[-1], "euclidean")
+tempfit = hclust(tempdist, method = "ward.D")
+plot(tempfit, main = "Clusters based on annual mean, min, max, range", cex = 0.6)
+
+```
+
+pheatmap-dendrogram and heat map
+
+```{r include = FALSE}
+library(pheatmap)
+library(viridis)
+tempAnwide1 <- tempAnwide[-1]
+tempAnwide_s <- scale(tempAnwide1)
+row.names(tempAnwide_s) <- tempAnwide$Station
+pheatmap(tempAnwide_s, cluster_cols = F, main = "Station Clusters")
+
+tempAnwide1 <- as.data.frame(tempAnwide1)
+row.names(tempAnwide1) <- tempAnwide$Station
+# Row annotation: Region (as assigned by Rosie previously)
+row_annot <- tempAn %>%
+  select(1:2) %>%
+  unique()%>%
+  as.data.frame()
+rownames(row_annot) <- row_annot$Station 
+row_annot <- row_annot[1]
+
+# Column annotation: WY Type
+col_annot <- tempAn %>%
+  select(c(WY, WYType2_Sac)) %>%
+  unique() %>%
+  as.data.frame() 
+rownames(col_annot) <- col_annot$WY
+col_annot <- col_annot[2]
+
+# Colors for annotations
+newCols <- colorRampPalette(grDevices::rainbow(length(unique(row_annot$Region))))
+mycolors <- newCols(length(unique(row_annot$Region)))
+names(mycolors) <- unique(row_annot$Region)
+mycolors <- list(category = mycolors)
+
+# Heat map
+# Order years
+tempAnwide_yearorder <- tempAnwide1 %>%
+  select(c("2009", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018"))
+
+pheatmap(tempAnwide_yearorder, scale = "column", annotation_row = row_annot, cluster_cols = F, main = "Compare Stations")
+
+pheatmap(tempAnwide_yearorder, scale = "row", annotation_row = row_annot,  annotation_col = col_annot,
+         cluster_cols = F, main = "Compare Years")
+
+
+# Clustered years
+pheatmap(tempAnwide1, scale = "row", annotation_col = col_annot, 
+         main = "Compare years")
+
+```
+
+
+# Make a winter and summer annual dataset
+
+Code to make sure every month has data - currently is not being used (need to join with above)
+```{r nMon}
+# Filter to only data that has temps from every month so as not to skew the data that only has part of the year represented.
+nMon <- tempMon %>% group_by(Station, WY) %>%
+  summarize(nMon = n())
+
+nMon$WY <- as.numeric(nMon$WY)
+```
+
+Add Season; Filter and alter variables
+```{r}
+tempMon <- tempMon %>%
+  mutate(Season = ifelse(Month %in% c(12, 1, 2), "Winter", 
+                         ifelse(Month %in% c(3,4,5), "Spring", 
+                                ifelse(Month %in% c(6,7,8), "Summer",
+                                       "Fall"))))
+tempMon$Season <- factor(tempMon$Season, levels = c("Spring", "Summer", "Fall", "Winter"))
+tempMon$WY <- as.numeric(tempMon$WY)
+tempMon$fWY <- ordered(tempMon$WY)
+tempMon$fMonth <- ordered(tempMon$Month, levels = c("11", "12", "1", "2"))
+tempMon$fYear <- ordered(tempMon$Year)
+tempMon <- filter(tempMon, WY > 2008 & WY < 2020)
+tempMonM <- left_join(tempMon, nMon) %>%
+  filter(nMon == 12)
+
+```
+
+# Make new annual datasets
+```{r}
+tempSum0 <- tempMonM %>% filter(Month %in% c(5,6,7,8,9,10)) %>%
+  group_by(Region, Station, WY, WYType2_Sac) %>%
+  summarize(maxT = mean(maxTemp),
+            meanT = mean(meanTemp),
+            minT = mean(minTemp),
+            rangeT = mean(rangeTemp)) %>%
+  ungroup() 
+  
+tempWet0 <- tempMonM %>% filter(Month %in% c(11,12,1,2,3,4)) %>%
+    group_by(Region, Station, WY, WYType2_Sac) %>%
+  summarize(maxT = mean(maxTemp),
+            meanT = mean(meanTemp),
+            minT = mean(minTemp),
+            rangeT = mean(rangeTemp)) %>%
+  ungroup()
+
+tempSum <- left_join(tempAn0, nYear) %>%
+  filter(nYear == 11)
+```
+
+# Shrink annual dataset to full dataset
+```{r include = FALSE}
+
+nYearSum <- tempSum %>%
+  group_by(Station, WY) %>%
+  summarize(n()) %>%
+  ungroup() %>%
+  group_by(Station) %>%
+  summarize(nYear = n())
+
+tempSum <- left_join(tempSum0, nYearSum) %>%
+  filter(nYear == 11)
+
+nYearWet <- tempWet %>%
+  group_by(Station, WY) %>%
+  summarize(n()) %>%
+  ungroup() %>%
+  group_by(Station) %>%
+  summarize(nYear = n())
+
+tempWet <- left_join(tempWet0, nYearWet) %>%
+  filter(nYear == 11)
+
+```
+
+
+# Summer/Fall Heatmaps
+```{r warning=FALSE, message=FALSE, fig.width=12}
+
+#put it into wide format for the cluster analysis
+tempSumWideMean = pivot_wider(tempSum, id_cols = c(Station), 
+                       names_from = WY, values_from = meanT)
+tempSumWideMax = pivot_wider(tempSum, id_cols = c(Station), 
+                         names_from = WY, values_from = maxT)
+tempSumWideRange = pivot_wider(tempSum, id_cols = c(Station), 
+                         names_from = WY, values_from = rangeT)
+
+tempSumWideMean <- as.data.frame(tempSumWideMean)
+rownames(tempSumWideMean) <- tempSumWideMean$Station
+
+#calculate distance and cluster
+tempdistSum = dist(tempSumWideMean[-1], "euclidean")
+tempfitSum = hclust(tempdistSum, method = "ward.D")
+plot(tempfitSum, main = "Clusters based on annual mean, min, max, range", cex = 0.6)
+
+```
+
+```{r}
+library(pheatmap)
+library(viridis)
+tempSumWide1 <- tempSumWideMean[-1]
+
+# Row annotation: Region (as assigned by Rosie previously)
+row_annotSum <- tempSum %>%
+  select(1:2) %>%
+  unique()%>%
+  as.data.frame()
+rownames(row_annotSum) <- row_annotSum$Station 
+row_annotSum <- row_annotSum[1]
+
+# Column annotation: WY Type
+col_annotSum <- tempSum %>%
+  select(c(WY, WYType2_Sac)) %>%
+  unique() %>%
+  as.data.frame() 
+rownames(col_annotSum) <- col_annotSum$WY
+col_annotSum <- col_annotSum[2]
+
+# Colors for annotations
+newCols <- colorRampPalette(grDevices::rainbow(length(unique(row_annot$Region))))
+mycolors <- newCols(length(unique(row_annot$Region)))
+names(mycolors) <- unique(row_annot$Region)
+mycolors <- list(category = mycolors)
+
+# Heat map
+# Order years
+tempSum_yearorder <- tempSumWide1 %>%
+  select(c("2009", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019"))
+
+```
+
+Unscaled, year order
+```{r, fig.dim = c(7,8)}
+pheatmap(tempSum_yearorder, annotation_row = row_annotSum, cluster_cols = F, main = "Summer Means")
+```
+
+
+Cluster of stations, organized by WY order
+```{r, fig.dim = c(7,8)}
+pheatmap(tempSum_yearorder, scale = "column", annotation_row = row_annotSum,
+         annotation_col = col_annotSum,cluster_cols = F, main = "Summer Means scaled by WY")
+```
+
+
+```{r fig.dim = c(7,8)}
+pheatmap(tempSum_yearorder, scale = "row", annotation_row = row_annotSum,  annotation_col = col_annotSum,
+         cluster_cols = F, main = "Summer Means scaled by Station")
+```
+
+
+Include year cluster (years organized by cluster)
+
+```{r fig.dim = c(7,8)}
+pheatmap(tempSumWide1, scale = "row", annotation_col = col_annotSum, annotation_row = row_annotSum,
+         main = "Summer means - scaled by Station")
+```
+
+```{r fig.dim = c(7,8)}
+pheatmap(tempSumWide1, scale = "column", annotation_col = col_annotSum, annotation_row = row_annotSum,
+         main = "Summer means - scaled by WY")
+```
+
+
+# Winter/Spring Heat maps
+```{r}
+tempWetWideMean = pivot_wider(tempWet, id_cols = c(Station), 
+                         names_from = WY, values_from = meanT)
+tempWetWideMax = pivot_wider(tempWet, id_cols = c(Station), 
+                         names_from = WY, values_from = maxT)
+
+tempWetWideMean <- as.data.frame(tempWetWideMean)
+rownames(tempWetWideMean) <- tempWetWideMean$Station
+
+#calculate distance and cluster
+tempdistWet = dist(tempWetWideMean[-1], "euclidean")
+tempfitWet = hclust(tempdistWet, method = "ward.D")
+plot(tempfitWet, main = "Clusters based on annual mean, min, max, range", cex = 0.6)
+
+```
+
+```{r}
+library(pheatmap)
+library(viridis)
+tempWetWide1 <- tempWetWideMean[-1]
+
+# Row annotation: Region (as assigned by Rosie previously)
+row_annotWet <- tempWet %>%
+  select(1:2) %>%
+  unique()%>%
+  as.data.frame()
+rownames(row_annotWet) <- row_annotWet$Station 
+row_annotWet <- row_annotWet[1]
+
+# Column annotation: WY Type
+col_annotWet <- tempWet %>%
+  select(c(WY, WYType2_Sac)) %>%
+  unique() %>%
+  as.data.frame() 
+rownames(col_annotWet) <- col_annotWet$WY
+col_annotWet <- col_annotWet[2]
+
+# Colors for annotations
+newCols <- colorRampPalette(grDevices::rainbow(length(unique(row_annot$Region))))
+mycolors <- newCols(length(unique(row_annot$Region)))
+names(mycolors) <- unique(row_annot$Region)
+mycolors <- list(category = mycolors)
+
+# Heat map
+# Order years
+tempWet_yearorder <- tempWetWide1 %>%
+  select(c("2009", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019"))
+
+```
+
+Absolute temps
+```{r fig.dim = c(7,8)}
+pheatmap(tempWet_yearorder,  annotation_row = row_annotWet,
+         annot_col = col_annotWet, 
+         cluster_cols = F, main = "Winter/Spring Means")
+```
+
+Organized by year order
+
+```{r fig.dim = c(7,8)}
+pheatmap(tempWet_yearorder, scale = "column", annotation_row = row_annotWet,
+         annotation_col = col_annotWet,
+         cluster_cols = F, main = "Winter/Spring Means scaled by WY")
+```
+
+
+```{r fig.dim = c(7,8)}
+pheatmap(tempWet_yearorder, scale = "row", annotation_row = row_annotWet,  annotation_col = col_annotWet,
+         cluster_cols = F, main = "Winter/Spring Means scaled by station")
+
+```
+
+Include year cluster (years organized by cluster)
+
+```{r fig.dim = c(7,8)}
+pheatmap(tempWetWide1, scale = "row", annotation_col = col_annotWet, annotation_row = row_annotWet,
+         main = "Winter/Spring Means scaled by Station")
+```
+
+
+```{r fig.dim = c(7,8)}
+pheatmap(tempWetWide1, scale = "column", annotation_col = col_annotWet, annotation_row = row_annotWet,
+         main = "Winter/Spring Means scaled by WY")
+```
+

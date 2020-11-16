@@ -1,0 +1,226 @@
+---
+title: "TempTrendGAM"
+author: "Catarina Pien"
+date: "9/22/2020"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+# Temperature Trend Analysis {.tabset}
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(lubridate)
+library(viridis) # color palette
+library(plotly)
+library(pscl)
+library(visreg)
+library(lattice)
+library(mgcv)
+```
+
+## Data Prep and Exploration
+Data import
+```{r import, include = FALSE, message = FALSE, warning = FALSE}
+setwd("C:/Users/cpien/OneDrive - California Department of Water Resources/Work/ClimateChange/R_code/TempSynthesis/")
+
+tempFilt <- readRDS("Data/tempFilt.rds") 
+tempToUse <- readRDS("Data/temp10years_20200922.rds")
+tempAn <- readRDS("Data/tempAnnual.rds")
+tempMon <- readRDS("Data/tempMonthly.rds")
+tempDaily <- readRDS("Data/tempDaily.rds")
+tempHeat <- readRDS("Data/heatstressDaily.rds")
+
+```
+
+Code to make sure every month has data - currently is not being used (need to join with above)
+```{r nMon}
+# Filter to only data that has temps from every month so as not to skew the data that only has part of the year represented.
+nMon <- tempMon %>% group_by(Station, WY) %>%
+  summarize(nMon = n())
+
+nMon$WY <- as.numeric(nMon$WY)
+```
+
+GAM for Daily Max
+bs = "cc" for month and yday (cyclic cubic regression splines)
+https://stat.ethz.ch/R-manual/R-patched/library/mgcv/html/smooth.terms.html
+```{r Models Daily Max}
+tempDaily <- filter(tempDaily, WY > 2009 & WY < 2020)
+tempDaily$yday = yday(tempDaily$Date)
+tempDaily$Year = ordered(year(tempDaily$Date))
+tempDaily$Month = month(tempDaily$Date)
+tempDaily$MonthF = ordered(tempDaily$Month)
+tempDailyM <- left_join(tempDaily, nMon) %>%
+  filter(nMon == 12)
+
+tempDaily$WYType2_Sac = as.factor(tempDaily$WYType2_Sac)
+
+#basic model of max temp based on day and location
+
+gdmax1 =  bam(maxDaily ~ s(yday, bs = "cc") +  
+          MonthF + Region + WYType2_Sac, 
+          data =tempDaily, method = "REML")
+summary(gdmax1)
+
+r1 = acf(resid(gdmax1),  plot=FALSE)$acf[2]
+plot(gdmax1, pages = 1, all.terms = TRUE, se = TRUE)
+
+gdmax2 =  bam(maxDaily~ s(yday, bs = "cc") +  
+          s(Month, bs = "cc") + Region + WYType2_Sac,
+          data =tempDaily, method = "REML")
+summary(gdmax2)
+plot(gdmax2, pages = 1, all.terms = TRUE, se = TRUE)
+
+gdmax3 =  bam(maxDaily~ s(yday, bs = "cc") +  
+          s(Month, bs = "cc") + Region + WYType2_Sac + HabitatType + Year,
+          data =tempDaily, method = "REML")
+summary(gdmax3)
+plot(gdmax3, pages = 1, all.terms = TRUE, se = TRUE)
+
+par(mfrow = c(2,2))
+gam.check(gdmax3)
+
+gdmax4 =  bam(maxDaily~ s(yday, bs = "cc") +  
+          s(Month, bs = "cc", by = WYType2_Sac) + Region + HabitatType + Year,
+          data =tempDaily, method = "REML")
+summary(gdmax4)
+plot(gdmax4, pages = 1, all.terms = TRUE, se = TRUE)
+
+par(mfrow = c(2,2))
+gam.check(gdmax4)
+
+```
+
+GAM for monthly max
+Best Model: maxTemp ~ Region * WY + Region * Month + Habitat Type
+```{r Models Max Monthly Temp}
+tempMon$WY <- as.numeric(tempMon$WY)
+tempMon <- filter(tempMon, WY > 2000 & WY < 2020)
+tempMonM <- left_join(tempMon, nMon) %>%
+  filter(nMon == 12)
+
+tempMonM$WY <- ordered(tempMonM$WY)
+
+gmmax4 =  bam(maxTemp~s(Month, bs = "cc") + Region + HabitatType + WY,
+          data =tempMonM, method = "REML")
+summary(gmmax4)
+plot(gmmax4, pages = 1, all.terms = TRUE, se = TRUE)
+
+par(mfrow = c(2,2))
+gam.check(gmmax4)
+```
+
+GAM for monthly mean
+Best Model: maxTemp ~ Region * WY + Region * Month + Habitat Type
+```{r Models Max Monthly Temp}
+gmmean4 =  bam(meanTemp~s(Month, bs = "cc") + Region + HabitatType + WY,
+          data =tempMonM, method = "REML")
+summary(gmmean4)
+plot(gmmean4, pages = 1, all.terms = TRUE, se = TRUE)
+
+par(mfrow = c(2,2))
+gam.check(gmmean4)
+```
+
+Number of days at each stress level
+```{r}
+# Calculate number of samples in a year or water year
+heatDaysSamp <- heat %>%
+  group_by(Region, Station, HabitatType, WY) %>%
+  summarize(totalDays = n()) %>%
+  filter(totalDays > 250)
+
+# Calculate number of days and proportion of days at each stress level
+heatDays <- heat %>%
+  group_by(Region, Station, HabitatType, WY, WYType2_Sac, Stress) %>%
+  summarize(nDays = n()) %>%
+  left_join(heatDaysSamp) %>%
+  mutate(propDays = round(nDays/totalDays,3)) %>%
+  ungroup()
+
+```
+
+
+High heat stress
+Remove Far North and WY < 2000
+```{r}
+# Count number of days at high heat
+HighHeat <- heatDays %>%
+  filter(Stress == "High",
+         Region != "Far North",
+         WY > 2009 & WY < 2020)
+
+HighHeat$WY <- ordered(HighHeat$WY)
+#  complete(WY, nesting(Station, Region, HabitatType), fill = list(nDays = 0))
+
+summary(HighHeat)
+```
+
+#### Models {.tabset}
+Best model: heat2 <- glm(propDays ~ Region + WYType2_Sac, family = "binomial", data = HighHeat)) BUT nothing is significant! 
+Questions:
+* Why does binomial result in no significance? 
+* nDays vs propDays
+
+```{r heatmodels}
+library(nlme)
+HighHeat$WY <- ordered(HighHeat$WY)
+HighHeat$Region <- factor(HighHeat$Region)
+HighHeat$WYType2_Sac <- factor(HighHeat$WYType2_Sac)
+HighHeat$HabitatType <- factor(HighHeat$HabitatType)
+
+# Model
+# Model 1
+heat1 <- glm(nDays ~ HabitatType + Region * WYType2_Sac,  data = HighHeat)
+summary(heat1)
+
+par(mfrow = c(2,2))
+plot(heat1)
+E = resid(heat1)
+plot(HighHeat$Region, E)
+plot(HighHeat$WYType2_Sac, E)
+plot(HighHeat$HabitatType, E)
+
+visreg(heat1, "WYType2_Sac", by = "Region")
+
+summary(heat1 <- glm(propDays ~ Region + WYType2_Sac + HabitatType, family = "binomial", data = HighHeat))
+
+summary(heat2 <- glm(propDays ~ Region + WYType2_Sac, family = "binomial", data = HighHeat))
+
+summary(heat3 <- glm(propDays ~ Region * WYType2_Sac, family = "binomial", data = HighHeat))
+
+(heat4 <- glm(propDays ~ Region + WY + HabitatType, family = "binomial", data = HighHeat))
+
+(heat5 <- glm(propDays ~ Region + WY, family = "binomial", data = HighHeat))
+
+(heat6 <- glm(propDays ~ Region * WY, family = "binomial", data = HighHeat))
+
+AIC(heat1, heat2, heat3, heat4, heat5, heat6)
+
+par(mfrow = c(2,2))
+plot(heat2)
+visreg(heat2)
+visreg(heat2, "Region", by = "WYType2_Sac")
+visreg(heat2, "WYType2_Sac", by = "Region")
+```
+
+### High stress days no recovery {.tabset}
+#### Heatmap
+```{r no recovery}
+heatNoRecovery <-  heat  %>%
+  group_by(Region, Station, HabitatType, WY, WYType2_Sac, Index_c, StressAllDay) %>%
+  summarize(NoRecovery = n())
+
+heatNoRecoverySum <- filter(heatNoRecovery,
+                 StressAllDay == "Y") 
+hotSta <- unique(heatNoRecoverySum$Station)
+hmapNoRecov <- ggplot(heatNoRecoverySum, aes(x = WY, y = Station, fill = NoRecovery )) + geom_tile() +
+  scale_fill_viridis(option = "cividis") + labs(title = "Number of unrecovered high stress days per year")
+ggplotly(hmapNoRecov)
+
+```
+

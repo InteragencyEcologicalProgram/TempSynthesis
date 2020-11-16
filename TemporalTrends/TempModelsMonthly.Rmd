@@ -1,0 +1,617 @@
+---
+title: "TempModelsMonthly"
+author: "Catarina Pien"
+date: "10/14/2020"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+# Monthly Temperature Trend Models {.tabset}
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(lubridate)
+library(viridis) # color palette
+library(plotly) # interactive plots
+library(pscl) # glm
+library(visreg) # visualize model results
+library(lattice)
+library(lme4) # glmm
+library(lmerTest) #glmm p values
+```
+
+Read in data
+```{r}
+setwd("C:/Users/cpien/OneDrive - California Department of Water Resources/Work/ClimateChange/R_code/TempSynthesis/")
+
+# tempFilt <- readRDS("Data/tempFilt.rds") 
+# tempToUse <- readRDS("Data/temp10years_20200922.rds")
+# tempAn <- readRDS("Data/tempAnnual.rds")
+tempMon <- readRDS("Data/tempMonthly.rds")
+# tempDaily <- readRDS("Data/tempDaily.rds")
+# tempHeat <- readRDS("Data/heatstressDaily.rds")
+```
+
+Code to make sure every month has data - currently is not being used (need to join with above)
+```{r nMon}
+# Filter to only data that has temps from every month so as not to skew the data that only has part of the year represented.
+nMon <- tempMon %>% group_by(Station, WY) %>%
+  summarize(nMon = n())
+
+nMon$WY <- as.numeric(nMon$WY)
+```
+
+Add Season; Filter and alter variables
+```{r}
+tempMon <- tempMon %>%
+  mutate(Season = ifelse(Month %in% c(12, 1, 2), "Winter", 
+                         ifelse(Month %in% c(3,4,5), "Spring", 
+                                ifelse(Month %in% c(6,7,8), "Summer",
+                                       "Fall"))))
+tempMon$Season <- factor(tempMon$Season, levels = c("Spring", "Summer", "Fall", "Winter"))
+tempMon$WY <- as.numeric(tempMon$WY)
+tempMon$fWY <- ordered(tempMon$WY)
+tempMon$fMonth <- ordered(tempMon$Month, levels = c("11", "12", "1", "2"))
+tempMon$fYear <- ordered(tempMon$Year)
+tempMon <- filter(tempMon, WY > 2008 & WY < 2020)
+tempMonM <- left_join(tempMon, nMon) %>%
+  filter(nMon == 12)
+
+```
+
+## Monthly Max Temps
+Scientific Questions: 
+1. Has maximum temperature increased over time?
+2. Are there regional trends in maximum temperature increase? 
+3. Do we see differences in max temp by water year type? (e.g. cooler summer temps in wet years)
+
+
+Questions for Rosie: 
+- Can I include region in my model but also have Station as a random variable? 
+- When I leave WY as numeric, it comes out significant, but is this accurate? Or is it better to have it as a factor, and say "the last 5 years are higher?"
+- We talked about putting year as random variable. Does our question then become is there a difference in winter temperature trends by region, wytype? Or what does the question really become? 
+- We don't really care about month specifically, unless there is an interaction of some sort (e.g. we can detect trends for certain months), so should this be a random variable?
+- Do we care about season?
+- How to incorporate random variables correctly (e.g. nested? crossed? syntax?)
+- How to interpret output
+- How to compare models (Still AIC?) Look at Zuur
+
+* October, July, August has upward trend
+* September downward trend
+```{r monthlyMaxPlot}
+library(plotly)
+max1 <- ggplot(tempMonM) + 
+  geom_point(aes(x = WY, y = maxAvTemp, color = ordered(Month)), size = 3)+
+  stat_smooth(aes(x = as.numeric(WY), y = minTemp, color = ordered(Month)),method = "lm", formula = y ~ x, size = 2, se = TRUE)+ 
+  labs(title = "Average maximum temperature by month") +
+  scale_color_viridis(option = "viridis", discrete = TRUE) + 
+  theme_bw() + theme(axis.text = element_text(size = 14),
+                     axis.title = element_text(size =14),
+                     legend.text = element_text(size = 14),
+                     legend.title = element_text(size = 14))
+ggplotly(max1)
+max1
+
+```
+
+
+### Look at interaction potential
+* Region * WYType
+* Month * WYType
+* Season * WYType
+* Month * Region
+* Season * Region
+```{r InteractionsPlotsMin}
+# WYType:Month
+# WY type trend differs by Month
+ggplot(tempMonM) + 
+  geom_point(aes(x = Month, y = maxAvTemp, color = WYType2_Sac)) + 
+  stat_smooth(aes(x = Month, y = maxAvTemp, color = WYType2_Sac),method = "lm", formula = y ~ x + I(x^2), size = 2, se = TRUE)+ 
+  scale_color_viridis(option = "viridis", discrete = TRUE) + theme_bw()
+
+# Region:Month
+# Regional trend seems to differ by Month
+ggplot(tempMonM) + 
+  geom_point(aes(x = Month, y = maxAvTemp, color = Region)) + 
+  stat_smooth(aes(x = Month, y = maxAvTemp, color = Region),method = "lm", formula = y ~ x + I(x^2), size = 2, se = TRUE)+ 
+  scale_color_viridis(option = "viridis", discrete = TRUE) + theme_bw()
+
+# Region:WYType
+ggplot(tempMonM) + 
+  geom_boxplot(aes(x = Region, y = maxAvTemp, fill = WYType2_Sac)) + 
+  scale_fill_viridis(option = "viridis", discrete = TRUE) + theme_bw()
+
+# WYType:Season
+# Not much difference... Spring lower maxAvTemp in the wet season, maybe slightly lower min in mid and wet years, other seasons look pretty similar. 
+ggplot(tempMonM) + 
+  geom_boxplot(aes(x = WYType2_Sac, y = maxAvTemp, fill= Season)) + 
+  scale_fill_viridis(option = "viridis", discrete = TRUE) + theme_bw()
+
+# Region:Season
+# Not anything too significant
+ggplot(tempMonM) + 
+  geom_boxplot(aes(x = Region, y = maxAvTemp, fill = Season)) + 
+  scale_fill_viridis(option = "viridis", discrete = TRUE) + theme_bw()
+```
+
+Best Model: glm(maxTemp~Region + I(Month^2) + WYType2_Sac +  WYType2_Sac:I(Month^2)
+```{r Models Max Monthly Temp}
+# WY Type or WY? WYType
+summary(M.max1 <- glm(maxAvTemp~Region + I(Month^2) + WYType2_Sac, data = tempMonM))
+summary(M.max2 <- glm(maxAvTemp~Region + WY + I(Month^2) , data = tempMonM))
+AIC(M.max1, M.max2)
+
+# Season or Month? Season makes better model but maybe less interesting?
+summary(M.max3 <- glm(maxAvTemp~Region + WYType2_Sac + Season , data = tempMonM))
+AIC(M.max1, M.max3)
+
+# Interactions?
+summary(M.max4 <- glm(maxAvTemp~Region + I(Month^2) + WYType2_Sac +  WYType2_Sac:I(Month^2) , data = tempMonM))
+
+summary(M.max5 <- glm(maxAvTemp~Region + I(Month^2) + WYType2_Sac +  WYType2_Sac:I(Month^2) + Region:I(Month^2), data = tempMonM))
+
+AIC(M.max4, M.max5)
+
+```
+
+# Plots look bad
+```{r}
+par(mfrow = c( 2,2))
+plot(M.max4)
+
+visreg(M.max4, "WYType2_Sac", by = "Region")
+visreg(M.max4, "Month", by = "Region")
+visreg(M.max4, "Region", by = "WYType2_Sac")
+```
+
+### Mixed Model - Year as random factor
+Best Model: 3b: lmer(maxTemp~Region + Season + WYType2_Sac + (1|Year) + (1|Station)
+```{r glmmmax}
+summary(M.max1a <- lmer(maxAvTemp~Region + I(Month^2) + WYType2_Sac + (1|Station), data = tempMonM, na.action = na.omit))
+
+summary(M.max1b <- lmer(maxAvTemp~Region + I(Month^2) + WYType2_Sac + (1|Year) + (1|Station) , data = tempMonM, na.action = na.omit))
+
+summary(M.max3a <- lmer(maxTemp~Region + Season + WYType2_Sac + (1|Station), data = tempMonM, na.action = na.omit))
+
+summary(M.max3b <- lmer(maxTemp~Region + Season + WYType2_Sac + (1|Year) + (1|Station), data = tempMonM, na.action = na.omit))
+
+
+summary(M.max5a <- lmer(maxAvTemp~Region + I(Month^2) + WYType2_Sac + WYType2_Sac:I(Month^2) + (1|Station), data = tempMonM, na.action = na.omit))
+
+summary(M.max5b <- lmer(maxAvTemp~Region + I(Month^2) + WYType2_Sac + WYType2_Sac:I(Month^2) + (1|Year) + (1|Station) , data = tempMonM, na.action = na.omit))
+
+AIC(M.max1a, M.max1b, M.max3a, M.max3b, M.max5a, M.max5b)
+```
+
+
+```{r}
+# Using season - looks good
+plot(M.max3b)
+qqnorm(resid(M.max3b))
+qqline(resid(M.max3b))
+
+visreg(M.max3b)
+
+# Using month - looks bad
+plot(M.max5b)
+qqnorm(resid(M.max5b))
+qqline(resid(M.max5b))
+
+visreg(M.max5b)
+
+```
+
+### Conclusions
+
+* Season: Summer>Fall>Spring>Winter
+* Region: San Joaquin, South higher max temps
+* WY Type: Wet season cooler
+
+## Monthly Min Temps
+
+Scientific Questions: 
+1. Do we see an annual trend in minimum temperature by month? 
+* Light greens (October, November) - trend upward
+* July - slight trend
+```{r monthlyMinPlot}
+library(plotly)
+p1 <- ggplot(tempMonM) + 
+  geom_point(aes(x = WY, y = minTemp, color = ordered(Month)), size = 3)+
+  stat_smooth(aes(x = as.numeric(WY), y = minTemp, color = ordered(Month)),method = "lm", formula = y ~ x, size = 2, se = TRUE)+ 
+  scale_color_viridis(option = "viridis", discrete = TRUE) + 
+  theme_bw() + theme(axis.text = element_text(size = 14),
+                     axis.title = element_text(size =14),
+                     legend.text = element_text(size = 14),
+                     legend.title = element_text(size = 14))
+ggplotly(p1)
+p1
+
+```
+
+### Look at interaction potential
+* Region * WYType
+* Month * WYType
+* Season * WYType
+* Month * Region
+* Season * Region
+```{r InteractionsPlotsMin}
+# WYType:Month
+# WY type trend differs by Month
+ggplot(tempMonM) + 
+  geom_point(aes(x = Month, y = minTemp, color = WYType2_Sac)) + 
+  stat_smooth(aes(x = Month, y = minTemp, color = WYType2_Sac),method = "lm", formula = y ~ x + I(x^2), size = 2, se = TRUE)+ 
+  scale_color_viridis(option = "viridis", discrete = TRUE) + theme_bw()
+
+# Region:Month
+# Regional trend seems to differ by Month
+ggplot(tempMonM) + 
+  geom_point(aes(x = Month, y = minTemp, color = Region)) + 
+  stat_smooth(aes(x = Month, y = minTemp, color = Region),method = "lm", formula = y ~ x + I(x^2), size = 2, se = TRUE)+ 
+  scale_color_viridis(option = "viridis", discrete = TRUE) + theme_bw()
+
+# Region:WYType
+ggplot(tempMonM) + 
+  geom_boxplot(aes(x = Region, y = minTemp, fill = WYType2_Sac)) + 
+  scale_fill_viridis(option = "viridis", discrete = TRUE) + theme_bw()
+
+# WYType:Season
+# Not much difference... Spring lower minTemp in the wet season, maybe slightly lower min in mid and wet years, other seasons look pretty similar. 
+ggplot(tempMonM) + 
+  geom_boxplot(aes(x = WYType2_Sac, y = minTemp, fill= Season)) + 
+  scale_fill_viridis(option = "viridis", discrete = TRUE) + theme_bw()
+
+# Region:Season
+# Not anything too significant
+ggplot(tempMonM) + 
+  geom_boxplot(aes(x = Region, y = minTemp, fill = Season)) + 
+  scale_fill_viridis(option = "viridis", discrete = TRUE) + theme_bw()
+```
+
+### Normal GLM
+    Best Model: glm(minTemp~Region + Season + WYType2_Sac + Year + WYType2_Sac:Season)
+```{r glmMin}
+
+# Temporal: Season vs. Month
+summary(M.min1 <- glm(minTemp~Region + I(Month^2) + WYType2_Sac + Year, data = tempMonM))
+summary(M.min2 <- glm(minTemp~Region + Season + WYType2_Sac + Year, data = tempMonM))
+AIC(M.min1, M.min2)
+
+# Which other combo of variables is best?
+summary(M.min3 <- glm(minTemp~Region + Season + WYType2_Sac, data = tempMonM))
+summary(M.min4 <- glm(minTemp~Region + Season + WY , data = tempMonM))
+
+# Add interaction
+summary(M.min5 <- glm(minTemp~Region + Season + WYType2_Sac + Year + WYType2_Sac:Season, data = tempMonM))
+
+# Year as factor
+summary(M.min6 <- glm(minTemp~Region + Season + WYType2_Sac + factor(Year) + WYType2_Sac:Season, data = tempMonM))
+
+AIC(M.min2, M.min3, M.min4, M.min5, M.min6)
+```
+
+Plot Model 5
+```{r}
+par(mfrow = c(2,2))
+plot(M.min5)
+visreg(M.min5, "Region", by = "Season")
+visreg(M.min5, "Year", by = "Season")
+visreg(M.min5, "Year", by = "Region")
+visreg(M.min5, "Year", by = "WYType2_Sac")
+visreg(M.min5, "Season", by = "WYType2_Sac")
+```
+
+
+### Mixed Model - Year as random factor
+Choice: M.min2b (Season:WYType) even though AIC very slightly higher
+```{r glmmMin}
+summary(M.min2a <- lmer(minTemp~Region + Season + WYType2_Sac + (1|Year), data = tempMonM, na.action = na.omit))
+
+summary(M.min2b <- lmer(minTemp~Region + Season + WYType2_Sac + Season:WYType2_Sac + (1|Year), data = tempMonM, na.action = na.omit))
+
+summary(M.min2c <- lmer(minTemp~Region + Season + WYType2_Sac + Season:Region + (1|Year), data = tempMonM, na.action = na.omit))
+
+summary(M.min2d <- lmer(minTemp~Region + Season + WYType2_Sac + Month:WYType2_Sac + Season:Region + (1|Year), data = tempMonM, na.action = na.omit))
+
+summary(M.min2e <- lmer(minTemp~Region + Season + WYType2_Sac + Season:WYType2_Sac + (1|Year) + (1|Station), data = tempMonM, na.action = na.omit))
+
+AIC(M.min2a, M.min2b, M.min2c, M.min2d, M.min2e)
+```
+
+Plot model
+```{r}
+plot(M.min2b)
+qqnorm(resid(M.min2b))
+qqline(resid(M.min2b))
+par(mfrow = c(2,2))
+visreg(M.min2b)
+visreg(M.min2b, "Region", by = "Season")
+visreg(M.min2b, "Region", by = "WYType2_Sac")
+visreg(M.min2b, "Season", by = "WYType2_Sac")
+```
+
+
+
+## Winter Temperatures
+
+Scientific Questions: 
+1. Do winter temperatures (mean, min) increase over time?
+2. Are there notable differences in how winter temperatures change by region? 
+3. Are there certain months where temperature increases more over time? 
+
+### Mean Temperature
+#### Plots
+```{r}
+Winter <- tempMonM %>%
+  filter(Season == "Winter" | Month == 11)
+
+ggplot(Winter, aes(x = factor(WY), y = meanTemp)) + geom_jitter(aes(color = ordered(Month)))  + 
+  scale_color_viridis(option = "viridis", discrete = TRUE) + theme_bw()
+
+ggplot(Winter, aes(x = factor(WY), y = meanTemp)) + geom_boxplot(aes(fill = ordered(Month)))  + 
+  scale_fill_viridis(option = "viridis", discrete = TRUE) + theme_bw()
+
+```
+
+Look at interaction potential - do we really care about these?
+* Region * WYType
+* Month * WYType
+* Month * Region
+```{r InteractionsPlotsMin}
+# WYType:Month
+# WY type trend differs by Month
+ggplot(Winter) + 
+  geom_boxplot(aes(x = fMonth, y = meanTemp, fill = WYType2_Sac)) +
+  scale_fill_viridis(option = "viridis", discrete = TRUE) + theme_bw()
+
+# Region:Month
+# Regional trend seems to differ by Month
+ggplot(Winter) + 
+  geom_boxplot(aes(x = fMonth, y = meanTemp, fill = Region)) +
+  scale_fill_viridis(option = "viridis", discrete = TRUE) + theme_bw()
+
+# Region:WYType
+# Not much difference
+ggplot(Winter) + 
+  geom_boxplot(aes(x = Region, y = meanTemp, fill = WYType2_Sac)) + 
+  scale_fill_viridis(option = "viridis", discrete = TRUE) + theme_bw()
+
+```
+
+#### Normal GLM
+    Best Model: meanTemp~Region + I(Month^2) + factor(WY)
+```{r glmMin}
+
+summary(M.meanW1 <- glm(meanTemp~Region + I(Month^2) + WYType2_Sac, data = Winter))
+summary(M.meanW2 <- glm(meanTemp~Region + I(Month^2) + WY , data = Winter))
+
+# Year as factor
+summary(M.meanW3 <- glm(meanTemp~Region + I(Month^2) + fWY, data = Winter))
+
+# Month as factor
+summary(M.meanW4 <- glm(meanTemp~Region + fMonth + fWY, data = Winter))
+
+AIC(M.meanW1, M.meanW2, M.meanW3, M.meanW4)
+```
+
+Plot results
+# Higher mean winter temps in South, SJ, Suisun Bay, lower in North Delta, Sac River, SM
+# High temps in 2015, overall higher 2015-2019 (avg increase 0.09/year)
+```{r}
+# Model 2 (numeric Year)
+par(mfrow = c(2,2))
+plot(M.meanW2)
+par(mfrow = c(1,3))
+visreg(M.meanW2)
+
+# Model 3 (factor year)
+par(mfrow = c(2,2))
+plot(M.meanW3)
+par(mfrow = c(1,3))
+visreg(M.meanW3)
+
+# Model 4 (factor year and month)
+par(mfrow = c(2,2))
+plot(M.meanW4)
+par(mfrow = c(1,3))
+visreg(M.meanW4)
+```
+
+#### Mixed models
+Best model: M.mean5c <- lmer(meanTemp~Region + fWY + fMonth + (1|Station))
+
+```{r}
+summary(M.meanW4a <- lmer(meanTemp~Region + I(Month^2) + (1|fWY), data = Winter, na.action = na.omit))
+
+summary(M.meanW4b <- lmer(meanTemp~Region +  I(Month^2) + (1|fWY) + (1|Station), data = Winter, na.action = na.omit))
+
+summary(M.meanW4c <- lmer(meanTemp~Region +  (1|Month) + (1|fWY), data = Winter, na.action = na.omit))
+
+summary(M.meanW4d <- lmer(meanTemp~Region + WYType2_Sac+  (1|Month) + (1|fWY), data = Winter, na.action = na.omit))
+
+
+summary(M.meanW5a <- lmer(meanTemp~Region +  (1|fWY) + (1|fMonth), data = Winter, na.action = na.omit))
+
+summary(M.meanW5b <- lmer(meanTemp~Region + (1|Station) + (1|fMonth) + (1|fWY), data = Winter, na.action = na.omit))
+
+summary(M.meanW5c <- lmer(meanTemp~Region + fWY + fMonth + (1|Station), data = Winter, na.action = na.omit))
+
+summary(M.meanW5d <- lmer(meanTemp~Region + fWY + (1|fMonth) + (1|Station), data = Winter, na.action = na.omit))
+
+AIC(M.meanW4a, M.meanW4b, M.meanW4c, M.meanW4d, M.meanW5a, M.meanW5b, M.meanW5c, M.meanW5d)
+```
+
+Model diagnostics
+```{r}
+plot(M.meanW5c)
+qqnorm(resid(M.meanW5c))
+par(mfrow = c(2,2))
+visreg(M.meanW5c)
+```
+
+
+### Conclusions:
+
+    While there is a lot of variability around year (really warm in 2015!), it looks like mean winter temperatures have been warmer in the last 5 years, compared with the prior 6 years. Not sure we care about month trends, but generally December and January are cooler than November and February. For regions, San Joaquin, South and Suisun Bay have slightly warmer mean winter temps. 
+
+
+
+
+
+
+### Average Min Temperature
+#### Plots
+```{r}
+ggplot(Winter, aes(x = fWY, y = minAvTemp)) + geom_jitter(aes(color = ordered(Month)))  + 
+  scale_color_viridis(option = "viridis", discrete = TRUE) + theme_bw()
+
+ggplot(Winter, aes(x = fWY, y = minAvTemp)) + geom_boxplot(aes(fill = ordered(Month)))  + 
+  scale_fill_viridis(option = "viridis", discrete = TRUE) + theme_bw()
+```
+
+```{r InteractionsPlotsMin}
+# WYType:Month
+# WY type trend differs by Month (11-12 more similar, 1-2 more similar)
+ggplot(Winter) + 
+  geom_boxplot(aes(x = fMonth, y = minAvTemp, fill = WYType2_Sac)) +
+  scale_fill_viridis(option = "viridis", discrete = TRUE) + theme_bw()
+
+# Region:Month
+# Regional trend seems to differ by Month
+ggplot(Winter) + 
+  geom_boxplot(aes(x = fMonth, y = minAvTemp, fill = Region)) +
+  scale_fill_viridis(option = "viridis", discrete = TRUE) + theme_bw()
+
+# Region:WYType
+ggplot(Winter) + 
+  geom_boxplot(aes(x = Region, y = minAvTemp, fill = WYType2_Sac)) + 
+  scale_fill_viridis(option = "viridis", discrete = TRUE) + theme_bw()
+```
+
+
+### Models - GLM  
+    Best Model: M.minW5 <- glm(minAvTemp~Region + fMonth + fWY + fMonth:Region
+```{r glmMin}
+
+summary(M.minW1 <- glm(minAvTemp~Region + I(Month^2) + WYType2_Sac, data = Winter))
+summary(M.minW2 <- glm(minAvTemp~Region + I(Month^2) + WY , data = Winter))
+
+# Year as factor
+summary(M.minW3 <- glm(minAvTemp~Region + I(Month^2) + fWY, data = Winter))
+
+# Month as factor
+summary(M.minW4 <- glm(minAvTemp~Region + fMonth + fWY, data = Winter))
+
+# Add interaction
+summary(M.minW5 <- glm(minAvTemp~Region + fMonth + fWY + fMonth:Region, data = Winter))
+
+AIC(M.minW1, M.minW2, M.minW3, M.minW4, M.minW5)
+```
+
+Plot results
+# Higher min winter temps in South, SJ, Suisun Bay, lower in North Delta, Sac River, SM
+# High temps in 2015, overall higher 2015-2019 (avg increase 0.09/year)
+```{r}
+# Model 2 (numeric Year)
+par(mfrow = c(2,2))
+plot(M.minW2)
+par(mfrow = c(1,2))
+visreg(M.minW2)
+
+# Model 3 (factor year)
+par(mfrow = c(2,2))
+plot(M.minW3)
+par(mfrow = c(1,2))
+visreg(M.minW3)
+
+# Model 4 (factor year and month)
+par(mfrow = c(2,2))
+plot(M.minW4)
+par(mfrow = c(1,3))
+visreg(M.minW4)
+
+# Model 5 (factor year and month + interaction)
+par(mfrow = c(2,2))
+plot(M.minW5)
+par(mfrow = c(1,3))
+visreg(M.minW5)
+visreg(M.minW5, "fWY", by = "Region")
+visreg(M.minW5, "Region", by = "fMonth")
+```
+
+### Conclusions
+* Region: Average min temps lower in North Delta, South, Suisun Marsh
+* Month: Nov>Feb>Dec>Jan
+* WY 2015 very warm, last 5 years warmer average min temps.
+* Interaction: Sac River, San Joaquin and Suisun Bay warmer than North Delta, South, Suisun Marsh in Nov/Dec. South warmer in January and February. 
+
+
+#### Mixed models
+Best model: M.min5c <- lmer(minAvTemp~Region + fWY + fMonth + (1|Station))
+
+```{r}
+summary(M.minW4a <- lmer(minAvTemp~Region + I(Month^2) + (1|fWY), data = Winter, na.action = na.omit))
+
+summary(M.minW4b <- lmer(minAvTemp~Region +  I(Month^2) + (1|fWY) + (1|Station), data = Winter, na.action = na.omit))
+
+summary(M.minW4c <- lmer(minAvTemp~Region +  (1|Month) + (1|fWY), data = Winter, na.action = na.omit))
+
+summary(M.minW4d <- lmer(minAvTemp~Region + WYType2_Sac+  (1|Month) + (1|fWY), data = Winter, na.action = na.omit))
+
+summary(M.minW5a <- lmer(minAvTemp~Region +  (1|fWY) + (1|fMonth), data = Winter, na.action = na.omit))
+
+summary(M.minW5b <- lmer(minAvTemp~Region + (1|Station) + (1|fMonth) + (1|fWY), data = Winter, na.action = na.omit))
+
+summary(M.minW5c <- lmer(minAvTemp~Region + fWY + fMonth + (1|Station), data = Winter, na.action = na.omit))
+
+summary(M.minW5d <- lmer(minAvTemp~Region + fWY + (1|fMonth) + (1|Station), data = Winter, na.action = na.omit))
+
+summary(M.minW5e <- lmer(minAvTemp~Region + fWY + fMonth + Region:fMonth + (1|Station), data = Winter, na.action = na.omit))
+
+summary(M.minW5f <- lmer(minAvTemp~ fWY + fMonth + (1|Station), data = Winter, na.action = na.omit))
+
+AIC(M.minW4a, M.minW4b, M.minW4c, M.minW4d, M.minW5a, M.minW5b, M.minW5c, M.minW5d, M.minW5e, M.minW5f)
+```
+
+Model diagnostics
+```{r}
+plot(M.minW5b)
+qqnorm(resid(M.minW5b))
+qqline(resid(M.minW5b))
+visreg(M.minW5b)
+
+plot(M.minW5c)
+qqnorm(resid(M.minW5c))
+qqline(resid(M.minW5c))
+visreg(M.minW5c)
+
+plot(M.minW5e)
+qqnorm(resid(M.minW5e))
+qqline(resid(M.minW5e))
+boxplot(minAvTemp~fMonth, data = Winter)
+boxplot(minAvTemp~Region, data = Winter)
+boxplot(minAvTemp~fWY, data = Winter)
+visreg(M.minW5e, "fWY", by = "Region")
+visreg(M.minW5e, "Region", by = "fMonth")
+
+```
+
+
+# Visualizing model results: 
+```{r}
+library(ggeffects)
+
+ggpredict(M.minW5f, terms = c("fWY", "fMonth"), type = "re") %>% 
+   plot() +
+   labs(x = "Water Year", y = "Month", title = "Avg Min Temp") + 
+   theme_minimal()
+
+library(sjPlot)
+
+# Visualise random effects 
+(re.effects <- plot_model(M.minW5f, type = "re", show.values = TRUE))
+
+# show summary
+summary(mixed.ranslope)
+```
+

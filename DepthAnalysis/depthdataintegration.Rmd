@@ -22,13 +22,19 @@ library(tidyverse)
 library(lubridate)
 library(readr)
 setwd("C:/Users/cpien/OneDrive - California Department of Water Resources/Work/ClimateChange/R_code/TempSynthesis/DepthAnalysis/")
-tempFilt <- readRDS("Data/Temp_filtered.rds")
+tempFilt <- readRDS("Data/Temp_filtered.rds") # Data 1 hour earlier than CDEC
+# Daylight time is one hour later
 
-ANH_bottom <- read.csv("Data/ANH_07122020_12312019_BottomTemp.csv")
-MAL_bottom <- read.csv("Data/MAL_07102012_12312019_BottomTemp.csv")
-MRZ_bottom <- read.csv("Data/MRZ_07102012_12312019_BottomTemp.csv")
-RRI_bottom <- read.csv("Data/RRI_01022008_12312019_BottomTemp.csv")
-RRI_middle <- read.csv("Data/RRI_01022008_12312019_MiddleTemp.csv")
+ANH_bottom <- read_csv("Data/ANH_07122020_12312019_BottomTemp.csv",
+                       col_types = cols( DATE = col_character()))
+MAL_bottom <- read_csv("Data/MAL_07102012_12312019_BottomTemp.csv",
+                       col_types = cols( DATE = col_character()))
+MRZ_bottom <- read_csv("Data/MRZ_07102012_12312019_BottomTemp.csv",
+                       col_types = cols( DATE = col_character()))
+RRI_bottom <- read_csv("Data/RRI_01022008_12312019_BottomTemp.csv",
+                       col_types = cols( DATE = col_character()))
+RRI_middle <- read_csv("Data/RRI_01022008_12312019_MiddleTemp.csv", 
+                       col_types = cols( DATE = col_character()))
 ```
 
 Prepare and Merge (bind) Files
@@ -45,28 +51,28 @@ Prepare and Merge (bind) Files
 
 bottom <- do.call("rbind", list(ANH_bottom, MAL_bottom, MRZ_bottom, RRI_bottom))
 bottom_clean <- bottom %>%
-  select(c(STATION.NAME, DATE, VALUE, QAQC.Flag)) %>%
+  select(c(`STATION NAME`, DATE, VALUE, `QAQC Flag`)) %>%
   mutate(WaterCol = "Bottom") %>%
   rename(Datetime = DATE,
          Temp = VALUE,
-         Station = STATION.NAME) %>%
+         Station = `STATION NAME`) %>%
   mutate(Station = replace(as.character(Station), as.character(Station) == "(D12A)  Antioch", "ANH"),
          Station = replace(as.character(Station), as.character(Station) == "(D10A)  Mallard", "MAL"),
          Station = replace(as.character(Station), as.character(Station) == "(D6A)  Martinez", "MRZ"),
          Station = replace(as.character(Station), as.character(Station) == "(P8A)  Stockton", "RRI")) %>%
-  filter(QAQC.Flag %in% c("G", "U")) 
+  filter(`QAQC Flag` %in% c("G", "U"))
 
 middle_clean <- RRI_middle %>%
-  select(c(STATION.NAME, DATE, VALUE, QAQC.Flag)) %>%
+  select(c(`STATION NAME`, DATE, VALUE, `QAQC Flag`)) %>%
   mutate(WaterCol = "Middle") %>%
   rename(Datetime = DATE,
          Temp = VALUE,
-         Station = STATION.NAME) %>%
+         Station = `STATION NAME`) %>%
   mutate(Station = replace(as.character(Station), as.character(Station) == "(P8A)  Stockton", "RRI")) %>%
-  filter(QAQC.Flag %in% c("G", "U")) 
+  filter(`QAQC Flag` %in% c("G", "U")) 
 
-bottom_clean$Datetime <- mdy_hm(bottom_clean$Datetime)
-middle_clean$Datetime <- mdy_hm(middle_clean$Datetime)
+bottom_clean$Datetime <- mdy_hm(bottom_clean$Datetime, tz = "America/Los_Angeles")
+middle_clean$Datetime <- mdy_hm(middle_clean$Datetime, tz = "America/Los_Angeles")
 
 botmid <- rbind(bottom_clean, middle_clean) %>%
   mutate(Date = date(Datetime),
@@ -77,8 +83,6 @@ botmid <- rbind(bottom_clean, middle_clean) %>%
        Minute = minute(Datetime)) %>%
   mutate(Temp = round(Temp, digits = 1)) %>%
   filter(Year<2020)
-
-
 
 ```
 
@@ -103,6 +107,7 @@ temp_q1_b <- temp_q1 %>%
   filter(Flag_QC1 == "Y")
 
 ```
+
 
 ## QC2) Missing values: Flag days with less than n(20) values 
 
@@ -315,6 +320,64 @@ temp_final <- temp_flags %>%
 
 ```
 
+Visualize ANH using plotly
+
+ANH
+```{r}
+library(plotly)
+ANH_clean_B <- temp_flags %>%
+  filter(Station == "ANH",
+         WaterCol == "Bottom") %>%
+  filter(Temp > 0 & Temp < 40)
+
+plot <- ggplot(ANH_clean_B, aes(x = Datetime, y = Temp, color = factor(AllFlags)), alpha = 0.5) + geom_point() +labs(title = "ANH")
+
+ggplotly(plot)
+
+# Check times
+ANH_clean_B2 <- depth_QC %>%
+  filter(Station == "ANH") %>%
+  filter(Temp > 0 & Temp < 40)
+
+```
+
+MRZ
+```{r}
+MRZ_clean_B <- temp_flags %>%
+  filter(Station == "MRZ",
+         WaterCol == "Bottom") %>%
+  filter(Temp > 0 & Temp < 40)
+
+plot2 <- ggplot(MRZ_clean_B, aes(x = Datetime, y = Temp, color = factor(AllFlags)), alpha = 0.5) + geom_point() + labs(title = "MRZ")
+
+ggplotly(plot2)
+```
+
+MAL
+```{r}
+MAL_clean_B <- temp_flags %>%
+  filter(Station == "MAL",
+         WaterCol == "Bottom") %>%
+  filter(Temp > 0 & Temp < 40)
+
+plot3 <- ggplot(MAL_clean_B, aes(x = Datetime, y = Temp, color = factor(AllFlags)), alpha = 0.5) + geom_point() + labs(title = "MAL")
+
+ggplotly(plot3)
+```
+
+RRI
+```{r}
+RRI_clean_B <- temp_flags %>%
+  filter(Station == "RRI",
+         WaterCol == "Bottom") %>%
+  filter(Temp > 0 & Temp < 40)
+
+plot4 <- ggplot(MRZ_clean_B, aes(x = Datetime, y = Temp, color = factor(AllFlags)), alpha = 0.5) + geom_point() + labs(title = "RRI")
+
+ggplotly(plot4)
+```
+
+
 ## How much data are being removed?
 
 ```{r Data removal}
@@ -345,21 +408,36 @@ print(paste0(round(nrow(Flags)/nrow(temp_q6)*100,2), "% flagged"))
 ```
 
 
-Bind QCed bottom middle data with original dataset
+Bind QCed bottom middle data with original dataset  
+When this happens the time zone shifts to UTC
 ```{r original and depth data}
 
 # Filter original dataset to only depth stations, add a column for surface
+# Added 3600s to Datetime to match times in CDEC. For some reason, data are an hour behind. CDEC is PST.
 surfaceFilt <- tempFilt %>%
   filter(Station %in% c("ANH", "MAL", "MRZ", "RRI")) %>%
   mutate(WaterCol = "Surface") %>%
-  select(-c(StationName, Date))
+  rename(Datetime_1 = Datetime) %>%
+  mutate(Datetime = Datetime_1+3600) %>%
+  select(-c(StationName, Date, Datetime_1)) %>%
+  select(c(Station, Datetime, everything()))
 
 # Remove some variables
 botmid_final <- select(temp_final, -Date)
 
+# Check timezones
+attributes(botmid_final$Datetime)
+attributes(surfaceFilt$Datetime)
+
 # Bind surface and depth data
 depth_QC <- rbind(surfaceFilt, botmid_final)
+
+
+
 ```
+
+
+
 
 Write file
 ```{r write}

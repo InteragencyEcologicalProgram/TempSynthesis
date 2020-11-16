@@ -11,14 +11,82 @@ editor_options:
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(lubridate)
+library(readr)
 ```
 
 ### Read in data
 * Add date and time variables (lubridate:: month(), day(), year())
 * Order factors to be low-medium-high
 ```{r import}
-depth <- readRDS("Data/depthdata_heatstress_20200728.rds")
+dir <- getwd() # Run this then check your dir (type dir in console).
+setwd(paste0(dir, "/DepthAnalysis/")) # If your "dir" does not include the DepthAnalysis folder run this line. If it does ignore this line.
+depth <- readRDS("Data/depthdata_heatstress_20201005.rds") # Run this
+#depth$Datetime <- attr(depth$Datetime, "tzone") <- "PDT"
 ```
+
+### Check timezone
+```{r timezone}
+depth2 <- read_rds("Data/depthdata_heatstress_20201005.rds") %>%
+  filter(WaterCol == "Bottom",
+         Station == "ANH") %>%
+  mutate(Date = date(Datetime)) 
+
+# Look at when max temp hour occurs
+depth2a <- depth2 %>%
+  group_by(Date) %>%
+   summarize(max.Temp = max(Temp),
+            n = n()) %>%
+  filter(n>20) %>%
+  left_join(depth2) %>%
+  filter(Temp == max.Temp) %>%
+  mutate(Month = month(Date),
+         Hour = hour(Datetime))
+
+# Make surface dataset 
+# Compared with CDEC - now the same (PST)
+ANH_surf <- depth%>%
+  filter(WaterCol == "Surface",
+         Station == "ANH")
+
+# Matches Excel File - same when reading as character vs. not.
+ANH1 <- read_csv("DepthAnalysis/Data/ANH_07122020_12312019_BottomTemp.csv")
+ANH1a <- read_csv("DepthAnalysis/Data/ANH_07122020_12312019_BottomTemp.csv",
+                 col_types = cols( DATE = col_character()))
+
+# Changing names, inputs
+ANH2 <- ANH1a %>%
+  mutate(Datetime = parse_datetime(DATE, format = "%m/%d/%Y %H:%M"),
+         Temp2 = round(VALUE,1),
+         Minute = minute(Datetime),
+         Hour = hour(Datetime),
+         Date = date(Datetime)) %>%
+  filter(Minute == 0,
+         Temp2 >5 & Temp2 < 40) %>%
+  select(-c(1:8))
+
+# Looking at when max temps occur
+ANH2a <- ANH2 %>%
+  group_by(Date) %>%
+  summarize(max.Temp = max(Temp2),
+            n = n()) %>%
+  filter(n>20) %>%
+  left_join(ANH2) %>%
+  filter(Temp2 == max.Temp) %>%
+  mutate(Month = month(Date))
+
+# Plot max temp by hour
+library(plotly)
+# Using Excel file
+ANHp3 <- ggplot(ANH2a, aes(x = ordered(Hour), y = max.Temp, color = factor(Month)), alpha = 0.6) + geom_jitter()
+ggplotly(ANHp3)
+
+# Using depth dataset
+ANHp4 <- ggplot(depth2a, aes(x = ordered(Hour), y = max.Temp, color = factor(Month)), alpha = 0.6) + geom_jitter()
+ggplotly(ANHp4)
+
+```
+
+
 # need to get all data in dataframe to be from 2012-07-12 to 2019-12-27 and
 Need to first take out the middle data from RRI
 ```{r}
@@ -34,6 +102,7 @@ View(depth_filter)
 #control plus enter equals running
 ```
 
+ANH Data
 ```{r}
 Anhdata<- depth_filter %>% 
   filter(Station == "ANH") %>% 
@@ -44,8 +113,6 @@ Anhdata
 No data in ANH has any high stress events.
 
 Use the filter above and check on the MED for ANH, MAL, MRZ
-
-
 ```{r}
 dates_filter <- depth_filter %>%
   group_by(Station, WaterCol) %>%
@@ -64,13 +131,6 @@ dates <- depth %>%
             end = last(Date))
 dates 
 ```
-```{r}
-
-
-
-
-```
-
 
 ### Stress Events
 * Subset to June 1 - November 1 
@@ -79,22 +139,13 @@ dates
 # need to filter out for the summer stress event
 #need to get the maximum temp per day per station and per water column as well surface or bottom
 
-
 temp_max <- depth_filter %>% 
   group_by(Station, WaterCol, Date, Stress) %>% 
   summarise(max(Temp))
   
-
 temp_max
 ```
 above now for each day I now have the max temp!!
-
-let's Plot! 
-1. 
-2. take a single day and within a single day how much does that deviation change? so std? are temps at the bottom more stable? potentially at the surface you have higher deviation
-```{r}
-
-```
 
 
 1. Calculate the number of days max daily temperature meets "high stress" criteria 
@@ -108,6 +159,7 @@ table_highstress <- temp_max %>%
  filter(Stress== "High") %>% 
   group_by(Station, WaterCol) %>%
   count(Stress)
+
  
 table_highstress 
  ## so far high stress has only been at RRI none at any of the other stations
@@ -161,6 +213,62 @@ ggplot(table, aes(x = Stress, y = days, fill = WaterCol)) + geom_col(position = 
 
 ```
 
+### Cat - Find the mean time of the max temp 
+
+```{r meanmaxtemphour}
+Max.time <- depth_filter %>%
+  group_by(Station, WaterCol, Date) %>%
+  mutate(Max.temp = max(Temp),
+         Month = month(Datetime),
+         Hour = hour(Datetime)) %>%
+  filter(Temp == Max.temp) %>%
+  ungroup()
+
+Max.time.n <- depth_filter %>%
+  group_by(Station, WaterCol, Date) %>%
+  mutate(Max.temp = max(Temp),
+         Month = month(Datetime),
+         Hour = hour(Datetime)) %>%
+  filter(Temp == Max.temp) %>%
+    summarize(n = n()) %>%
+  ungroup()
+
+Max.time.summary = Max.time %>%
+  group_by(Station, WaterCol, Month) %>%
+  summarize(Median.max.hour = median(Hour))
+
+# By month
+ggplot(Max.time.summary, aes(x= ordered(Month), y = Median.max.hour)) + facet_grid(Station~WaterCol) + geom_col() + 
+  theme_bw() + 
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        strip.text = element_text(size = 15))
+
+Max.time.summary2 = Max.time %>%
+  group_by(Station, WaterCol) %>%
+  summarize(Median.max.hour = round(median(Hour),1),
+            n = n())
+
+# By station/watercol
+ggplot(Max.time.summary2, aes(x= Station, y = Median.max.hour)) + facet_grid(~WaterCol) + geom_col() + 
+  theme_bw() + 
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        strip.text = element_text(size = 15))
+
+ggplot(Max.time.summary, aes(x= Station, y = Median.max.hour)) + facet_grid(~WaterCol) + geom_boxplot() + 
+  theme_bw() + 
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        strip.text = element_text(size = 15))
+
+Max.time.summary3 <- Max.time %>%
+  summarize(median.max = median(Hour))
+
+
+```
+
+
 ### Surface-bottom temperature difference
 * Convert data to wide format so that surface temps and bottom temps are in separate columns (google pivot_wider)
 * Calculate temperature difference (use mutate)
@@ -184,12 +292,14 @@ Have a line at 0, plot a bar plot above and below zero
 ```{r}
 #max temp difference at bottom/surface
 depthDiff <- depth_filter %>%
-  group_by(Station, WaterCol, Date) %>%
   mutate(Year = year(Date)) %>%
-  summarize(maxtemp = max(Temp))
+  group_by(Station, WaterCol, Year, Date) %>%
+  summarize(maxtemp = max(Temp))%>%
+  ungroup()
 
 library(tidyr)
-depthDiff_w <- pivot_wider(depthDiff, names_from = WaterCol,   values_from = maxtemp)
+############# Not accurately lined up Bottom-Surface
+depthDiff_w <- pivot_wider(depthDiff,  names_from = WaterCol,   values_from = maxtemp)
 
 depthDiff_w2 <- depthDiff_w %>%
   mutate(TempDiff = Bottom - Surface)
@@ -198,70 +308,169 @@ depthDiff_w2 <- depthDiff_w %>%
 ggplot(depthDiff_w2, aes(x = Date, y = TempDiff)) + geom_point(size=.2) + labs(y="max tempdiff(c)") +
   facet_wrap(~Station) +geom_hline(yintercept = 0, color = "red")
 
-
-##subset just 1 year to look at +/- trends in bottom/top temps by season
 #create new columns for month number and year
 depthDiff_w2$Month=month(depthDiff_w2$Date)
 depthDiff_w2$Year=year(depthDiff_w2$Date)
 #plot my month
 ggplot(depthDiff_w2, aes(x = factor(Month), y = TempDiff)) + geom_point(size=.2) + labs(y="Max TempDiff (c)") +geom_smooth(aes(group = factor(Station),  method = "loess", se = T))+
-  facet_wrap(~Station) +geom_hline(yintercept = 0, color = "red")
+  facet_wrap(~Station) +geom_hline(yintercept = 0, color = "red") +
+  theme_bw() + 
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        strip.text = element_text(size = 15))
 
 #Sites by year and months
 ggplot(depthDiff_w2, aes(x = factor(Month), y = TempDiff)) + geom_point(size=.2) + labs(y="Max TempDiff (c)") +geom_smooth(aes(group = factor(Station),  method = "loess", se = T))+
   facet_grid(Station~Year) +geom_hline(yintercept = 0, color = "red")
+###################################################################
+depth_filter$WaterCol <- as.factor(depth_filter$WaterCol)
 
+depthDiff_rel <- pivot_wider(depth_filter, names_from = WaterCol, values_from = Temp) %>%
+  arrange(Station, Datetime)
 
-#relative difference each hour (similar to Brians)
+# Missing data - RRI 
+RRI_rel <- depthDiff_rel %>%
+  filter(Station == "RRI") %>%
+  mutate(Bottom = Bottom - 5)
 
-depthDiff_rel <- pivot_wider(depth_filter, names_from = WaterCol,   values_from = Temp)
+ggplot(RRI_rel) +
+  geom_point(aes(x = Datetime, y = Surface), color = "red", alpha = 0.5) +
+  geom_point(aes(x = Datetime, y = Bottom), color = "green", alpha = 0.5)
+
 depthDiff_rel2 <- depthDiff_rel %>%
   mutate(RelTempDiff = Bottom - Surface)
 
-ggplot(depthDiff_rel2, aes(x = Date, y = RelTempDiff)) + geom_point(size=.2) + labs(y="Relative TempDiff(c)") +
-  facet_wrap(~Station) +geom_hline(yintercept = 0, color = "red")
+# Overall rel temp diff by station and date
+ggplot(depthDiff_rel2, aes(x = Date, y = RelTempDiff)) + geom_point(size=.8) + labs(y="Relative TempDiff(C)") +
+  facet_wrap(~Station) +geom_hline(yintercept = 0, color = "red") +
+    theme_bw() + 
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        strip.text = element_text(size = 15))
 
-
-##subset just 1 year to look at +/- trends in bottom/top temps by season
 #create new columns for month number and year
 depthDiff_rel2$Month=month(depthDiff_rel2$Date)
 depthDiff_rel2$Year=year(depthDiff_rel2$Date)
 depthDiff_rel2$Hour=hour(depthDiff_rel2$Datetime)
 
-#add daytime categories
+#add daytime categories for time of day
 depthDiff_rel3 <- depthDiff_rel2 %>%
   mutate(TOD= ifelse(Hour>0 & Hour <=6, 'Early:1-6', ifelse(Hour>6 & Hour <=12, 'Morning:6-12', ifelse(Hour>12 & Hour <=18, 'Afternoon:12-18', ifelse(Hour>18 & Hour <=23, 'Evening:18-24' ,ifelse(Hour<1 & Hour >=0, 'Evening:18-24' , NA))))))
 
 #set levels for time of day
 depthDiff_rel3$TOD<-factor(depthDiff_rel3$TOD, levels=c("Early:1-6","Morning:6-12","Afternoon:12-18", "Evening:18-24"))
 
-#plot my month
-ggplot(depthDiff_rel3, aes(x = factor(Month), y = RelTempDiff,colour=factor(TOD))) + geom_point(size=.4, position=position_dodge(width=0.2)) + labs(y="Relative TempDiff (c)") +geom_smooth(aes(group = factor(TOD), colour=factor(TOD), method = "gam", se = T))+
-  facet_wrap(~Station) +geom_hline(yintercept = 0, color = "black",linetype='dashed')
+#plot by month
+ggplot(depthDiff_rel3, aes(x = factor(Month), y = RelTempDiff,colour=factor(TOD))) + 
+  geom_point(size=.4, position=position_dodge(width=0.2)) + 
+  labs(y="Relative TempDiff (c)") +
+  geom_smooth(aes(group = factor(TOD), colour=factor(TOD), method = "gam", se = TRUE))+
+  facet_wrap(~Station) +
+  geom_hline(yintercept = 0, color = "black",linetype='dashed') +
+  theme_bw() + 
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        strip.text = element_text(size = 15),
+        legend.text = element_text(size = 12),
+        legend.title = element_text(size = 12),
+        legend.position = "bottom")
+
+
+check <- depthDiff_rel3 %>%
+  filter(Station == "MRZ")%>%
+  filter(is.na(RelTempDiff)) 
+
+check2 <- depth_filter %>%
+  filter(Station == "MRZ")
 
 #Sites by year and months
-ggplot(depthDiff_rel3, aes(x = factor(Month), y = RelTempDiff)) + geom_point(size=.2) + labs(y="Relative TempDiff (c)") +geom_smooth(aes(group = factor(Station),  method = "loess", se = T))+
-  facet_grid(Station~Year) +geom_hline(yintercept = 0, color = "red")
+ggplot(depthDiff_rel3, aes(x = factor(Month), y = RelTempDiff)) + 
+  geom_point(size=.2) + 
+  labs(y="Relative TempDiff (C)") +
+  geom_smooth(aes(group = factor(Station),method = "loess", se = TRUE))+
+  facet_grid(Station~Year) +geom_hline(yintercept = 0, color = "red") 
 
-#plot my year
-ggplot(depthDiff_rel3, aes(x = Date, y = RelTempDiff,colour=factor(TOD))) + geom_point(size=.2, position=position_dodge(width=0.2)) + labs(y="Relative TempDiff (c)") +
-  facet_wrap(~Station) +geom_hline(yintercept = 0, color = "black", linetype='dashed')
+#plot by year
+ggplot(depthDiff_rel3, aes(x = Date, y = RelTempDiff,colour=factor(TOD))) + geom_point(size=.5, position=position_dodge(width=0.2)) + labs(y="Relative TempDiff (C)") +
+  facet_wrap(~Station) +geom_hline(yintercept = 0, color = "black", linetype='dashed') +
+    theme_bw() +
+      theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        strip.text = element_text(size = 15),
+        legend.position = "bottom",
+        legend.text = element_text(size = 12),
+        legend.title = element_text(size = 12))
+  
 
 #only regressions
 ggplot(depthDiff_rel3, aes(x = Date, y = RelTempDiff,colour=factor(TOD)))+ labs(y="Relative TempDiff (c)") +geom_smooth(aes(group = factor(TOD), colour=factor(TOD), method = "loess", se = T))+
-  facet_wrap(~Station) +geom_hline(yintercept = 0, color = "black",linetype='dashed')
+  facet_wrap(~Station) +geom_hline(yintercept = 0, color = "black",linetype='dashed') +
+  theme_bw() +
+      theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        strip.text = element_text(size = 15),
+        legend.position = "bottom",
+        legend.text = element_text(size = 13))
 
-#only regressions plot my month
-ggplot(depthDiff_rel3, aes(x = factor(Month), y = RelTempDiff,colour=factor(TOD)))+ labs(y="Relative TempDiff (c)") +geom_smooth(aes(group = factor(TOD), colour=factor(TOD), method = "loess", se = T))+
-  facet_grid(Year~Station) +geom_hline(yintercept = 0, color = "black",linetype='dashed')
-
+#only regressions plot by month
+ggplot(depthDiff_rel3, aes(x = factor(Month), y = RelTempDiff,colour=factor(TOD)))+ labs(y="Relative TempDiff (C)") +geom_smooth(aes(group = factor(TOD), colour=factor(TOD), method = "loess", span = 2, se = TRUE))+
+  facet_grid(Year~Station) +geom_hline(yintercept = 0, color = "black",linetype='dashed') +
+        theme_bw() + 
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        strip.text = element_text(size = 15),
+        legend.position = "bottom",
+        legend.text = element_text(size = 12),
+        legend.title = element_text(size = 12))
 
 ```
 
 If there is a difference (above) can include absolute temperatures to see what those numbers actually are.
 
 ```{r}
+# Filter to just MRZ 
+MRZ_depth <- depth_filter %>%
+  filter(Station == "MRZ") %>%
+  mutate(
+    Hour = lubridate::hour(Datetime),
+    TOD= ifelse(Hour>0 & Hour <=6, 'Early:1-6', 
+                ifelse(Hour>6 & Hour <=12, 'Morning:6-12',
+                       ifelse(Hour>12 & Hour <=18, 'Afternoon:12-18', 
+                              ifelse(Hour>18 & Hour <=23, 'Evening:18-24' ,
+                                     ifelse(Hour<1 & Hour >=0, 'Evening:18-24' , NA))))))
+# Filter to just RRI
+RRI_depth <- depth_filter %>%
+  filter(Station == "RRI") %>%
+  mutate(
+    Hour = lubridate::hour(Datetime),
+    TOD= ifelse(Hour>0 & Hour <=6, 'Early:1-6', 
+                ifelse(Hour>6 & Hour <=12, 'Morning:6-12',
+                       ifelse(Hour>12 & Hour <=18, 'Afternoon:12-18', 
+                              ifelse(Hour>18 & Hour <=23, 'Evening:18-24' ,
+                                     ifelse(Hour<1 & Hour >=0, 'Evening:18-24' , NA))))))
 
+#look at absolute temp differences for MRZ
+ggplot() + geom_point(data = MRZ_depth,aes(x = Date, y = Temp, color = WaterCol), alpha = 0.5, size = 1) + facet_wrap(~factor(TOD)) + labs(title = "MRZ Absolute Temps", y="Water Temp (C)") +
+  geom_hline(yintercept = 25, color = "black", linetype='dashed') +
+  geom_hline(yintercept = 22, color = "magenta", linetype='dashed') +
+  scale_color_brewer(palette = "Dark2") +
+    theme_bw() +
+      theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        strip.text = element_text(size = 15),
+        legend.position = "bottom",
+        legend.text = element_text(size = 13))
+
+# look at absolute temp differences for RRI
+ggplot() + geom_point(data = RRI_depth,aes(x = Date, y = Temp, color = WaterCol), alpha = 0.5, size = 1) + facet_wrap(~factor(TOD)) + labs(title = "RRI Absolute Temps", y="Water Temp (C)") +
+  geom_hline(yintercept = 25, color = "black", linetype='dashed') +
+    scale_color_brewer(palette = "Dark2") +
+    theme_bw() +
+      theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        strip.text = element_text(size = 15),
+        legend.position = "bottom",
+        legend.text = element_text(size = 13))
 ```
 
 ### Temperature variability 
@@ -272,7 +481,6 @@ If there is a difference (above) can include absolute temperatures to see what t
   + By season?
   
 ```{r}
-
 depth_range <- depth_filter %>%
   group_by(Station, WaterCol, Date) %>% 
   mutate(Year=year(Date)) %>%
@@ -281,11 +489,55 @@ depth_range <- depth_filter %>%
             mintemp=min(Temp),
             range= maxtemp-mintemp)
   
-
 ggplot(depth_range, aes(x = Date, y = range, color = WaterCol)) + geom_point(size=1) + 
   facet_wrap(~Station)
 
 ```
+
+
+### Range 
+2. take a single day and within a single day how much does that deviation change? so std? are temps at the bottom more stable? potentially at the surface you have higher deviation
+```{r}
+range_data <- depth_filter %>%
+  group_by(Station, WaterCol, Date) %>%
+  summarize(max.temp = max(Temp),
+         min.temp = min(Temp),
+         range = max.temp-min.temp)%>%
+  mutate(Month = month(Date),
+         Year = year(Date),
+         yday = yday(Date)) %>%
+  ungroup()
+
+# range_data_yday <- range_data %>%
+# pivot_wider(cols = c(Station, WaterCol), names_to = "StationDepth")
+# group_by(Station, WaterCol, yday) %>%
+# summarize(mean.range = mean(range)) 
+```
+
+Plot Range
+```{r}
+library(viridis)
+ggplot(range_data, aes(x = as.factor(Month), y = range, color = WaterCol)) + 
+  facet_grid(Station~., scales = "free") + geom_jitter(alpha = 0.5) +
+  scale_color_brewer(palette="Dark2") + theme_bw() + 
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        strip.text = element_text(size = 15),
+        legend.text = element_text(size = 13),
+        legend.position = "bottom")
+
+ggplot(range_data, aes(x = as.factor(Month), y = range, color = WaterCol)) + 
+  facet_grid(Station~., scales = "free") + geom_boxplot() +  
+  scale_color_brewer(palette = "Dark2")+ theme_bw() + 
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        strip.text = element_text(size = 15),
+        legend.text = element_text(size = 13),
+        legend.position = "bottom")
+
+```
+
+
 
 ### Other questions
 # How do results change if only 1+ day at different temperature thresholds?

@@ -18,7 +18,7 @@ library(readr)
 
 setwd("C:/Users/cpien/OneDrive - California Department of Water Resources/Work/ClimateChange/R_code/TempSynthesis/DepthAnalysis/")
 
-depthdata <- readRDS("Data/depthdata_QC_20200728.rds")
+depthdata <- readRDS("Data/depthdata_QC_20201005.rds")
 depthdata$Date <- date(depthdata$Datetime)
 ```
 
