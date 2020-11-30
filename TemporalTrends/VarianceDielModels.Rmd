@@ -21,7 +21,6 @@ library(lme4) # glmm
 library(lmerTest) #glmm p values
 ```
 
-########### Written files from above ###############
 Read in 
 ```{r}
 setwd("C:/Users/cpien/OneDrive - California Department of Water Resources/Work/ClimateChange/R_code/TempSynthesis/")
@@ -34,8 +33,7 @@ tempDaily <- readRDS("Data/tempDaily.rds")
 #tempHeat <- readRDS("Data/heatstressDaily.rds")
 ```
 
-
-Code to make sure every month has data - currently is not being used (need to join with above)
+Code to make sure every month has data
 ```{r nMon}
 # Filter to only data that has temps from every month so as not to skew the data that only has part of the year represented.
 nMon <- tempMon %>% group_by(Station, WY) %>%
@@ -49,7 +47,7 @@ nMon$WY <- as.numeric(nMon$WY)
 tempDaily <- filter(tempDaily, WY > 2008 & WY < 2020)
 tempDaily$yday = yday(tempDaily$Date)
 tempDaily$Year = year(tempDaily$Date)
-tempDaily$Year = ordered(tempDaily$Year)
+tempDaily$fYear = ordered(tempDaily$Year)
 tempDaily$fWY = ordered(tempDaily$WY)
 tempDaily$Month = month(tempDaily$Date)
 tempDaily$fMonth = ordered(tempDaily$Month)
@@ -57,30 +55,45 @@ tempDailyM <- left_join(tempDaily, nMon) %>%
   filter(nMon == 12)
 
 tempDaily$WYType2_Sac = as.factor(tempDaily$WYType2_Sac)
+tempToUse$Hour <- hour(tempToUse$Datetime)
+# Add season
+tempToUse <- tempToUse %>%
+  mutate(Season = ifelse(Month %in% c(12, 1, 2), "Winter", 
+                         ifelse(Month %in% c(3,4,5), "Spring", 
+                                ifelse(Month %in% c(6,7,8), "Summer",
+                                       "Fall"))))
+tempToUse$Season <- factor(tempToUse$Season, levels = c("Spring", "Summer", "Fall", "Winter"))
 
+
+# Add season
+tempDailyM <- tempDailyM %>%
+  mutate(Season = ifelse(Month %in% c(12, 1, 2), "Winter", 
+                         ifelse(Month %in% c(3,4,5), "Spring", 
+                                ifelse(Month %in% c(6,7,8), "Summer",
+                                       "Fall"))))
+tempDailyM$Season <- factor(tempDailyM$Season, levels = c("Spring", "Summer", "Fall", "Winter"))
 ```
 
-## Questions
+**Scientific Questions**  
+
 1. What is the approximate daily range? 
 2. How does range change on annual scale? 
 3. Does the range differ by region?
 4. Does the range differ at particular stations in a region? 
 
-1. What is the daily range?
-* Approximately 0.25 - 1.5C 
-
-
-```{r fig.width = 100%}
-# Overall trend 
-temp_s <- tempInfo %>% group_by(Region) %>% sample_frac(.1)
-ggplot(temp_s, aes(x = factor(Hour), y = Temp, fill = Region)) + geom_boxplot() + facet_grid(Region~Month)
+```{r }
+# Overall trends by Month and Region 
+temp_s <- tempToUse %>% group_by(Region) %>% sample_frac(.1)
+ggplot(temp_s, aes(x = factor(Hour), y = Temp)) + geom_boxplot() + facet_grid(Region~Season)+theme_bw()
 ```
 
-
+Median Daily Range
 ```{r}
 tempDailyM_2 <- tempDailyM %>%
-  group_by(Region, Station, WYType2_Sac ,fWY, fMonth) %>%
-  summarize(medianRange = median(rangeTemp))
+  group_by(Region, Station, Season, WYType2_Sac ,fWY, WY, fMonth) %>%
+  summarize(medianRange = median(rangeTemp),
+            meanRange = mean(rangeTemp)) %>%
+  ungroup()
 
 ggplot(tempDailyM_2, aes(x = fMonth, y = medianRange, fill = WYType2_Sac)) +   geom_boxplot() +
    scale_fill_viridis(option = "viridis", discrete = TRUE) + 
@@ -90,19 +103,46 @@ ggplot(tempDailyM_2, aes(x = fMonth, y = medianRange, fill = WYType2_Sac)) +   g
                      legend.title = element_text(size = 14))
 ```
 
+**Median Range: Approximately 0.25 - 1.5C**
 
-2. How does range change on annual scale? 
-* Doesn't really appear to change over time
+Curious about those with large median ranges
 ```{r}
-ggplot(tempDailyM_2, aes(x = fWY, y = medianRange, fill = Region)) + geom_boxplot()
+highRange <- filter(tempDailyM_2, medianRange > 3)
+ggplot(highRange, aes(x = fWY, y = medianRange, color = Station, shape = Region)) + geom_jitter(size = 4)+scale_color_viridis(option = "viridis", discrete = TRUE) +
+  facet_wrap(~Season) +
+  theme_bw() + 
+  theme(axis.text = element_text(size = 14),
+                     axis.title = element_text(size =14),
+                    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+                     legend.text = element_text(size = 14),
+                     legend.title = element_text(size = 14),
+        strip.text = element_text(size = 14))
+```
+    
+    Large ranges in San Joaquin, South, Suisun Marsh mostly in Spring and especially summer.
+    
+
+## 2. How does range change on annual scale?
+
+* Doesn't really appear to change over time, or at least not in a consistent way
+```{r}
+tempDailyM_s <- tempDailyM %>% group_by(Region) %>% sample_frac(.5)
+
+ggplot(tempDailyM_s, aes(x = Date, y = rangeTemp)) + geom_jitter() + geom_smooth(se = TRUE)
+
 ```
 
-3. Does the range differ by region?
+## 3. Does the range differ by region?
+
 * Greater in Suisun Marsh spring, South
 * High variability in Suisun Marsh
 * Range generally greater in the late spring, summer
 * Range generally slightly smaller in wet years
 ```{r}
+ggplot(tempDailyM_s, aes(x = Date, y = rangeTemp, color = Region)) + geom_smooth()
+
+ggplot(tempDailyM_2, aes(x = fWY, y = meanRange, fill = Region)) + geom_boxplot()
+
 ggplot(tempDailyM_2, aes(x = fMonth, y = medianRange, fill = WYType2_Sac)) + facet_wrap(~Region, scales = "free_y") +  geom_boxplot() +
    scale_fill_viridis(option = "viridis", discrete = TRUE) + 
   theme_bw() + theme(axis.text = element_text(size = 14),
@@ -111,13 +151,15 @@ ggplot(tempDailyM_2, aes(x = fMonth, y = medianRange, fill = WYType2_Sac)) + fac
                      legend.title = element_text(size = 14))
 ```
 
-4. Does the range differ at particular stations in a region? 
-* Suisun
+## 4. Does the range differ at particular stations in a region?
+
+**Suisun**
 High range and range variability in BLL and SNC
 ```{r}
 tempSuisun <- tempDailyM %>% filter(Region == "Suisun Marsh")
 
 ggplot(tempSuisun, aes(x= fMonth, y = rangeTemp, fill = Station)) + geom_boxplot() +
+  labs(title = "Suisun Marsh") + 
    scale_fill_viridis(option = "viridis", discrete = TRUE) + 
   theme_bw() + theme(axis.text = element_text(size = 14),
                      axis.title = element_text(size =14),
@@ -125,12 +167,14 @@ ggplot(tempSuisun, aes(x= fMonth, y = rangeTemp, fill = Station)) + geom_boxplot
                      legend.title = element_text(size = 14))
 ```
 
-* South
+**South**
+
 High range and range variability in UNI and Vernalis 
 ```{r}
 tempSouth <- tempDailyM %>% filter(Region == "South")
 
 ggplot(tempSouth, aes(x= fMonth, y = rangeTemp, fill = Station)) + geom_boxplot() +
+  labs(title = "South") +
    scale_fill_viridis(option = "viridis", discrete = TRUE) + 
   theme_bw() + theme(axis.text = element_text(size = 14),
                      axis.title = element_text(size =14),
@@ -138,106 +182,90 @@ ggplot(tempSouth, aes(x= fMonth, y = rangeTemp, fill = Station)) + geom_boxplot(
                      legend.title = element_text(size = 14))
 ```
 
+**San Joaquin**
 
-
-
-
-Models of Variables 
-
+* Not much variation
 ```{r}
-# Using WYType
-summary(M.rangeDay1 <- glm(rangeTemp~Region + Year + Month + WYType2_Sac + yday, data = tempDailyM, na.action = na.omit))
+tempSJ <- tempDailyM %>% filter(Region == "San Joaquin")
 
-# Using Index_c
-summary(M.rangeDay2 <- glm(rangeDaily~Region + Year + Month + HabitatType + Index_c + yday, data = tempDaily, na.action = na.omit))
-
-# Compare
-AIC(M.rangeDay1, M.rangeDay2) # WY Type seems more useful
-
-# R2 
-with(summary(M.rangeDay1), 1 - deviance/null.deviance)
-
-# Interactions?
-summary(M.rangeDay3 <- glm(rangeDaily~Region*Year + Month + HabitatType + WYType2_Sac, data = tempDaily, na.action = na.omit))
-
-summary(M.rangeDay4 <- glm(rangeDaily~Region*WYType2_Sac + Year  + Month + HabitatType, data = tempDaily, na.action = na.omit))
-
-AIC(M.rangeDay1, M.rangeDay3, M.rangeDay4)
-
-par(mfrow = c(2,2))
-plot(M.rangeDay3)
-visreg(M.rangeDay3, "Year", by = "Region")
-visreg(M.rangeDay3, "Year", by = "WYType2_Sac")
+ggplot(tempSJ, aes(x= fMonth, y = rangeTemp, fill = Station)) + geom_boxplot() +
+   scale_fill_viridis(option = "viridis", discrete = TRUE) + 
+  labs(title = "San Joaquin") +
+  theme_bw() + theme(axis.text = element_text(size = 14),
+                     axis.title = element_text(size =14),
+                     legend.text = element_text(size = 14),
+                     legend.title = element_text(size = 14))
 ```
 
-#### ADDED ####
-```{r}
 
-# yday as quadratic
-summary(M.maxDay5A <- glm(maxDaily~I(yday^2) + Region + HabitatType + WYType2_Sac, data = tempDaily, na.action = na.omit))
+## Modeling
 
-par(mfrow = c(2,2))
-plot(M.maxDay5A)
-
-# not quadratic
-summary(M.maxDay5B <- glm(maxDaily~yday + Region +  HabitatType + WYType2_Sac, data = tempDaily, na.action = na.omit))
-
-AIC(M.maxDay5A, M.maxDay5B) # quadratic better
-```
-
-Add random effect of year
-Account for Temporal autocorrelation
+* Main variables: WY, Region, yday, lag
+* Random variables: Station, possibly WY
+* Possible: WY Type
 
 ```{r}
 library(lme4)
 library(lmerTest)
 
 # Account for Temporal Autocorrelation 
-tempDaily <- tempDaily %>% 
+tempDailyM <- tempDailyM %>% 
     group_by(Region, Station) %>%
-  mutate(maxDailylag1 = lag(maxDaily, 1),
-         maxDailylag2 = lag(maxDaily, 2),
-         minDailylag1 = lag(minDaily, 1),
-         minDailylag2 = lag(minDaily, 2)) %>%
+  mutate(rangeDailylag1 = lag(rangeTemp, 1),
+         rangeDailylag2 = lag(rangeTemp, 2))%>%
   ungroup() %>%
-  mutate(yday_s = scale(yday),
-         maxDailylag1_s = scale(maxDailylag1),
-         maxDailylag2_s = scale(maxDailylag2),
-         minDailylag1_s = scale(minDailylag1),
-         minDailylag2_s = scale(minDailylag2))
+  mutate(rangeDailylag1_s = scale(rangeDailylag1),
+         yday_s = scale(yday))
 
-# Model no lag, lag(1), lag(2)
-summary(M.maxDay6A <- lmer(maxDaily~I(yday^2) + Region + (1|Year) + WYType2_Sac, data = tempDaily, na.action = na.omit))
+# Model no lag, lag(1)
+summary(M.range1 <- lmer(rangeTemp~I(yday_s^2) + Region + Year + WYType2_Sac + (1|Station), data = tempDailyM, na.action = na.omit))
 
-summary(M.maxDay6B <- lmer(maxDaily~I(yday_s^2) + maxDailylag1_s + Region + (1|Year) + WYType2_Sac, data = tempDaily, na.action = na.omit))
-
-summary(M.maxDay6C <- lmer(maxDaily~I(yday_s^2) + maxDailylag1_s + maxDailylag2_s + Region + (1|Year) + WYType2_Sac, data = tempDaily, na.action = na.omit))
+M.range2 <- lmer(rangeTemp~I(yday_s^2) + Region + Year + WYType2_Sac + rangeDailylag1_s + (1|Station), data = tempDailyM, na.action = na.omit)
 
 # Check temporal autocorrelation
 # How correlated day 1 is to day 2, 3, etc. 
-acf(residuals(M.maxDay6A))
-acf(residuals(M.maxDay6B))
-acf(residuals(M.maxDay6C))
+acf(residuals(M.range1))
+acf(residuals(M.range2))
 
-summary(M.maxDay7 <- lmer(maxDaily~I(Month^2) + maxDailylag1_s + maxDailylag2_s + Region + (1|Year) +  WYType2_Sac, data = tempDaily, na.action = na.omit))
 
-AIC(M.maxDay6C, M.maxDay7) # yday better
+```
+
+
+**Chosen but not best model: M.range2 <- lmer(rangeTemp~I(yday_s^2) + Region + Year + WYType2_Sac + rangeDailylag1_s + (1|Station)**
+Year as random variable is slightly better but we care about year for now
+```{r}
+summary(M.range2 <- lmer(rangeTemp~I(yday_s^2) + Region + Year + WYType2_Sac + rangeDailylag1_s + (1|Station), data = tempDailyM, na.action = na.omit))
+```
+
+Other models:
+```{r}
+# no WY Type
+summary(M.range3 <- lmer(rangeTemp~I(yday_s^2) + Region + Year + rangeDailylag1_s + (1|Station), data = tempDailyM, na.action = na.omit))
+
+# Year as random variable
+summary(M.range4 <- lmer(rangeTemp~I(yday_s^2) + rangeDailylag1_s + Region + WYType2_Sac + (1|Year) + (1|Station), data = tempDailyM, na.action = na.omit))
+
+# Year as factor
+summary(M.range5 <- lmer(rangeTemp~I(yday_s^2) + rangeDailylag1_s + Region + fYear + WYType2_Sac + (1|Station), data = tempDailyM, na.action = na.omit))
+
+AIC(M.range2, M.range3, M.range4, M.range5)
 
 # Diagnostic Plots
 # https://www.ssc.wisc.edu/sscc/pubs/MM/MM_DiagInfer.html
 # What is the right diagnostic plot for lmer?
-visreg(M.maxDay6C)
 par(mfrow = c(2,2))
+visreg(M.range2)
+
 # Residuals vs fitted
-plot(M.maxDay6C)
+plot(M.range2)
 # Normality of residuals
-qqnorm(resid(M.maxDay6C))
+qqnorm(resid(M.range2))
 # significant but small diff ~0.03 degC
 
 ### Basic plot mean, max, min temp by region, WY
 ```
 
-Interactions - If you don't see it in the main effects, try interactions
+Interactions
 
 * Region*yday
 * WYType2_Sac*Month/yday
@@ -245,50 +273,43 @@ Interactions - If you don't see it in the main effects, try interactions
 
 * lower max temps in Suisun Bay
 ```{r}
-tempDaily_s <-sample_n(tempDaily, 50000)
-ggplot(tempDaily_s, aes(x = yday, y = maxDaily, color = WYType2_Sac)) + geom_point() + scale_color_viridis(discrete = TRUE)
+tempDaily_s <-sample_n(tempDailyM, 50000)
+ggplot(tempDaily_s, aes(x = yday, y = rangeTemp, color = WYType2_Sac)) + geom_point() + scale_color_viridis(discrete = TRUE)
 
 # WYType:yday
-# WY type trend differs by yday (similar in winter, not similar in summer)
+# no trend
 ggplot(tempDaily_s) + 
-  geom_point(aes(x = yday, y = maxDaily, color = WYType2_Sac), alpha = 0.2) + 
-  stat_smooth(aes(x = yday, y = maxDaily, color = WYType2_Sac),method = "lm", formula = y ~ x + I(x^2), size = 2, se = TRUE)+ 
+  geom_point(aes(x = yday, y = rangeTemp, color = WYType2_Sac), alpha = 0.2) + 
+  stat_smooth(aes(x = yday, y = rangeTemp, color = WYType2_Sac),method = "lm", formula = y ~ x + I(x^2), size = 2, se = TRUE)+ 
   scale_color_viridis(option = "viridis", discrete = TRUE) + theme_bw()
 
 # Region:yday
-# Regional trend seems to differ by yday?
+# Difference by Region (more differences in summer)
 ggplot(tempDaily_s) + 
-  geom_point(aes(x = yday, y = maxDaily, color = Region), alpha = 0.2) + 
-  stat_smooth(aes(x = yday, y = maxDaily, color = Region),method = "lm", formula = y ~ x + I(x^2), size = 2, se = TRUE)+ 
+  geom_point(aes(x = yday, y = rangeTemp, color = Region), alpha = 0.2) + 
+  stat_smooth(aes(x = yday, y = rangeTemp, color = Region),method = "lm", formula = y ~ x + I(x^2), size = 2, se = TRUE)+ 
   scale_color_viridis(option = "magma", discrete = TRUE) + theme_bw()
 
-# Region:WY Type - perhaps not. Dry always highest, followed by Mid, follow by wet. Interaction for variability though, possibly.
+# Region:WY Type -not much difference
 ggplot(tempDaily_s) + 
-  geom_boxplot(aes(x = Region, y = maxDaily, fill = WYType2_Sac)) + 
+  geom_boxplot(aes(x = Region, y = rangeTemp, fill = WYType2_Sac)) + 
   scale_fill_viridis(option = "viridis", discrete = TRUE)
 
 ```
 
 # Add Interactions into model
 ```{r}
-summary(M.maxDay8 <- lmer(maxDaily~I(yday_s^2) + maxDailylag1_s + maxDailylag2_s + Region + (1|Year) + WYType2_Sac + yday:Region + yday:WYType2_Sac, data = tempDaily, na.action = na.omit))
-
-AIC(M.maxDay6C, M.maxDay8) # Model with interactions better
+summary(M.range6 <- lmer(maxDaily~I(yday_s^2) + rangeDailylag1_s + Region + Year + (1|Station) + WYType2_Sac + yday:Region, data = tempDailyM, na.action = na.omit))
 
 # Diagnostics
 # How should I plot this?
 # Next time - work on this interpretation
-visreg(M.maxDay8, "yday", by = "Region")
-visreg(M.maxDay8, "yday", by = "WYType2_Sac")
+visreg(M.range6, "yday", by = "Region")
+visreg(M.range6, "yday", by = "WYType2_Sac")
 par(mfrow = c(2,2))
-plot(M.maxDay8)
-qqnorm(resid(M.maxDay8)) # This looks weird
+plot(M.range6)
+qqnorm(resid(M.range6)) # This looks weird
 ```
-
-
-
-
-
 
 
 
@@ -302,6 +323,8 @@ qqnorm(resid(M.maxDay8)) # This looks weird
 * Max temp ~ 16:00
 * Min temp ~ 7:00
 * Diel: 14-18 vs 5-9
+
+
 ```{r}
 tempToUse$Hour <- hour(tempToUse$Datetime)
 tempToUse$Month <- month(tempToUse$Datetime)
@@ -333,3 +356,6 @@ ggplot(tempMin_s, aes(x = factor(Month), y = Hour)) + geom_boxplot() + facet_wra
 
 ```
 
+* Filter for just those hours. 
+* Add variable TOD = Early vs Late
+* Run model with TOD as variable 
