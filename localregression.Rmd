@@ -147,15 +147,15 @@ temps$Year = year(temps$Date)
 tempmax = temps %>%
   mutate(julian = yday(Date)) %>%
   group_by(Station, julian, Year, Date) %>%
-  summarize(Temp = mean(Temp, na.rm = T),
+  summarize(Tempave = mean(Temp, na.rm = T),
             maxTemp = max(Temp, na.rm = T),
             minTemp = min(Temp, na.rm = T))
 
 tempmax2 = merge(tempmax, stas)
 
-tempmax2.1 = dplyr::filter(tempmax2, julian <250)
+#tempmax2.1 = dplyr::filter(tempmax2, julian <250)
 #spx = sample_n(tempmax2.1, 10000)
-spx = tempmax2.1
+spx = tempmax2
 
 #turn it into a spatial object
 coordinates(spx) = ~ Longitude + Latitude
@@ -371,7 +371,7 @@ data = tempmax2, method = "REML")
 summary(g2)
 
 #now the interaction version
-g3 = bam(Temp ~ s(julian, bs="cc" ) + s(Year) + 
+g3 = bam(Tempave ~ s(julian, bs="cc" ) + s(Year) + 
            ti(Latitude, Longitude, Year) +
            ti(Latitude, Longitude, julian), 
 data = tempmax2, method = "REML")
@@ -389,7 +389,7 @@ r1 = acf(resid(g3), plot=FALSE)$acf[2]
 #identify the start of the time series
 testdat = start_event(tempmax2, column="Date", event=c("Station", "Year"), label.event="Event")
 
-g4 = bam(Temp ~ s(julian, bs = "cc") + s(Year) + 
+g4 = bam(Tempave ~ s(julian, bs = "cc") + s(Year) + 
            ti(Latitude, Longitude, Year)+ 
            ti(Latitude, Longitude, julian), 
 data =testdat, method = "REML",  rho=r1, AR.start=testdat$start.event)
@@ -466,6 +466,51 @@ data =tempmax_long, method = "REML",  rho=r1x2, AR.start=tempmax_long$start.even
 
 summary(g4x2)
 plot(g4x2)
+
+
+#now try the Minimum temperatures, like peggy suggested
+
+g3x2m = bam(minTemp ~ s(julian, bs = "cc") + s(Year), 
+
+data = tempmax_long, method = "REML")
+#calculate start value of Rho
+r1x2m = acf(resid(g3x2m), plot=FALSE)$acf[2]
+
+
+g4x2m = bam(minTemp ~ 
+           s(Year)+ 
+          s(julian, bs = "cc"), 
+data =tempmax_long, method = "REML",  rho=r1x2m, AR.start=tempmax_long$start.event)
+
+summary(g4x2m)
+plot(g4x2m)
+#hm. Minimum temperatures were not very interesting either
+```
+
+Just winter
+```{r}
+#let's try just the winter, since peggy and sam both thought that 
+#might be useful
+
+winter = mutate(tempmax_long, Month = month(Date)) %>%
+  filter(Month %in% c(11))
+
+gwin = bam(minTemp ~ 
+           s(Year)+ 
+          s(julian), 
+data =winter, method = "REML",  rho=r1x2m, AR.start=winter$start.event)
+
+summary(gwin)
+plot(gwin)
+
+
+gwin2 = bam(Tempave ~ 
+           s(Year)+ 
+          s(julian), 
+data =winter, method = "REML",  rho=r1x2m, AR.start=winter$start.event)
+
+summary(gwin2)
+plot(gwin2)
 
 ```
 If I don't have a lot of stations with the long time series, ditch spatial structure and move to random effects. 
