@@ -68,21 +68,47 @@ tempMonM <- left_join(tempMon, nMon) %>%
 3. Do we see differences in max temp by water year type? (e.g. cooler summer temps in wet years)
 
 
-**Questions for Rosie:**
+**Questions for Rosie:**    
 
-- Can I include region in my model but also have Station as a random variable? 
-- When I leave WY as numeric, it comes out significant, but is this accurate? Or is it better to have it as a factor, and say "the last 5 years are higher?"
-- Okay to include both WYType + Year (instead of WY, because then it conflicts?)
-- Seasonal/daily decomposition to look at trends?
-- We talked about putting year as random variable. Does our question then become is there a difference in winter temperature trends by region, wytype? Or what does the question really become? 
-- We don't really care about month specifically, unless there is an interaction of some sort (e.g. we can detect trends for certain months), so should this be a random variable?
-- Do we care about season?
-- How to incorporate random variables correctly (e.g. nested? crossed? syntax?)
-- Does it make sense to order the factors somehow for intercept and model interpretation?
+- It feels like what I am primarily interested in is: 
+  (max,min,mean,range)Temp ~ WY(or year) + Region (+ WYType), with a recognition of the importance of yday, month or season
+  - However, I cannot have WY and WYType in the same model, right?
+  - Instead, include WYType + Year (instead of WY)?
+
+- When I leave WY as numeric, it comes out significant, but is this accurate? Or is it better to have it as a factor, and say "the last 5 years are higher based on slope?"
+
+- Random variables
+  - We talked about putting year as random variable. Does our question then become is there a difference in mean temp by region, wytype, time of year? Or what does the question really become? Confused what we are asking when we are using only categorical variables, and if this is useful. 
+  - Can I include region in my model but also have Station as a random variable (aka nested random variable within fixed variable)? 
+  - We don't really care about month, season specifically, unless there is an interaction of some sort (e.g. we can detect trends for certain months), so should this be a random variable?
+  - How to incorporate random variables correctly (e.g. nested? crossed? syntax?)
+  - Random variable interactions. Random effects, random intercept, random intercept plus slope models
+  - Correlation structure
+  - method = REML or ML
+
+- Does it make sense to order the factors somehow for intercept and model interpretation? (aka lowest or highest variable first)
+
 - How to interpret output
-  + Are we looking at how rate of change of temp differs by season (or is this only if we have an interaction between year:season), or just how temp differs by season? E.g. a low winter coefficient just indicates that there are lower temps in the winter, not that the change in temp is lower for winter?
-- How to compare mixed models (Still AIC?) Look at Zuur
+  - Reminder of interpreting parameters vs interactions
+  - Are we looking at how rate of change of temp differs by season (or is this only if we have an interaction between year:season), or just how temp differs by season? E.g. a low winter coefficient just indicates that there are lower temps in the winter, not that the change in temp is lower for winter?
+  - How do I plot this in a way to see the model differences by category?
+  - How do I plot categorical variables in a useful way?
+  - How to compare mixed models (Still AIC?) Look at Zuur
+    - Start with as many variables as relevant. 1. Figure out random structure, 2. Figure out fixed structure, 3. Compare models with the same random but different fixed structures
+    - AIC(), anova()
+    - Try random intercept, random intercept slope
+  - What do I say about the random effects? 
 
+- Checking models for assumptions
+  - Normalized residuals based on REML fit
+    - Residuals vs fitted values (homogeneity)
+    - Plot residuals against each explanatory variable
+- Seasonal/daily decomposition to look at trends?
+
+**Other thoughts**    
+
+- Change regions based on dendrogram? 
+- Change regions based on how they group together in results?
 
 **Conclusions**
 * October, July, August has upward trend
