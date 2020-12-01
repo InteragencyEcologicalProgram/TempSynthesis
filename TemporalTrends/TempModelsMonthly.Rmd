@@ -73,8 +73,7 @@ tempMonM <- left_join(tempMon, nMon) %>%
   (max,min,mean,range)Temp ~ WY(or year) + Region (+ WYType), with a recognition of the importance of yday, month or season
   - However, I cannot have WY and WYType in the same model, right?
   - Instead, include WYType + Year (instead of WY)?
-
-- When I leave WY as numeric, it comes out significant, but is this accurate? Or is it better to have it as a factor, and say "the last 5 years are higher based on slope?"
+  - When I leave WY as numeric, it comes out significant, but is this accurate? Or is it better to have it as a factor, and say "the last 5 years are higher based on slope?"
 
 - Random variables
   - We talked about putting year as random variable. Does our question then become is there a difference in mean temp by region, wytype, time of year? Or what does the question really become? Confused what we are asking when we are using only categorical variables, and if this is useful. 
