@@ -296,9 +296,9 @@ raster_plot2<-function(data, date, labels="All"){
 
 #maximum temperatures
 raster_plot(rastered_preds) + ggtitle("Max Temperature")
-raster_plot2(rastered_preds, 3) + ggtitle("Max Temperature")
-raster_plot2(rastered_preds, 4) + ggtitle("Max Temperature")
-raster_plot2(rastered_preds, 10) + ggtitle("Max Temperature")
+raster_plot2(rastered_preds, 3) + ggtitle("Max Temperature - March")
+raster_plot2(rastered_preds, 4) + ggtitle("Max Temperature - April")
+raster_plot2(rastered_preds, 10) + ggtitle("Max Temperature - Octover")
 #It's treating the impact of space as constant accross time. I'd have to put in another interaction
 #if i want it to vary.
 
@@ -354,3 +354,24 @@ foo4 = filter(tempmean2, TempMax >30)
 
 #station RCS also has a lot of really high max temps and high range values. 
 #that's the one all the way up at Kights' landing we were talking about dropping.
+
+################################################################################
+#What happens if I increase or decrease the tmperatures?
+
+rastered_preds2 = rastered_preds %>%
+mutate(Prediction = Prediction+2)
+
+rastered_predsx2 = rastered_preds %>%
+  mutate(Prediction = Prediction*.02)
+
+raster_plot(rastered_preds2) + ggtitle("Max Temperature")
+raster_plot2(rastered_preds2, 3) + ggtitle("Max Temperature - March")
+raster_plot2(rastered_preds2, 6) + ggtitle("Max Temperature - June")
+raster_plot2(rastered_preds2, 10) + ggtitle("Max Temperature - October")
+
+
+raster_plot(rastered_predsx2) + ggtitle("Max Temperature")
+raster_plot2(rastered_predsx2, 3) + ggtitle("Max Temperature - March")
+raster_plot2(rastered_predsx2, 6) + ggtitle("Max Temperature - June")
+raster_plot2(rastered_predsx2, 10) + ggtitle("Max Temperature - October")
+
