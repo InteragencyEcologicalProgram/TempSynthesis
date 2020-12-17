@@ -23,7 +23,7 @@ library(lmerTest) #glmm p values
 
 Read in data
 ```{r read}
-setwd("C:/Users/cpien/OneDrive - California Department of Water Resources/Work/ClimateChange/R_code/TempSynthesis/")
+#setwd("C:/Users/cpien/OneDrive - California Department of Water Resources/Work/ClimateChange/R_code/TempSynthesis/")
 
 # tempFilt <- readRDS("Data/tempFilt.rds") 
 # tempToUse <- readRDS("Data/temp10years_20200922.rds")
@@ -57,6 +57,14 @@ tempMon$fYear <- ordered(tempMon$Year)
 tempMon <- filter(tempMon, WY > 2008 & WY < 2020)
 tempMonM <- left_join(tempMon, nMon) %>%
   filter(nMon == 12)
+
+
+#try a sine-transformation on "month" so we can include it in linear models
+tempMonM$smonth = sin(pi*tempMonM$Month/12)
+
+#Note:I'm not 100% sure that's the best way to do it. Plus having the sign term makes it
+#a little hard to interpret the results. But it does allow you to use a linear model instead of a 
+#quadratic, if you like that better. Personally, I"d rather stick with the quadratic.
 
 ```
 
@@ -135,11 +143,24 @@ ggplotly(max1)
 ```{r InteractionsPlotsMax}
 # WYType:Month
 # WY type trend differs by Month
+
+#RKH: Interestingly, you had the right formula for the quadratic regression in this section (x + I(x^2))
+#but later on we dropped teh "x" part
+
 ggplot(tempMonM) + 
   geom_point(aes(x = Month, y = maxAvTemp, color = WYType2_Sac)) + 
   stat_smooth(aes(x = Month, y = maxAvTemp, color = WYType2_Sac),method = "lm", formula = y ~ x + I(x^2), size = 2, se = TRUE)+ 
   labs(title = "WYType:Month") +
   scale_color_viridis(option = "viridis", discrete = TRUE) + theme_bw()
+
+#see what it looks like with the sin-transformed month
+
+ggplot(tempMonM) + 
+  geom_point(aes(x = smonth, y = maxAvTemp, color = WYType2_Sac)) + 
+  stat_smooth(aes(x = smonth, y = maxAvTemp, color = WYType2_Sac),method = "lm", size = 2, se = TRUE)+ 
+  labs(title = "WYType:Month with sin-transformation") +
+  scale_color_viridis(option = "viridis", discrete = TRUE) + theme_bw()
+
 
 # Region:Month
 # Regional trend seems to differ by Month
@@ -174,8 +195,11 @@ Models
 
 ```{r Models Max Monthly Temp}
 # WY Type or WY? WYType
-summary(M.max1 <- glm(maxAvTemp~Region + I(Month^2) + WYType2_Sac, data = tempMonM))
-summary(M.max2 <- glm(maxAvTemp~Region + WY + I(Month^2) , data = tempMonM))
+
+#RKH: Need to add the linear term for "month"
+
+summary(M.max1 <- glm(maxAvTemp~Region + Month + I(Month^2) + WYType2_Sac, data = tempMonM))
+summary(M.max2 <- glm(maxAvTemp~Region + WY +  Month + I(Month^2) , data = tempMonM))
 AIC(M.max1, M.max2)
 
 # Season or Month? Season makes better model but maybe less interesting?
@@ -184,39 +208,46 @@ AIC(M.max1, M.max3)
 
 ```
 
-Best Model: **M.max4 = glm(maxTemp~Region + I(Month^2) + WYType2_Sac +  WYType2_Sac:I(Month^2)**
+Best Model: **M.max4 = glm(maxTemp~Region + Month + I(Month^2) + WYType2_Sac +  WYType2_Sac:I(Month^2)**
 ```{r}
 # Interactions?
-summary(M.max4 <- glm(maxAvTemp~Region + I(Month^2) + WYType2_Sac +  WYType2_Sac:I(Month^2) , data = tempMonM))
+summary(M.max4 <- glm(maxAvTemp~Region + Month + I(Month^2) + WYType2_Sac +  WYType2_Sac:I(Month^2) , data = tempMonM))
 
-summary(M.max5 <- glm(maxAvTemp~Region + I(Month^2) + WYType2_Sac +  WYType2_Sac:I(Month^2) + Region:I(Month^2), data = tempMonM))
+summary(M.max5 <- glm(maxAvTemp~Region + Month + I(Month^2) + WYType2_Sac +  WYType2_Sac:I(Month^2) + Region:I(Month^2), data = tempMonM))
 
 AIC(M.max4, M.max5)
 ```
 
 
 Plots look bad
+
+RKH: I don't know, not that bad once we get the quadratic term in there right!
 ```{r}
 par(mfrow = c( 2,2))
 plot(M.max4)
 
 visreg(M.max4, "WYType2_Sac", by = "Region")
 visreg(M.max4, "Month", by = "Region")
+visreg(M.max4, "Region", by = "Month")
 visreg(M.max4, "Region", by = "WYType2_Sac")
+visreg(M.max2, "Month")
+
 ```
 
 ### Mixed Model - Year as random factor
 
-```{r glmmmax}
-summary(M.max1a <- lmer(maxAvTemp~Region + I(Month^2) + WYType2_Sac + (1|Station), data = tempMonM, na.action = na.omit))
+RKH: You might want to try having year as a factor rather than a continuous variable for these models
 
-summary(M.max1b <- lmer(maxAvTemp~Region + I(Month^2) + WYType2_Sac + (1|Year) + (1|Station) , data = tempMonM, na.action = na.omit))
+```{r glmmmax}
+summary(M.max1a <- lmer(maxAvTemp~Region + Month + I(Month^2) + WYType2_Sac + (1|Station), data = tempMonM, na.action = na.omit))
+
+summary(M.max1b <- lmer(maxAvTemp~Region + Month + I(Month^2) + WYType2_Sac + (1|Year) + (1|Station) , data = tempMonM, na.action = na.omit))
 
 summary(M.max3a <- lmer(maxTemp~Region + Season + WYType2_Sac + (1|Station), data = tempMonM, na.action = na.omit))
 
-summary(M.max5a <- lmer(maxAvTemp~Region + I(Month^2) + WYType2_Sac + WYType2_Sac:I(Month^2) + (1|Station), data = tempMonM, na.action = na.omit))
+summary(M.max5a <- lmer(maxAvTemp~Region + Month + I(Month^2) + WYType2_Sac + WYType2_Sac:I(Month^2) + (1|Station), data = tempMonM, na.action = na.omit))
 
-summary(M.max5b <- lmer(maxAvTemp~Region + I(Month^2) + WYType2_Sac + WYType2_Sac:I(Month^2) + (1|Year) + (1|Station) , data = tempMonM, na.action = na.omit))
+summary(M.max5b <- lmer(maxAvTemp~Region + Month + I(Month^2) + WYType2_Sac + WYType2_Sac:I(Month^2) + (1|Year) + (1|Station) , data = tempMonM, na.action = na.omit))
 
 
 ```
@@ -331,7 +362,7 @@ ggplot(tempMonM) +
 ```{r glmMin}
 
 # Temporal: Season vs. Month
-summary(M.min1 <- glm(minTemp~Region + I(Month^2) + WYType2_Sac + Year, data = tempMonM))
+summary(M.min1 <- glm(minTemp~Region + Month+ I(Month^2) + WYType2_Sac + Year, data = tempMonM))
 summary(M.min2 <- glm(minTemp~Region + Season + WYType2_Sac + Year, data = tempMonM))
 AIC(M.min1, M.min2)
 
@@ -511,7 +542,7 @@ ggplot(tempMonM) +
 ```{r glmMean}
 
 # Temporal: Season vs. Month
-summary(M.mean1 <- glm(meanTemp~Region + I(Month^2) + WYType2_Sac + Year, data = tempMonM))
+summary(M.mean1 <- glm(meanTemp~Region + Month+ I(Month^2) + WYType2_Sac + Year, data = tempMonM))
 summary(M.mean2 <- glm(meanTemp~Region + Season + WYType2_Sac + Year, data = tempMonM))
 AIC(M.mean1, M.mean2)
 
@@ -642,8 +673,8 @@ ggplot(Winter) +
 
 ```{r glmWinMean}
 
-summary(M.meanW1 <- glm(meanTemp~Region + I(Month^2) + WYType2_Sac, data = Winter))
-summary(M.meanW2 <- glm(meanTemp~Region + I(Month^2) + WY , data = Winter))
+summary(M.meanW1 <- glm(meanTemp~Region + Month + I(Month^2) + WYType2_Sac, data = Winter))
+summary(M.meanW2 <- glm(meanTemp~Region + Month + I(Month^2) + WY , data = Winter))
 
 # Month as factor
 summary(M.meanW4 <- glm(meanTemp~Region + fMonth + fWY, data = Winter))
@@ -655,7 +686,7 @@ summary(M.meanW4 <- glm(meanTemp~Region + fMonth + fWY, data = Winter))
     
 ```{r}
 # Year as factor
-summary(M.meanW3 <- glm(meanTemp~Region + I(Month^2) + fWY, data = Winter))
+summary(M.meanW3 <- glm(meanTemp~Region + Month + I(Month^2) + fWY, data = Winter))
 AIC(M.meanW1, M.meanW2, M.meanW3, M.meanW4)
 ```
     
@@ -685,13 +716,19 @@ visreg(M.meanW4)
 #### Mixed models
 
 ```{r}
-summary(M.meanW4a <- lmer(meanTemp~Region + I(Month^2) + (1|fWY), data = Winter, na.action = na.omit))
+summary(M.meanW4a <- lmer(meanTemp~Region +Month + I(Month^2) + (1|fWY), data = Winter, na.action = na.omit))
 
-summary(M.meanW4b <- lmer(meanTemp~Region +  I(Month^2) + (1|fWY) + (1|Station), data = Winter, na.action = na.omit))
+summary(M.meanW4b <- lmer(meanTemp~Region + Month+  I(Month^2) + (1|fWY) + (1|Station), data = Winter, na.action = na.omit))
 
+#you might need to add a quadratic term on "month" even when it's in the random factors, though I'm not totally sure there.
 summary(M.meanW4c <- lmer(meanTemp~Region +  (1|Month) + (1|fWY), data = Winter, na.action = na.omit))
 
 summary(M.meanW4d <- lmer(meanTemp~Region + WYType2_Sac+  (1|Month) + (1|fWY), data = Winter, na.action = na.omit))
+
+summary(M.meanW4cx <- lmer(meanTemp~Region +  (1|Month) + (1|I(Month^2)) +(1|fWY), data = Winter, na.action = na.omit))
+
+summary(M.meanW4dx <- lmer(meanTemp~Region + WYType2_Sac+  (1|Month)+ (1|I(Month^2)) + (1|fWY), data = Winter, na.action = na.omit))
+
 
 
 summary(M.meanW5a <- lmer(meanTemp~Region +  (1|fWY) + (1|fMonth), data = Winter, na.action = na.omit))
@@ -766,14 +803,14 @@ ggplot(Winter) +
 
 ```{r glmMinWinter}
 
-summary(M.minW1 <- glm(minAvTemp~Region + I(Month^2) + WYType2_Sac, data = Winter))
-summary(M.minW2 <- glm(minAvTemp~Region + I(Month^2) + WY , data = Winter))
+summary(M.minW1 <- glm(minAvTemp~Region + Month + I(Month^2) + WYType2_Sac, data = Winter))
+summary(M.minW2 <- glm(minAvTemp~Region + Month +I(Month^2) + WY , data = Winter))
 
 # Year as factor
-summary(M.minW3 <- glm(minAvTemp~Region + I(Month^2) + fWY, data = Winter))
+summary(M.minW3 <- glm(minAvTemp~Region + Month + I(Month^2) + fWY, data = Winter))
 
 # Month as factor
-summary(M.minW4 <- glm(minAvTemp~Region + fMonth + fWY, data = Winter))
+summary(M.minW4 <- glm(minAvTemp~Region + Month + fMonth + fWY, data = Winter))
 
 ```
 
@@ -832,9 +869,9 @@ visreg(M.minW5, "Region", by = "fMonth")
 #### Mixed models
 
 ```{r}
-summary(M.minW4a <- lmer(minAvTemp~Region + I(Month^2) + (1|fWY), data = Winter, na.action = na.omit))
+summary(M.minW4a <- lmer(minAvTemp~Region + Month + I(Month^2) + (1|fWY), data = Winter, na.action = na.omit))
 
-summary(M.minW4b <- lmer(minAvTemp~Region +  I(Month^2) + (1|fWY) + (1|Station), data = Winter, na.action = na.omit))
+summary(M.minW4b <- lmer(minAvTemp~Region + Month +  I(Month^2) + (1|fWY) + (1|Station), data = Winter, na.action = na.omit))
 
 summary(M.minW4c <- lmer(minAvTemp~Region +  (1|Month) + (1|fWY), data = Winter, na.action = na.omit))
 
