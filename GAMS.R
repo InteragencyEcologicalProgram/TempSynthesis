@@ -263,12 +263,18 @@ rastered_predsSE<-c(rastered_preds, rastered_SE)
 
 deltabuff = st_buffer(delta, dist = 0.01)
 
-raster_plot<-function(data, labels="All"){
+#############################################################################
+#plotting functions
+
+raster_plot<-function(data, labels="All", type){
+  if (type == "range") lims = c(0,6) else lims = c(5,30)
   data = st_crop(data, deltabuff)
   ggplot()+
     geom_stars(data=data)+
     facet_wrap(~Date)+
-    scale_fill_viridis_c(name="Temperature", na.value="white", breaks=seq(6,26,by=1), labels= function(x) ifelse((x/2)==as.integer(x/2), as.character(x), ""),
+    scale_fill_viridis_c(name="Temperature", na.value="white",
+                         limits=lims,
+                         labels= function(x) ifelse((x/2)==as.integer(x/2), as.character(x), ""),
                          guide = guide_colorbar(direction="horizontal", title.position = "top", barwidth = 10, ticks.linewidth = 2,
                                                 barheight=1, title.hjust=0.5, label.position="bottom", label.theme=element_text(size=12), 
                                                 title.theme=element_text(size=13)))+
@@ -284,7 +290,25 @@ raster_plot2<-function(data, date, labels="All"){
   ggplot()+
     geom_stars(data=data)+
    # facet_wrap(~Date)+
-    scale_fill_viridis_c(name="Temperature", na.value="white", breaks=seq(6,26,by=1), labels= function(x) ifelse((x/2)==as.integer(x/2), as.character(x), ""),
+    scale_fill_viridis_c(name="Temperature", na.value="white", breaks=seq(6,26,by=1), limits = c(5,30),
+                         labels= function(x) ifelse((x/2)==as.integer(x/2), as.character(x), ""),
+                         guide = guide_colorbar(direction="horizontal", title.position = "top", barwidth = 10, ticks.linewidth = 2,
+                                                barheight=1, title.hjust=0.5, label.position="bottom", label.theme=element_text(size=12), 
+                                                title.theme=element_text(size=13)))+
+    coord_sf()+
+    ylab("Latitude")+
+    xlab("Longitude")+
+    theme_bw() + theme(legend.position = "top")
+}
+
+
+raster_plot_range<-function(data, labels="All"){
+  data = st_crop(data, deltabuff)
+  ggplot()+
+    geom_stars(data=data)+
+    # facet_wrap(~Date)+
+    scale_fill_viridis_c(name="Temperature", na.value="white", breaks=seq(6,26,by=1), limits = c(0,8),
+                         labels= function(x) ifelse((x/2)==as.integer(x/2), as.character(x), ""),
                          guide = guide_colorbar(direction="horizontal", title.position = "top", barwidth = 10, ticks.linewidth = 2,
                                                 barheight=1, title.hjust=0.5, label.position="bottom", label.theme=element_text(size=12), 
                                                 title.theme=element_text(size=13)))+
@@ -362,16 +386,40 @@ rastered_preds2 = rastered_preds %>%
 mutate(Prediction = Prediction+2)
 
 rastered_predsx2 = rastered_preds %>%
-  mutate(Prediction = Prediction*.02)
+  mutate(Prediction = Prediction*1.02)
 
-raster_plot(rastered_preds2) + ggtitle("Max Temperature")
-raster_plot2(rastered_preds2, 3) + ggtitle("Max Temperature - March")
-raster_plot2(rastered_preds2, 6) + ggtitle("Max Temperature - June")
-raster_plot2(rastered_preds2, 10) + ggtitle("Max Temperature - October")
+raster_plot(rastered_preds, type = "Max") + ggtitle("Max Temperature")
+raster_plot(rastered_preds2, type = "Max") + ggtitle("Max Temperature with 2 degree increase")
+raster_plot2(rastered_preds2, 3) + ggtitle("Max Temperature +2 - March")
+raster_plot2(rastered_preds2, 6) + ggtitle("Max Temperature +2 - June")
+raster_plot2(rastered_preds2, 10) + ggtitle("Max Temperature +2 - October")
 
 
-raster_plot(rastered_predsx2) + ggtitle("Max Temperature")
+raster_plot(rastered_predsx2) + ggtitle("Max Temperature with 2 percent increase")
 raster_plot2(rastered_predsx2, 3) + ggtitle("Max Temperature - March")
 raster_plot2(rastered_predsx2, 6) + ggtitle("Max Temperature - June")
 raster_plot2(rastered_predsx2, 10) + ggtitle("Max Temperature - October")
 
+
+rastered_preds2ave = rastered_predsave %>%
+  mutate(Prediction = Prediction+2)
+
+raster_plot(rastered_preds2ave) + ggtitle("Mean Temperature with 2 degree increase")
+raster_plot2(rastered_preds2ave, 3) + ggtitle("Mean Temperature +2 - March")
+raster_plot2(rastered_preds2ave, 6) + ggtitle("Mean Temperature +2 - June")
+raster_plot2(rastered_preds2ave, 10) + ggtitle("Mean Temperature +2 - October")
+
+#ten percent increase in temperature range
+rastered_preds2range = rastered_predsrange %>%
+  mutate(Prediction = Prediction+1.1)
+
+
+raster_plot(rastered_preds2range, type = "range") + ggtitle("Temp range with 10% increase")
+raster_plot(rastered_predsrange, type = "range") + ggtitle("Temp range")
+raster_plot_range(rastered_preds2range, 3) + ggtitle("Temp range +10%- March")
+raster_plot_range(rastered_preds2range, 6) + ggtitle(" Temp range +10% - June")
+raster_plot_range(rastered_preds2range, 10) + ggtitle("Temp range +10% - October")
+
+#Save all teh results
+save(deltabuff, rastered_preds, rastered_preds2, rastered_preds2ave, rastered_predsave, rastered_predsmin,
+     rastered_predsrange, rastered_predsSE, rastered_preds2range, file = "GAMresults.RData")
