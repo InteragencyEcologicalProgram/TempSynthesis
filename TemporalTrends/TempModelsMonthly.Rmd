@@ -52,7 +52,7 @@ tempMon <- tempMon %>%
 tempMon$Season <- factor(tempMon$Season, levels = c("Spring", "Summer", "Fall", "Winter"))
 tempMon$WY <- as.numeric(tempMon$WY)
 tempMon$fWY <- ordered(tempMon$WY)
-tempMon$fMonth <- ordered(tempMon$Month, levels = c("11", "12", "1", "2"))
+tempMon$fMonth <- ordered(tempMon$Month, levels = c("11", "12", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"))
 tempMon$fYear <- ordered(tempMon$Year)
 tempMon <- filter(tempMon, WY > 2008 & WY < 2020)
 tempMonM <- left_join(tempMon, nMon) %>%
@@ -181,6 +181,7 @@ AIC(M.max1, M.max2)
 # Season or Month? Season makes better model but maybe less interesting?
 summary(M.max3 <- glm(maxAvTemp~Region + WYType2_Sac + Season , data = tempMonM))
 AIC(M.max1, M.max3)
+
 ```
 
 Best Model: **M.max4 = glm(maxTemp~Region + I(Month^2) + WYType2_Sac +  WYType2_Sac:I(Month^2)**
@@ -420,7 +421,7 @@ visreg(M.min2b, "Season", by = "WYType2_Sac")
 3. Is mean temperature increasing differentially by region?
 
 
-```{r monthlyMinPlot}
+```{r monthlyMeanPlot}
 library(plotly)
 p2 <- ggplot(tempMonM) + 
   geom_point(aes(x = WY, y = meanTemp, color = ordered(Month)), size = 3)+
@@ -887,9 +888,12 @@ Visualizing model results:
 ```{r include = FALSE, eval = FALSE}
 library(ggeffects)
 
-ggpredict(M.minW5f, terms = c("fWY", "fMonth"), type = "re") %>% 
-   plot() +
-   labs(x = "Water Year", y = "Month", title = "Avg Min Temp") + 
+call <- ggpredict(M.minW5f, terms = c("fWY", "fMonth"), type = "re") 
+ggplot(call, aes(x, predicted, group = group)) +
+  geom_line(aes(color = group)) +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high, group = group), alpha = .1)+
+  geom_point() +
+  labs(x = "Water Year", y = "Predicted", title = "Winter Avg Min Temp") + 
    theme_minimal()
 
 library(sjPlot)
@@ -901,3 +905,312 @@ library(sjPlot)
 summary(mixed.ranslope)
 ```
 
+
+## Summer Temperatures 
+**Scientific Questions: **
+
+1. Do summer temperatures (mean, min, max) increase over time?
+2. Are there notable differences in how summer temperatures change by region? 
+3. Are there certain months where temperature increases more over time? 
+
+### Mean Temperature
+#### Plots
+```{r}
+Summer <- tempMonM %>%
+  filter(Season == "Summer" | Month == 9)
+
+ggplot(Summer, aes(x = factor(WY), y = meanTemp)) + geom_jitter(aes(color = ordered(Month)))  + 
+  scale_color_viridis(option = "viridis", discrete = TRUE) + theme_bw()
+
+ggplot(Summer, aes(x = factor(WY), y = meanTemp)) + geom_boxplot(aes(fill = ordered(Month)))  + 
+  scale_fill_viridis(option = "viridis", discrete = TRUE) + theme_bw()
+```
+
+Look at interaction potential - do we really care about these?
+* Region * WYType
+* Month * WYType
+* Month * Region
+```{r InteractionsPlotsSummer}
+# WYType:Month
+# WY type trend differs by Month
+ggplot(Summer) + 
+  geom_boxplot(aes(x = fMonth, y = meanTemp, fill = WYType2_Sac)) +
+  scale_fill_viridis(option = "viridis", discrete = TRUE) + theme_bw()
+
+# Region:Month
+# Regional trend seems to differ by Month
+ggplot(Summer) + 
+  geom_boxplot(aes(x = fMonth, y = meanTemp, fill = Region)) +
+  scale_fill_viridis(option = "viridis", discrete = TRUE) + theme_bw()
+
+# Region:WYType
+# Difference in the South, wet year is lowest mean temp
+ggplot(Summer) + 
+  geom_boxplot(aes(x = Region, y = meanTemp, fill = WYType2_Sac)) + 
+  scale_fill_viridis(option = "viridis", discrete = TRUE) + theme_bw()
+```
+
+#### Normal GLM
+
+```{r glmWinMean}
+
+summary(M.meanS1 <- glm(meanTemp~Region + I(Month^2) + WYType2_Sac, data = Summer))
+summary(M.meanS2 <- glm(meanTemp~Region + I(Month^2) + WY , data = Summer))
+
+# Month as factor
+summary(M.meanS4 <- glm(meanTemp~Region + fMonth + fWY, data = Summer))
+
+```
+
+
+    Best Model: meanTemp~Region + I(Month^2) + factor(WY)
+    
+```{r}
+# Year as factor
+summary(M.meanS3 <- glm(meanTemp~Region + I(Month^2) + fWY, data = Summer))
+AIC(M.meanS1, M.meanS2, M.meanS3, M.meanS4)
+```
+    
+Plot results
+
+```{r}
+# Model 2 (numeric Year)
+par(mfrow = c(2,2))
+plot(M.meanS2)
+par(mfrow = c(1,3))
+visreg(M.meanS2)
+
+# Model 3 (factor year)
+par(mfrow = c(2,2))
+plot(M.meanS3)
+par(mfrow = c(1,3))
+visreg(M.meanS3)
+
+# Model 4 (factor year and month)
+par(mfrow = c(2,2))
+plot(M.meanS4)
+par(mfrow = c(1,3))
+visreg(M.meanS4)
+```
+
+#### Mixed models
+
+```{r}
+summary(M.meanS4a <- lmer(meanTemp~Region + I(Month^2) + (1|fWY), data = Summer, na.action = na.omit))
+
+summary(M.meanS4b <- lmer(meanTemp~Region +  I(Month^2) + (1|fWY) + (1|Station), data = Summer, na.action = na.omit))
+
+summary(M.meanS4c <- lmer(meanTemp~Region +  (1|Month) + (1|fWY), data = Summer, na.action = na.omit))
+
+summary(M.meanS4d <- lmer(meanTemp~Region + WYType2_Sac+  (1|Month) + (1|fWY), data = Summer, na.action = na.omit))
+
+summary(M.meanS5a <- lmer(meanTemp~Region +  (1|fWY) + (1|fMonth), data = Summer, na.action = na.omit))
+
+summary(M.meanS5b <- lmer(meanTemp~Region + (1|Station) + (1|fMonth) + (1|fWY), data = Summer, na.action = na.omit))
+
+summary(M.meanS5d <- lmer(meanTemp~Region + fWY + (1|fMonth) + (1|Station), data = Summer, na.action = na.omit))
+
+```
+
+Best model: **M.mean5c <- lmer(meanTemp~Region + fWY + fMonth + (1|Station))**
+
+```{r}
+summary(M.meanS5c <- lmer(meanTemp~Region + fWY + fMonth + (1|Station), data = Summer, na.action = na.omit))
+
+AIC(M.meanS4a, M.meanS4b, M.meanS4c, M.meanS4d, M.meanS5a, M.meanS5b, M.meanS5c, M.meanS5d)
+```
+
+Model diagnostics
+```{r}
+plot(M.meanS5c)
+qqnorm(resid(M.meanS5c))
+par(mfrow = c(2,2))
+visreg(M.meanS5c)
+```
+
+**Back to questions**
+
+1. Do summer temperatures (mean, min) increase over time?
+* Mean: not clear difference - high in 2015
+2. Are there notable differences in how summer temperatures change by region? 
+* Higher temps in Sac River
+3. Are there certain months where temperature increases more over time? 
+* June lowest
+
+### Conclusions:
+
+    Not a clear trend by water year 
+
+### Average Min Temperature
+#### Plots
+```{r}
+ggplot(Summer, aes(x = fWY, y = minAvTemp)) + geom_jitter(aes(color = ordered(Month)))  + 
+  scale_color_viridis(option = "viridis", discrete = TRUE) + theme_bw()
+
+ggplot(Summer, aes(x = fWY, y = minAvTemp)) + geom_boxplot(aes(fill = ordered(Month)))  + 
+  scale_fill_viridis(option = "viridis", discrete = TRUE) + theme_bw()
+```
+
+Interactions
+```{r InteractionsPlotsMinAv}
+# WYType:Month
+# WY type trend differs by Month (11-12 more similar, 1-2 more similar)
+ggplot(Summer) + 
+  geom_boxplot(aes(x = fMonth, y = minAvTemp, fill = WYType2_Sac)) +
+  scale_fill_viridis(option = "viridis", discrete = TRUE) + theme_bw()
+
+# Region:Month
+# Regional trend seems to differ by Month
+ggplot(Summer) + 
+  geom_boxplot(aes(x = fMonth, y = minAvTemp, fill = Region)) +
+  scale_fill_viridis(option = "viridis", discrete = TRUE) + theme_bw()
+
+# Region:WYType
+ggplot(Summer) + 
+  geom_boxplot(aes(x = Region, y = minAvTemp, fill = WYType2_Sac)) + 
+  scale_fill_viridis(option = "viridis", discrete = TRUE) + theme_bw()
+```
+
+
+### Models - GLM  
+
+```{r glmMinSummer}
+
+summary(M.minS1 <- glm(minAvTemp~Region + I(Month^2) + WYType2_Sac, data = Summer))
+summary(M.minS2 <- glm(minAvTemp~Region + I(Month^2) + WY , data = Summer))
+
+# Year as factor
+summary(M.minS3 <- glm(minAvTemp~Region + I(Month^2) + fWY, data = Summer))
+
+# Month as factor
+summary(M.minS4 <- glm(minAvTemp~Region + fMonth + fWY, data = Summer))
+
+```
+
+
+Best Model: **M.minS5 <- glm(minAvTemp~Region + fMonth + fWY + fMonth:Region**
+```{r}
+# Add interaction
+summary(M.minS5 <- glm(minAvTemp~Region + fMonth + fWY + fMonth:Region, data = Summer))
+
+AIC(M.minS1, M.minS2, M.minS3, M.minS4, M.minS5)
+```
+
+
+Plot results
+* Higher min Summer temps in South, SJ, Suisun Bay, lower in North Delta, Sac River, SM
+* High temps in 2015, overall higher 2015-2019 (avg increase 0.09/year)
+```{r}
+# Model 2 (numeric Year)
+par(mfrow = c(2,2))
+plot(M.minS2)
+par(mfrow = c(1,2))
+visreg(M.minS2)
+
+# Model 3 (factor year)
+par(mfrow = c(2,2))
+plot(M.minS3)
+par(mfrow = c(1,2))
+visreg(M.minS3)
+
+# Model 4 (factor year and month)
+par(mfrow = c(2,2))
+plot(M.minS4)
+par(mfrow = c(1,3))
+visreg(M.minS4)
+
+# Model 5 (factor year and month + interaction)
+par(mfrow = c(2,2))
+plot(M.minS5)
+par(mfrow = c(1,3))
+visreg(M.minS5)
+visreg(M.minS5, "fWY", by = "Region")
+visreg(M.minS5, "Region", by = "fMonth")
+```
+
+**Back to questions**
+
+1. Do Summer temperatures (mean, min) increase over time?
+  a. WY 2015 very warm, last 5 years warmer average min temps.
+2. Are there notable differences in how Summer temperatures change by region? 
+  a. Trend lesser in North Delta, South, Suisun Marsh
+3. Are there certain months where temperature increases more over time? 
+  a. Nov>Feb>Dec>Jan
+
+* Interaction: Sac River, San Joaquin and Suisun Bay warmer than North Delta, South, Suisun Marsh in Nov/Dec. South warmer in January and February. 
+
+#### Mixed models
+
+```{r}
+summary(M.minS4a <- lmer(minAvTemp~Region + I(Month^2) + (1|fWY), data = Summer, na.action = na.omit))
+
+summary(M.minS4b <- lmer(minAvTemp~Region +  I(Month^2) + (1|fWY) + (1|Station), data = Summer, na.action = na.omit))
+
+summary(M.minS4c <- lmer(minAvTemp~Region +  (1|Month) + (1|fWY), data = Summer, na.action = na.omit))
+
+summary(M.minS4d <- lmer(minAvTemp~Region + WYType2_Sac+  (1|Month) + (1|fWY), data = Summer, na.action = na.omit))
+
+summary(M.minS5a <- lmer(minAvTemp~Region +  (1|fWY) + (1|fMonth), data = Summer, na.action = na.omit))
+
+summary(M.minS5b <- lmer(minAvTemp~Region + (1|Station) + (1|fMonth) + (1|fWY), data = Summer, na.action = na.omit))
+
+summary(M.minS5d <- lmer(minAvTemp~Region + fWY + (1|fMonth) + (1|Station), data = Summer, na.action = na.omit))
+
+summary(M.minS5e <- lmer(minAvTemp~Region + fWY + fMonth + Region:fMonth + (1|Station), data = Summer, na.action = na.omit))
+
+summary(M.minS5f <- lmer(minAvTemp~ fWY + fMonth + (1|Station), data = Summer, na.action = na.omit))
+
+```
+
+Best model: **M.min5c <- lmer(minAvTemp~Region + fWY + fMonth + (1|Station))**
+
+```{r}
+summary(M.minS5c <- lmer(minAvTemp~Region + fWY + fMonth + (1|Station), data = Summer, na.action = na.omit))
+
+AIC(M.minS4a, M.minS4b, M.minS4c, M.minS4d, M.minS5a, M.minS5b, M.minS5c, M.minS5d, M.minS5e, M.minS5f)
+```
+
+Model diagnostics
+```{r}
+plot(M.minS5b)
+qqnorm(resid(M.minS5b))
+qqline(resid(M.minS5b))
+visreg(M.minS5b)
+
+plot(M.minS5c)
+qqnorm(resid(M.minS5c))
+qqline(resid(M.minS5c))
+visreg(M.minS5c)
+
+plot(M.minS5e)
+qqnorm(resid(M.minS5e))
+qqline(resid(M.minS5e))
+boxplot(minAvTemp~fMonth, data = Summer)
+boxplot(minAvTemp~Region, data = Summer)
+boxplot(minAvTemp~fWY, data = Summer)
+visreg(M.minS5e, "fWY", by = "Region")
+visreg(M.minS5e, "Region", by = "fMonth")
+
+```
+
+
+Visualizing model results: 
+```{r include = FALSE, eval = FALSE}
+library(ggeffects)
+
+call <- ggpredict(M.minS5f, terms = c("fWY", "fMonth"), type = "re") 
+ggplot(call, aes(x, predicted, group = group)) +
+  geom_line(aes(color = group)) +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high, group = group), alpha = .1)+
+  geom_point() +
+  labs(x = "Water Year", y = "Predicted", title = "Summer Avg Min Temp") + 
+   theme_minimal()
+
+library(sjPlot)
+
+# Visualise random effects 
+(re.effects <- plot_model(M.minS5f, type = "re", show.values = TRUE))
+
+# show summary
+summary(mixed.ranslope)
+```
