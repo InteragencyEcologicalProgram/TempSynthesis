@@ -1,0 +1,145 @@
+---
+title: "Rosie's GAM results"
+author: "Rosie"
+date: "12/8/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(lubridate)
+library(tidyverse)
+library(vegan)
+library(sf)
+if (!require("rspatial")) devtools::install_github('rspatial/rspatial')
+library(rspatial)
+library( spgwr )
+library(nlme)
+library(boot)
+library(itsadug)
+library(mgcv)
+library(raster)
+library(stars)
+```
+
+## Spatial and Annual variation in temperature
+
+Early exploration found no real trend in temperature across years (no signs of climate change). Some years were definitely warmer than others, but we don't have a long enough data set to say anything conclusive. Therefore, it seems more useful to use our data to look at changes across space and changes within years. THe approach I am using:
+
+* Calculate average temperature, minimum temperature, and maximum temperature for each day of the year for the past ten years (where we have the most data)
+* Run a tensor product smooth on temperature, latitude, longitude, and day
+* Plot the results for some representative days of the year
+* See how the results change given a 2-degree increase in average temperature or maximum temperature.
+
+
+### The GAMs
+
+For each GAM, I first ran the model without any accounting for temporal autocorrelation. I used the `bam` function in the package `mgcv` because I have a large data set.
+
+`g1 = bam(Temperature ~ te(Latitude, Longitude, julian, bs = c("cr","cr", "cc")), 
+             data =tempmean2, method = "REML"))`
+             
+I then calculated the value of `rho` based on the autocorrelation of the residuals of the origional model. I used this value to run a new GAM with an AR1 correlation parameter.
+
+
+`r1 = acf(resid(g1), plot=FALSE)$acf[2]`
+
+`g2 =  bam(Temperature ~ te(Latitude, Longitude, julian, bs = c("cr","cr", "cc")),
+             data =tempmean2, method = "REML",  rho=r1, AR.start=tempmean2$start.event)`
+
+These models were repeated for the minimum, maximum, average, and range of temperatures.
+
+## Plots
+
+To plot the results, I created a grid based on a rasterization of the Delta waterways, and used the "predict" function to fill in values for areas between data points based on the GAM model. I then raised the prediction for maximum and average temperatures by two degrees to see how different things might be under climate change scenarios. 
+
+```{r, echo=FALSE}
+load("GAMresults.RData")
+
+#############################################################################
+#plotting functions
+
+raster_plot<-function(data, labels="All", type){
+  if (type == "range") lims = c(0,6) else lims = c(5,30)
+  data = st_crop(data, deltabuff)
+  ggplot()+
+    geom_stars(data=data)+
+    facet_wrap(~Date)+
+    scale_fill_viridis_c(name="Temperature", na.value="white",
+                         limits=lims,
+                         labels= function(x) ifelse((x/2)==as.integer(x/2), as.character(x), ""),
+                         guide = guide_colorbar(direction="horizontal", title.position = "top", barwidth = 10, ticks.linewidth = 2,
+                                                barheight=1, title.hjust=0.5, label.position="bottom", label.theme=element_text(size=12), 
+                                                title.theme=element_text(size=13)))+
+    coord_sf()+
+    ylab("Latitude")+
+    xlab("Longitude")+
+    theme_bw() + theme(legend.position = "top")
+}
+
+raster_plot2<-function(data, date, labels="All", lims = NULL){
+  data = data[,,,date]
+  data = st_crop(data, deltabuff)
+  ggplot()+
+    geom_stars(data=data)+
+   # facet_wrap(~Date)+
+    scale_fill_viridis_c(name="Temperature", na.value="white", limits = lims,
+                         labels= function(x) ifelse((x/2)==as.integer(x/2), as.character(x), ""),
+                         guide = guide_colorbar(direction="horizontal", title.position = "top", barwidth = 10, ticks.linewidth = 2,
+                                                barheight=1, title.hjust=0.5, label.position="bottom", label.theme=element_text(size=12), 
+                                                title.theme=element_text(size=13)))+
+    coord_sf()+
+    ylab("Latitude")+
+    xlab("Longitude")+
+    theme_bw() + theme(legend.position = "top")
+}
+
+
+
+```
+
+For example, here is a plot of the maximum temperatures currently, and with a 2-degree increase.
+
+```{r}
+
+raster_plot(rastered_preds, type = "Max") + ggtitle("Max Temperature")
+raster_plot(rastered_preds2, type = "Max") + ggtitle("Max Temperature with 2 degree increase")
+
+
+```
+
+It's a little easier to look at just one day at a time. This is March 15th.
+
+```{r}
+
+raster_plot2(rastered_preds, 3, lims = c(10,25)) + ggtitle("Max Temperature - March")
+raster_plot2(rastered_preds2, 3, lims = c(10,25)) + ggtitle("Max Temperature +2 - March")
+
+```
+
+Here is the mean temperature.
+
+```{r}
+
+raster_plot(rastered_predsave, type = "mean") + ggtitle("Mean Temperature")
+
+raster_plot(rastered_preds2ave, type = "mean") + ggtitle("Mean Temperature with 2 degree increase")
+
+raster_plot2(rastered_predsave, 3, lims = c(12,18)) + ggtitle("Mean Temperature - March")
+raster_plot2(rastered_preds2ave, 3, lims = c(12,18)) + ggtitle("Mean Temperature +2 - March")
+
+```
+
+Many models show only small increases in average temperatures, but increases in temperature range might be more significant. Let's see what a 10% increase in temperature range looks like.
+
+```{r}
+raster_plot(rastered_predsrange, type = "range") + ggtitle("Temp range")
+raster_plot(rastered_preds2range, type = "range") + ggtitle("Temp range with 10% increase")
+
+raster_plot2(rastered_preds2range, 3, lims = c(0,7)) + ggtitle("Temp range - March")
+
+raster_plot2(rastered_preds2range, 3, lims = c(0,7)) + ggtitle("Temp range +10%- March")
+
+
+```
+
