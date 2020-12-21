@@ -25,7 +25,11 @@ MODIStsp(
   start_date = "2020.06.01",
   end_date = "2020.06.2",
   verbose = FALSE,
-  parallel = TRUE
+  parallel = TRUE,
+  start_x = 8,
+  end_x = 8,
+  start_y = 5,
+  end_y = 5
 )
 
 MODIStsp_get_prodlayers("M*D09CMG")
