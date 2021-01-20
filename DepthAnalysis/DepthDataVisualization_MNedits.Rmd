@@ -18,7 +18,8 @@ library(readr)
 * Add date and time variables (lubridate:: month(), day(), year())
 * Order factors to be low-medium-high
 ```{r import}
-dir <- getwd() # Run this then check your dir (type dir in console).
+dir <- getwd()
+# Run this then check your dir (type dir in console).
 setwd(paste0(dir, "/DepthAnalysis/")) # If your "dir" does not include the DepthAnalysis folder run this line. If it does ignore this line.
 depth <- readRDS("Data/depthdata_heatstress_20201005.rds") # Run this
 #depth$Datetime <- attr(depth$Datetime, "tzone") <- "PDT"
@@ -30,6 +31,7 @@ depth2 <- read_rds("Data/depthdata_heatstress_20201005.rds") %>%
   filter(WaterCol == "Bottom",
          Station == "ANH") %>%
   mutate(Date = date(Datetime)) 
+## what does this show us?? if I am reading it correctly this shows anh bottom max temperature june-August? -MN
 
 # Look at when max temp hour occurs
 depth2a <- depth2 %>%
@@ -41,6 +43,7 @@ depth2a <- depth2 %>%
   filter(Temp == max.Temp) %>%
   mutate(Month = month(Date),
          Hour = hour(Datetime))
+view(depth2a)
 
 # Make surface dataset 
 # Compared with CDEC - now the same (PST)
@@ -62,7 +65,9 @@ ANH2 <- ANH1a %>%
          Date = date(Datetime)) %>%
   filter(Minute == 0,
          Temp2 >5 & Temp2 < 40) %>%
-  select(-c(1:8))
+ select(-c(1:8))
+#round (value,1) is the rounding to the tenth
+#each of the temp2,datetime and minute, hour is adding new columns select line 1-8 is when she deleted the knew columns she used but doesn't need to show anymore
 
 # Looking at when max temps occur
 ANH2a <- ANH2 %>%
@@ -73,6 +78,7 @@ ANH2a <- ANH2 %>%
   left_join(ANH2) %>%
   filter(Temp2 == max.Temp) %>%
   mutate(Month = month(Date))
+## temp2 appears to be the new rounded values-MN
 
 # Plot max temp by hour
 library(plotly)
@@ -83,6 +89,8 @@ ggplotly(ANHp3)
 # Using depth dataset
 ANHp4 <- ggplot(depth2a, aes(x = ordered(Hour), y = max.Temp, color = factor(Month)), alpha = 0.6) + geom_jitter()
 ggplotly(ANHp4)
+
+## did you find a difference using the different datasets?-MN
 
 ```
 
@@ -204,7 +212,7 @@ table
 # Make a bar plot!
 # ndays in each stress category, faceted into station 
 library(ggplot2)
-ggplot(table_highstress, aes(x = Stress, y = n)) + geom_col() +
+ggplot(table_highstress, aes(x = Stress, y = n)) + geom_col() + ## this is ust for RRI since it is the only station with any high stress
   facet_grid(WaterCol~Station)
 
 # Add stacked bar plot
@@ -248,6 +256,7 @@ Max.time.summary2 = Max.time %>%
   group_by(Station, WaterCol) %>%
   summarize(Median.max.hour = round(median(Hour),1),
             n = n())
+###most of the median max hours for both surface and bottom were at 1600, with the exception of MRZbottom and RRI surface at 1500
 
 # By station/watercol
 ggplot(Max.time.summary2, aes(x= Station, y = Median.max.hour)) + facet_grid(~WaterCol) + geom_col() + 
@@ -425,6 +434,73 @@ ggplot(depthDiff_rel3, aes(x = factor(Month), y = RelTempDiff,colour=factor(TOD)
 
 ```
 
+##### Cat started here ######
+Run model for temp difference
+* Change time of day groupings? 
+* List variables to put in model 
+* Figure out what a lower estimate means (greater difference or smaller difference?)
+* Figure by station and TOD (panel)
+```{r}
+
+# Cut off first 3 days
+# Include temperature lag 
+depthDiff_rel3 <- depthDiff_rel3 %>%
+  filter(Date > "2012-07-15") %>%
+  group_by(Station) %>%
+  mutate(TempDiffLag = lag(RelTempDiff, 1),
+         TempDiffLag2 = lag(RelTempDiff,2))
+
+# Add julian day
+depthDiff_rel3$julian <- yday(depthDiff_rel3$Date)
+
+# Add WY 
+depthDiff_rel3 <- depthDiff_rel3 %>%
+  mutate(WY = ifelse(Month > 10, Year + 1, Year))
+
+# Run model 
+
+# Filter to Station
+RelTempDiff_MRZ <- depthDiff_rel3 %>% filter(Station == "MRZ")
+RelTempDiff_RRI <- depthDiff_rel3 %>% filter(Station == "RRI")
+RelTempDiff_MAL <- depthDiff_rel3 %>% filter(Station == "MAL")
+RelTempDiff_ANH <- depthDiff_rel3 %>% filter(Station == "ANH")
+
+# Plot max temp difference
+ggplot(RelTempDiff_MRZ, aes(x = Hour, y = RelTempDiff)) + geom_point()
+ggplot(RelTempDiff_RRI, aes(x = Hour, y = RelTempDiff)) + geom_point()
+ggplot(RelTempDiff_MAL, aes(x = Hour, y = RelTempDiff)) + geom_point()
+ggplot(RelTempDiff_ANH, aes(x = Hour, y = RelTempDiff)) + geom_point()
+
+ggplot(depthDiff_rel3, aes(x = Hour, y = RelTempDiff)) + geom_point() + facet_wrap(~Station)
+
+# Variables: 
+# Julian day (sin or julian + julian^2)
+# Hour vs TOD
+# Mixed effects model vs Autoregression 
+  # gls/lmer - Linear mixed effect model. Hour within station as a repeated measure
+
+summary(m.MRZ1 <- glm(RelTempDiff ~ julian + I(julian^2)* TOD, data = RelTempDiff_MRZ))
+
+m.TempDiff1 <- glm(RelTempDiff ~ julian * TOD, data = depthDiff_rel3)
+summary(m.TempDiff1)
+
+
+```
+
+* Temp difference is greater when coefficient is more negative
+
+
+
+
+
+
+
+
+
+
+
+
+
 If there is a difference (above) can include absolute temperatures to see what those numbers actually are.
 
 ```{r}
@@ -491,6 +567,71 @@ depth_range <- depth_filter %>%
   
 ggplot(depth_range, aes(x = Date, y = range, color = WaterCol)) + geom_point(size=1) + 
   facet_wrap(~Station)
+
+```
+
+
+
+### temperature variability by Water Year type (answer all the questions above(-season) using WY)
+### create WY column and assign the month 10-12 to the following year and add the type of water year from the excel file Sactype2
+
+
+```{r}
+depth_filter$Datetime <- as.character(depth_filter$Datetime)
+
+
+depthfilterWY <- depth_filter %>%
+  mutate(Datetime = parse_datetime(Datetime, format = "%Y-%m-%d %H:%M:%S"),
+         Month = month(Datetime),
+         Year = year(Datetime)) %>% 
+  mutate(WY = ifelse(Month %in% c(10,11,12), Year + 1, Year))       
+
+## mutate is adding or editing an existing or creating a new column, by editing you are technically overwriting a column. if you see a name and then an = you are making something new like line 511-512 above.  
+ 
+depthfilterWY = left_join(depthfilterWY, WYType, by = 'WY')
+
+### got all the WYType information from the excel file combined in depthfilterWY!
+## New file =  left_join(main file, WYType file, by = “WY”) Cat's email suggestion for joining the WY file
+
+### eliminate columns that are not needed descrribing wy in the depthfilterWY
+
+depthfilterWY <- depthfilterWY %>% 
+  select(Station, Datetime, Temp, WaterCol, Date, Stress, Month, Year, WY, WYType2_Sac)
+## successfully removed unwanted WYT columns
+
+
+## rearranging columns order
+depthfilterWY <-depthfilterWY [,c("Station", "Datetime", "WY", "WYType2_Sac", "Temp", "WaterCol", "Date", "Stress", "Month", "Year")]
+### [,c (column names and orders)]
+```
+### exploratory WYtype: what questions do we want to ask with regards to Water Year type?
+```{r}
+## julian day, need lubridate, need to check how the dates are loaded in? character? or date class?
+
+view(depthfilterWY)
+?yday
+depthfilterWY$julian <- yday(depthfilterWY$Date)
+head(depthfilterWY$julian)
+view(depthfilterWY)
+## rename the dataset and take out unneccessary columns
+depthfilter_WY_julian <-depthfilterWY [,c("Station", "Datetime", "WY", "WYType2_Sac", "Temp", "WaterCol", "Date", "Stress", "Month", "Year", "julian")]
+view(depthfilter_WY_julian)
+### it worked, although I do not know how to check if the Julian date is the correct date or not..
+```
+
+
+```{r}
+glm()
+```
+
+
+```{r}
+## how many of these Med stress events were in dry years? wet? med? 
+## I am confused on how to move forward with combing two different objects, how would I add WY to this question?
+table_Medstress <- temp_max %>% 
+ filter(Stress== "Med") %>% 
+  group_by(Station, WaterCol) %>%
+  count(Stress)
 
 ```
 
