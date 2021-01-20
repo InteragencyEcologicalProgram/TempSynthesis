@@ -35,7 +35,7 @@ d <- SpatialPointsDataFrame(coords = Chipps[, -1],
 d_mrc <- spTransform(d, CRS("+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +no_defs"))
 #Now, the width can be specified in meters:
   
-  d_mrc_bff_mrc <- gBuffer(d_mrc, byid = TRUE, width = 400000)
+  d_mrc_bff_mrc <- gBuffer(d_mrc, byid = TRUE, width = 800000)
  
   d_mrc_bff <- spTransform(d_mrc_bff_mrc, CRS("+init=epsg:4326"))
  Chipps2 = st_as_sf(d_mrc_bff)
@@ -75,44 +75,55 @@ return(df2b)
 
 #We cant run it all at once because it gets too big, so I have to chunk it
 #there is probably a more elegant way of doing this.
-test = decadesum(1950, fires)
-test60s = decadesum(1960, fires)
-test70s = decadesum(1970, 2, fires)
-test73s = decadesum(1973, 3, fires)
-test77s = decadesum(1977, 2, fires)
-test80s = decadesum(1980, 5, fires)
-test86s = decadesum(1986, 4, fires)
-test90s = decadesum(1990, 5, fires)
-test96s = decadesum(1996, 4, fires)
-test00s = decadesum(2000, 5, fires)
-test06s = decadesum(2006, 3, fires)
-test10s = decadesum(2010, 3, fires)
-test14s = decadesum(2014, 3, fires)
+
+test = decadesum(1950, 10, firesclose)
+test60s = decadesum(1960, 10, firesclose)
+test70s = decadesum(1970, 2, firesclose)
+test73s = decadesum(1973, 3, firesclose)
+test77s = decadesum(1977, 2, firesclose)
+test80s = decadesum(1980, 5, firesclose)
+test86s = decadesum(1986, 4, firesclose)
+test90s = decadesum(1990, 5, firesclose)
+test96s = decadesum(1996, 4, firesclose)
+test00s = decadesum(2000, 5, firesclose)
+test06s = decadesum(2006, 3, firesclose)
+test10s = decadesum(2010, 3, firesclose)
+test14s = decadesum(2014, 3, firesclose)
+test15s = decadesum(2017, 2, firesclose)
 
 fireTS = distinct(rbind(test, test60s, test70s, test73s, test77s, 
                test80s, test86s, test90s, test96s, test00s, 
-               test06s, test10s, test14s))
+               test06s, test10s, test14s, test15s))
 
 
 fireTS2 = left_join(df, fireTS)
 fireTS2$acres[which(is.na(fireTS2$acres))] = 0
-write.csv(fireTS2, "fire_TS.csv")
+write.csv(fireTS2, "fire_TS_8K.csv")
 
 #probably just want the summer for analysis, since that's when most
 #of the fires are and that's when the highest chlorophyll occurs
 fireSummer = mutate(fireTS2, month = month(date)) %>%
-  filter(month %in% c(6,7,8,9))
+  filter(month %in% c(7,8,9, 10, 11))
 fireSummer$acres[which(is.na(fireSummer$acres))] = 0
 
 #Start with chlorophyll from EMP's dataset. Try continuous data later
-EMP = read.csv("WQ_Discrete_1975-2018.csv")
-EMPc = filter(EMP, AnalyteName == "Chlorophyll a") %>%
-  mutate(logCh = log(Result), date = as.Date(SampleDate), month = month(date)) %>%
-  filter(month %in% c(6,7,8,9))
+EMP = read.csv("SacSJ_delta_water_quality_1975_2019.csv")
+EMPc = EMP %>%
+  mutate(Chla = as.numeric(Chla), logCh = log(Chla), date = mdy(Date), month = month(date)) %>%
+  filter(month %in% c(7,8,9, 10, 11))
+
 
 fireEMP = left_join(EMPc, fireSummer)
+smokeEMP = rename(smoke2sum, date = Time) %>%
+  merge(EMPc)
 
 ggplot(fireEMP, aes(x = acres, y = logCh)) + geom_point()
+ggplot(smokeEMP, aes(x = AOD, y = logCh)) + geom_point() + geom_smooth(method = "lm") +
+  xlab("Aerosol Optical Depth") + ylab("Log EMP Chlorophyll")
+ggplot(smokeEMP, aes(x = AOD, y = Chla)) + geom_point() + geom_smooth(method = "lm")
+
+ggplot(smokeEMP, aes(x = AOD, y = DOSurface)) + geom_point() + geom_smooth(method = "lm")
+
 
 EMPsum = mutate(fireEMP, Year = year(date)) %>%
   group_by(month, Year) %>%
@@ -125,11 +136,18 @@ library(lmerTest)
 library(visreg)
 lm1 = lmer(logCh~ acres + month + (1|StationCode), data = fireEMP)
 summary(lm1)
-
 #warning, Some predictor variables are on very different scales: consider rescaling
 
 fireEMP = mutate(fireEMP, acres_scaled = scale(acres), 
                  julian = yday(date), Year = year(date))
+
+lm1x = lmer(logCh~ AOD + (1|StationCode), data = smokeEMP)
+summary(lm1x)
+
+lm1x = lmer(Result~ AOD + (1|StationCode), data = filter(smokeEMP, AOD < 0.4))
+summary(lm1x)
+visreg(lm1x)
+
 
 lm2 = lmer(logCh~ acres_scaled + Year + (1|StationCode), data = fireEMP)
 summary(lm2)

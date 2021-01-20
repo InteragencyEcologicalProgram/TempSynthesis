@@ -33,6 +33,16 @@ ggplot(USGSsites2, aes(x=dateTime, y = CHL)) + geom_point(aes(color = site_no))+
 USGSsites3 = group_by(USGSsites2, Date, site_no) %>%
   summarize(chla = mean(CHL, na.rm = T)) %>%
   mutate(logchla = log(chla), Month = month(Date)) %>%
-  filter(Month %in% c(6,7,8,9)) %>%
-  rename(date = Date)
+  filter(Month %in% c(7,8,9, 10, 11)) %>%
+  rename(date = Date) %>%
+  filter(site_no %in% c(11337190, 11455508, 380631122032201))
 
+smoke2sum = rename(smoke2sum, date = Time)
+USGSsmoke = merge(USGSsites3, smoke2sum) 
+
+ggplot(USGSsmoke, aes(x = AOD, y = chla)) + geom_point() +
+  facet_grid(.~site_no)
+
+fires_TS = read.csv("fire_TS_8K.csv")
+fires_TS = mutate(fires_TS, date = ymd(date), X = NULL)
+save(EMPc, USGSsites2, USGSsmoke, fires_TS, smoke2, smoke2sum, smokeEMP, file = "smoke.RData")
