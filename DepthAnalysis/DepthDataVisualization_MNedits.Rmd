@@ -18,6 +18,7 @@ library(readr)
 * Add date and time variables (lubridate:: month(), day(), year())
 * Order factors to be low-medium-high
 ```{r import}
+dir <- getwd()
 # Run this then check your dir (type dir in console).
 setwd(paste0(dir, "/DepthAnalysis/")) # If your "dir" does not include the DepthAnalysis folder run this line. If it does ignore this line.
 depth <- readRDS("Data/depthdata_heatstress_20201005.rds") # Run this
@@ -438,9 +439,11 @@ Run model for temp difference
 * Change time of day groupings? 
 * List variables to put in model 
 * Figure out what a lower estimate means (greater difference or smaller difference?)
+* Figure by station and TOD (panel)
 ```{r}
 
 # Cut off first 3 days
+# Include temperature lag 
 depthDiff_rel3 <- depthDiff_rel3 %>%
   filter(Date > "2012-07-15") %>%
   group_by(Station) %>%
@@ -450,15 +453,33 @@ depthDiff_rel3 <- depthDiff_rel3 %>%
 # Add julian day
 depthDiff_rel3$julian <- yday(depthDiff_rel3$Date)
 
+# Add WY 
+depthDiff_rel3 <- depthDiff_rel3 %>%
+  mutate(WY = ifelse(Month > 10, Year + 1, Year))
+
 # Run model 
-* WY Type
-* Season
 
 # Filter to Station
 RelTempDiff_MRZ <- depthDiff_rel3 %>% filter(Station == "MRZ")
-summary(m.MRZ1 <- glm(RelTempDiff ~ I(julian^2)* TOD, data = RelTempDiff_MRZ))
+RelTempDiff_RRI <- depthDiff_rel3 %>% filter(Station == "RRI")
+RelTempDiff_MAL <- depthDiff_rel3 %>% filter(Station == "MAL")
+RelTempDiff_ANH <- depthDiff_rel3 %>% filter(Station == "ANH")
 
+# Plot max temp difference
 ggplot(RelTempDiff_MRZ, aes(x = Hour, y = RelTempDiff)) + geom_point()
+ggplot(RelTempDiff_RRI, aes(x = Hour, y = RelTempDiff)) + geom_point()
+ggplot(RelTempDiff_MAL, aes(x = Hour, y = RelTempDiff)) + geom_point()
+ggplot(RelTempDiff_ANH, aes(x = Hour, y = RelTempDiff)) + geom_point()
+
+ggplot(depthDiff_rel3, aes(x = Hour, y = RelTempDiff)) + geom_point() + facet_wrap(~Station)
+
+# Variables: 
+# Julian day (sin or julian + julian^2)
+# Hour vs TOD
+# Mixed effects model vs Autoregression 
+  # gls/lmer - Linear mixed effect model. Hour within station as a repeated measure
+
+summary(m.MRZ1 <- glm(RelTempDiff ~ julian + I(julian^2)* TOD, data = RelTempDiff_MRZ))
 
 m.TempDiff1 <- glm(RelTempDiff ~ julian * TOD, data = depthDiff_rel3)
 summary(m.TempDiff1)
