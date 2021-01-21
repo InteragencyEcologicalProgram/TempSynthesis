@@ -21,13 +21,13 @@ library(readr)
 dir <- getwd()
 # Run this then check your dir (type dir in console).
 setwd(paste0(dir, "/DepthAnalysis/")) # If your "dir" does not include the DepthAnalysis folder run this line. If it does ignore this line.
-depth <- readRDS("Data/depthdata_heatstress_20201005.rds") # Run this
+depth <- readRDS("/DepthAnalysis/Data/depthdata_heatstress_20201005.rds") # Run this
 #depth$Datetime <- attr(depth$Datetime, "tzone") <- "PDT"
 ```
 
 ### Check timezone
 ```{r timezone}
-depth2 <- read_rds("Data/depthdata_heatstress_20201005.rds") %>%
+depth2 <- depth %>%
   filter(WaterCol == "Bottom",
          Station == "ANH") %>%
   mutate(Date = date(Datetime)) 
@@ -366,14 +366,37 @@ depthDiff_rel2$Hour=hour(depthDiff_rel2$Datetime)
 depthDiff_rel3 <- depthDiff_rel2 %>%
   mutate(TOD= ifelse(Hour>0 & Hour <=6, 'Early:1-6', ifelse(Hour>6 & Hour <=12, 'Morning:6-12', ifelse(Hour>12 & Hour <=18, 'Afternoon:12-18', ifelse(Hour>18 & Hour <=23, 'Evening:18-24' ,ifelse(Hour<1 & Hour >=0, 'Evening:18-24' , NA))))))
 
+
+
 #set levels for time of day
 depthDiff_rel3$TOD<-factor(depthDiff_rel3$TOD, levels=c("Early:1-6","Morning:6-12","Afternoon:12-18", "Evening:18-24"))
+
+############################################################
+#Convert hour to a trig funciton so that 0 and 24 are equal
+#also julian day.
+depthDiff_rel3 = mutate(depthDiff_rel3, sHour = cos(2*pi*(Hour)/24), sjulian = cos(2*pi*(julian)/365))
+
 
 #plot by month
 ggplot(depthDiff_rel3, aes(x = factor(Month), y = RelTempDiff,colour=factor(TOD))) + 
   geom_point(size=.4, position=position_dodge(width=0.2)) + 
   labs(y="Relative TempDiff (c)") +
   geom_smooth(aes(group = factor(TOD), colour=factor(TOD), method = "gam", se = TRUE))+
+  facet_wrap(~Station) +
+  geom_hline(yintercept = 0, color = "black",linetype='dashed') +
+  theme_bw() + 
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        strip.text = element_text(size = 15),
+        legend.text = element_text(size = 12),
+        legend.title = element_text(size = 12),
+        legend.position = "bottom")
+
+
+#plot by month - with hour as a sin function
+ggplot(depthDiff_rel3, aes(x = sHour, y = RelTempDiff)) + 
+  geom_point(size=.4) + 
+  labs(y="Relative TempDiff (c)") +
   facet_wrap(~Station) +
   geom_hline(yintercept = 0, color = "black",linetype='dashed') +
   theme_bw() + 
@@ -484,6 +507,51 @@ summary(m.MRZ1 <- glm(RelTempDiff ~ julian + I(julian^2)* TOD, data = RelTempDif
 m.TempDiff1 <- glm(RelTempDiff ~ julian * TOD, data = depthDiff_rel3)
 summary(m.TempDiff1)
 
+#now let's use hour in the model
+m.TempDiff2 <- glm(RelTempDiff ~ sjulian + sHour + sjulian:sHour + TempDiffLag + TempDiffLag2, data = RelTempDiff_ANH)
+summary(m.TempDiff2)
+library(visreg)
+visreg(m.TempDiff2)
+
+#NOt all that much autocorrelation at teh T-2 lag. 
+
+library(itsadug)
+library(mgcv)
+
+
+
+#try using a GAM
+RelTempDiff_ANH = start_event(as.data.frame(RelTempDiff_ANH), column="Datetime", event=c("Year"), label.event="Event")
+
+
+g5 =  bam(RelTempDiff~  s(julian, bs = "cc") + s(Hour, bs = "cc") + te(julian, Hour, bs = c("cc","cc")), 
+          data =RelTempDiff_ANH , method = "REML")
+
+r5 = acf(resid(g5))$acf[2]
+
+
+g5 =  bam(RelTempDiff~  s(julian, bs = "cc") + s(Hour, bs = "cc") + te(julian, Hour, bs = c("cc","cc")), 
+          data =RelTempDiff_ANH , method = "REML", rho = r5,  AR.start=RelTempDiff_ANH$start.event)
+
+plot(g5)
+
+
+#try it again, without the interaction, cause that's kinda confusing
+
+#look at antioch
+g6 =  bam(RelTempDiff~  s(julian, bs = "cc") + s(Hour, bs = "cc"),
+          data =RelTempDiff_ANH , method = "REML")
+plot(g6)
+
+r6 = acf(resid(g6))$acf[2]
+
+
+g6.1 =  bam(RelTempDiff~  s(julian, bs = "cc") + s(Hour, bs = "cc"), 
+          data =RelTempDiff_ANH , method = "REML", rho = r6,  AR.start=RelTempDiff_ANH$start.event)
+
+plot(g6.1)
+
+
 
 ```
 
@@ -524,6 +592,7 @@ RRI_depth <- depth_filter %>%
                        ifelse(Hour>12 & Hour <=18, 'Afternoon:12-18', 
                               ifelse(Hour>18 & Hour <=23, 'Evening:18-24' ,
                                      ifelse(Hour<1 & Hour >=0, 'Evening:18-24' , NA))))))
+
 
 #look at absolute temp differences for MRZ
 ggplot() + geom_point(data = MRZ_depth,aes(x = Date, y = Temp, color = WaterCol), alpha = 0.5, size = 1) + facet_wrap(~factor(TOD)) + labs(title = "MRZ Absolute Temps", y="Water Temp (C)") +
