@@ -1,0 +1,55 @@
+---
+title: "Relative Temperature Difference"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+### load all libraries, added all libraries from previous depthdatavisualiztion.rmd whether we necessarily needed them or not.
+library(tidyverse)
+library(lubridate)
+library(readr)
+library(plotly)
+library(tidyr)
+library(visreg)
+library(itsadug)
+library(mgcv)
+
+```
+
+```{r}
+## set wd, read in CSV relative tempdiff, bring over all data
+setwd("c:/User/nelsonm/Documents/R data files/Temp_syn/DepthAnalysis/Data") 
+## this didn't work had to use the session way 
+## error message: Error in setwd("c:/User/nelsonm/Documents/R data files/Temp_syn/DepthAnalysis/Data") : 
+  #cannot change working directory
+
+## relativetempdiff has all of our parameters: julian day, WY, sinejulian, sinehour etc and is the correct timeframe
+
+## filter the relativetempdiff for each station so I can bring in the models or try the models first
+View(relativetempdiff)
+
+RelTempDiff_MRZ <- relativetempdiff %>% filter(Station == "MRZ")
+RelTempDiff_RRI <- relativetempdiff %>% filter(Station == "RRI")
+RelTempDiff_MAL <- relativetempdiff %>% filter(Station == "MAL")
+RelTempDiff_ANH <- relativetempdiff %>% filter(Station == "ANH")
+
+```
+
+
+
+
+```
+##PLOTS
+
+## max differnce per station and together
+
+
+```{r}
+ggplot(RelTempDiff_MRZ, aes(x = Hour, y = RelTempDiff)) + geom_point()
+ggplot(RelTempDiff_RRI, aes(x = Hour, y = RelTempDiff)) + geom_point()
+ggplot(RelTempDiff_MAL, aes(x = Hour, y = RelTempDiff)) + geom_point()
+ggplot(RelTempDiff_ANH, aes(x = Hour, y = RelTempDiff)) + geom_point()
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
