@@ -81,13 +81,15 @@ tempDailyM$Season <- factor(tempDailyM$Season, levels = c("Spring", "Summer", "F
 3. Does the range differ by region?
 4. Does the range differ at particular stations in a region? 
 
+
+### Trends
 ```{r }
-# Overall trends by Month and Region 
+# Overall temperature trends by Month and Region 
 temp_s <- tempToUse %>% group_by(Region) %>% sample_frac(.1)
 ggplot(temp_s, aes(x = factor(Hour), y = Temp)) + geom_boxplot() + facet_grid(Region~Season)+theme_bw()
 ```
 
-Median Daily Range
+Monthly Median of Daily Range
 ```{r}
 tempDailyM_2 <- tempDailyM %>%
   group_by(Region, Station, Season, WYType2_Sac ,fWY, WY, fMonth) %>%
@@ -95,15 +97,46 @@ tempDailyM_2 <- tempDailyM %>%
             meanRange = mean(rangeTemp)) %>%
   ungroup()
 
+
+
+```
+
+By Water Year
+```{r}
 ggplot(tempDailyM_2, aes(x = fMonth, y = medianRange, fill = WYType2_Sac)) +   geom_boxplot() +
    scale_fill_viridis(option = "viridis", discrete = TRUE) + 
   theme_bw() + theme(axis.text = element_text(size = 14),
                      axis.title = element_text(size =14),
                      legend.text = element_text(size = 14),
                      legend.title = element_text(size = 14))
+
+ggplot(tempDailyM_2, aes(x = fMonth, y = medianRange, color = WYType2_Sac)) +   geom_jitter() +
+   scale_color_viridis(option = "viridis", discrete = TRUE) + 
+  theme_bw() + theme(axis.text = element_text(size = 14),
+                     axis.title = element_text(size =14),
+                     legend.text = element_text(size = 14),
+                     legend.title = element_text(size = 14))
 ```
 
-**Median Range: Approximately 0.25 - 1.5C**
+By Region
+```{r}
+ggplot(tempDailyM_2, aes(x = Region, y = medianRange, fill = WYType2_Sac)) +   geom_boxplot() +
+   scale_fill_viridis(option = "viridis", discrete = TRUE) + 
+  theme_bw() + theme(axis.text = element_text(size = 14),
+                     axis.title = element_text(size =14),
+                     legend.text = element_text(size = 14),
+                     legend.title = element_text(size = 14))
+
+ggplot(tempDailyM_2, aes(x = Region, y = medianRange, color = WYType2_Sac)) +   geom_jitter() +
+   scale_color_viridis(option = "viridis", discrete = TRUE) + 
+  theme_bw() + theme(axis.text = element_text(size = 14),
+                     axis.title = element_text(size =14),
+                     legend.text = element_text(size = 14),
+                     legend.title = element_text(size = 14))
+```
+
+**Median Range: Approximately 0.25 - 1.5C**  
+**Larger range values and variability in the South**
 
 Curious about those with large median ranges
 ```{r}
@@ -129,6 +162,8 @@ ggplot(highRange, aes(x = fWY, y = medianRange, color = Station, shape = Region)
 tempDailyM_s <- tempDailyM %>% group_by(Region) %>% sample_frac(.5)
 
 ggplot(tempDailyM_s, aes(x = Date, y = rangeTemp)) + geom_jitter() + geom_smooth(se = TRUE)
+
+ggplot(tempDailyM_s, aes(x = Date, y = rangeTemp, color = WYType2_Sac)) + geom_jitter()
 
 ```
 
