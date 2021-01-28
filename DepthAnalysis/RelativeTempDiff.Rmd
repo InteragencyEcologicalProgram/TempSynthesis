@@ -1,6 +1,8 @@
 ---
 title: "Relative Temperature Difference"
 output: html_document
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
@@ -38,18 +40,82 @@ RelTempDiff_ANH <- relativetempdiff %>% filter(Station == "ANH")
 
 
 
-
-```
 ##PLOTS
 
-## max differnce per station and together
 
 
 ```{r}
-ggplot(RelTempDiff_MRZ, aes(x = Hour, y = RelTempDiff)) + geom_point()
+
+## max differnce per station and together
+
+ggplot(RelTempDiff_MRZ, aes(x = Hour, y = RelTempDiff)) + geom_point() 
+
 ggplot(RelTempDiff_RRI, aes(x = Hour, y = RelTempDiff)) + geom_point()
+
 ggplot(RelTempDiff_MAL, aes(x = Hour, y = RelTempDiff)) + geom_point()
+
 ggplot(RelTempDiff_ANH, aes(x = Hour, y = RelTempDiff)) + geom_point()
+
+### now plot all stations together with their relative temperature difference
+
+ggplot(relativetempdiff, aes(x = Hour, y = RelTempDiff)) + geom_point() + facet_wrap(~Station)
+## got the overall station to work
+
+ggplot(relativetempdiff, aes(x = julian, y = RelTempDiff)) + geom_point() + facet_wrap(~Station)
+
+```
+## Models
+```{r}
+### run models for each station use as results interpretation
+
+
+modelANH <- glm(RelTempDiff ~ sjulian + sHour + sjulian:sHour + TempDiffLag , data = RelTempDiff_ANH)
+modelMAL <- glm(RelTempDiff ~ sjulian + sHour + sjulian:sHour + TempDiffLag , data = RelTempDiff_MAL)
+modelMRZ <- glm(RelTempDiff ~ sjulian + sHour + sjulian:sHour + TempDiffLag , data = RelTempDiff_MRZ)
+modelRRI <- glm(RelTempDiff ~ sjulian + sHour + sjulian:sHour + TempDiffLag , data = RelTempDiff_RRI)
+### now let's look at the model outputs (will put into a table)
+summary(modelANH)
+summary(modelMAL)
+summary(modelMRZ)
+summary(modelRRI)
+
+### deeper look into each station with ggplot and then ggplotly
+
+##ANH##
+
+
+##looking at the interaction between sjulian and shour
+ggplot(RelTempDiff_ANH, aes(x= sjulian, y = sHour))+ geom_point() ## not a great plot
+## with hour as a factor
+ggplot(RelTempDiff_ANH, aes(x= julian, y = RelTempDiff, color = factor(Hour)))+ geom_point(size = .4)
+## better but still not great
+###plotly to see the data clearer
+#first with Hour
+plotANHhour <- ggplot(RelTempDiff_ANH, aes(x= julian, y = RelTempDiff, color = factor(Hour)))+ 
+  geom_point(size = .4) + labs(title = Antioch) 
+## need to add the station as the legend for quick view#
+ggplotly(plotANHhour)
+# now with TOD as a factor 
+plotANHTOD <- ggplot(RelTempDiff_ANH, aes(x= julian, y = RelTempDiff, color = factor(TOD)))+ geom_point(size = .4)
+ggplotly(plotANH)
+
+## TOD seems like it will be easier for us to use for our figures for the viewers, but the models will be run hourly
+
+## RRI##
+##with TOD
+plotRRITOD <- ggplot(RelTempDiff_RRI, aes(x= julian, y = RelTempDiff, color = factor(TOD)))+ geom_point(size = .4)
+ggplotly(plotRRI)
+
+## MAL##
+plotMALTOD <- ggplot(RelTempDiff_MAL, aes(x= julian, y = RelTempDiff, color = factor(TOD)))+ geom_point(size = .4)
+ggplotly(plotMALTOD)
+
+##MRZ##
+plotMRZTOD <- ggplot(RelTempDiff_MRZ, aes(x= julian, y = RelTempDiff, color = factor(TOD)))+ geom_point(size = .4)
+ggplotly(plotMRZTOD)
+
+
+## Suggestions for making the data easier to view and see: color code by TOD (change groups) add a loess line with gmsmooth
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
