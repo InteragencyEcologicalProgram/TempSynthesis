@@ -1,0 +1,267 @@
+---
+title: "Daily Models"
+author: "Catarina Pien"
+date: "2/2/2021"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+# Daily Temperature Trend Models {.tabset}
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(lubridate)
+library(viridis) # color palette
+library(plotly) # interactive plots
+library(pscl) # glm
+library(visreg) # visualize model results
+library(lattice)
+library(lme4) # glmm
+library(lmerTest) #glmm p values
+library(plotly)
+library(ggeffects)
+```
+
+Read in data
+```{r read}
+setwd("C:/Users/cpien/OneDrive - California Department of Water Resources/Work/ClimateChange/R_code/TempSynthesis/")
+
+# tempFilt <- readRDS("Data/tempFilt.rds") 
+# tempToUse <- readRDS("Data/temp10years_20200922.rds")
+# tempAn <- readRDS("Data/tempAnnual.rds")
+tempMon <- readRDS("Data/tempMonthly.rds")
+tempDaily0 <- readRDS("Data/tempDaily.rds")
+# tempHeat <- readRDS("Data/heatstressDaily.rds")
+```
+
+
+```{r}
+nMon <- tempMon %>% group_by(Station, WY) %>%
+  summarize(nMon = n())
+```
+
+Add Season; Filter and alter variables
+```{r filterVars}
+tempDaily0$Month <- month(tempDaily0$Date)
+tempDaily0$Year <- year(tempDaily0$Date)
+tempDaily0 <- tempDaily0 %>%
+  mutate(Season = ifelse(Month %in% c(12, 1, 2), "Winter", 
+                         ifelse(Month %in% c(3,4,5), "Spring", 
+                                ifelse(Month %in% c(6,7,8), "Summer",
+                                       "Fall"))))
+tempDaily0$Season <- factor(tempDaily0$Season, levels = c("Spring", "Summer", "Fall", "Winter"))
+tempDaily0$WY <- as.numeric(tempDaily0$WY)
+tempDaily0$fWY <- factor(tempDaily0$WY)
+tempDaily0$fMonth <- factor(tempDaily0$Month, levels = c("11", "12", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"))
+tempDaily0$fYear <- factor(tempDaily0$Year)
+tempDaily0 <- filter(tempDaily0, WY > 2008 & WY < 2020)
+tempDaily <- left_join(tempDaily0, nMon) %>%
+  filter(nMon == 12)
+tempDaily$yday <- yday(tempDaily$Date)
+
+
+#try a sine-transformation on "month" so we can include it in linear models
+tempDaily$sMonth = sin(pi*tempDaily$Month/12)
+tempDaily$syday = sin(pi*tempDaily$yday/365)
+
+```
+
+How much data do we have?
+```{r}
+datasummary <- tempDaily%>%
+  group_by(Station, fWY) %>%
+  summarize(n = n())
+
+ggplot(datasummary, aes(x = fWY, y = Station, fill = n)) + geom_tile() + scale_fill_viridis()
+```
+
+## Daily Max Temps  
+**Scientific Questions:**
+
+1. Has maximum temperature increased over time?
+2. Are there regional trends in maximum temperature increase? 
+3. Do we see differences in max temp by water year type? (e.g. cooler summer temps in wet years)
+
+```{r dailyMaxPlot}
+# Daily Trends
+tempD_s <- tempDaily %>% group_by(Region) %>% sample_frac(.1)
+
+max1 <- ggplot(tempD_s) + 
+  geom_jitter(aes(x = WY, y = maxDaily, color = fMonth), size = .7)+
+  stat_smooth(aes(x = WY, y = maxDaily, color = fMonth),method = "lm", formula = y ~ x, size = 1, se = TRUE)+ 
+  labs(title = "Maximum daily temperature by month") +
+  scale_color_viridis(option = "viridis", discrete = TRUE) + 
+  theme_bw() + theme(axis.text = element_text(size = 14),
+                     axis.title = element_text(size =14),
+                     legend.text = element_text(size = 14),
+                     legend.title = element_text(size = 14))
+ggplotly(max1)
+
+# Regional Trends
+max2 <- ggplot(tempD_s) + 
+  geom_jitter(aes(x = WY, y = maxDaily, color = Region), size = .7)+
+  stat_smooth(aes(x = WY, y = maxDaily, color = Region),method = "lm", formula = y ~ x, size = 1, se = FALSE)+ 
+  labs(title = "Maximum daily temperature by region") +
+  scale_color_viridis(option = "viridis", discrete = TRUE) + 
+  theme_bw() + theme(axis.text = element_text(size = 14),
+                     axis.title = element_text(size =14),
+                     legend.text = element_text(size = 14),
+                     legend.title = element_text(size = 14))
+ggplotly(max2)
+```
+
+### Look at interaction potential
+* Month * WYType: yes
+* Month * Region: yes
+* Region * WYType: no
+
+```{r InteractionsPlotsMax}
+# WYType:Month
+# WY type trend differs by Month
+ggplot(tempD_s) + 
+  geom_point(aes(x = Month, y = maxDaily, color = WYType2_Sac)) + 
+  stat_smooth(aes(x = Month, y = maxDaily, color = WYType2_Sac),method = "lm", formula = y ~ x + I(x^2), size = 2, se = TRUE)+ 
+  labs(title = "WYType:Month") +
+  scale_color_viridis(option = "viridis", discrete = TRUE) + theme_bw()
+
+#see what it looks like with the sin-transformed month
+ggplot(tempD_s) + 
+  geom_point(aes(x = sMonth, y = maxDaily, color = WYType2_Sac)) + 
+  stat_smooth(aes(x = sMonth, y = maxDaily, color = WYType2_Sac),method = "lm", size = 2, se = TRUE)+ 
+  labs(title = "WYType:Month with sin-transformation") +
+  scale_color_viridis(option = "viridis", discrete = TRUE) + theme_bw()
+
+# Region:Month
+# Regional trend seems to differ by Month
+ggplot(tempD_s) + 
+  geom_point(aes(x = Month, y = maxDaily, color = Region)) + 
+  stat_smooth(aes(x = Month, y = maxDaily, color = Region),method = "lm", formula = y ~ x + I(x^2), size = 2, se = TRUE)+ 
+    labs(title = "Region:Month") +
+  scale_color_viridis(option = "viridis", discrete = TRUE) + theme_bw()
+
+# Region:WYType
+ggplot(tempD_s) + 
+  geom_boxplot(aes(x = Region, y = maxDaily, fill = WYType2_Sac)) + 
+    labs(title = "Region:WYType") +
+  scale_fill_viridis(option = "viridis", discrete = TRUE) + theme_bw()
+```
+
+### Models 
+
+Add lag 
+```{r}
+# Account for Temporal Autocorrelation 
+tempDaily <- tempDaily %>% 
+    group_by(Region, Station) %>%
+  mutate(maxDailylag1 = lag(maxDaily, 1),
+         maxDailylag2 = lag(maxDaily, 2),
+         meanDailylag1 = lag(meanDaily, 1),
+         meanDailylag2 = lag(meanDaily, 2),
+         minDailylag1 = lag(minDaily, 1),
+         minDailylag2 = lag(minDaily, 2)) %>%
+  ungroup() %>%
+  mutate(yday_s = ifelse(is.na(yday), scale(yday), NA),
+         maxDailylag1_s = scale(maxDailylag1),
+         maxDailylag2_s = scale(maxDailylag2),
+         meanDailylag1_s = scale(meanDailylag1),
+         meanDailylag2_s = scale(meanDailylag2),
+         minDailylag1_s = scale(minDailylag1),
+         minDailylag2_s = scale(minDailylag2))
+```
+
+Normal glm
+
+Check for number of lags needed
+```{r}
+testMax <- tempDaily %>% filter(fWY %in% c(2014, 2015, 2016, 2017))
+summary(M.testlag0 <- glm(maxDaily ~ Region + fWY + syday, data = testMax, na.action = na.omit))
+summary(M.testlag1 <- glm(maxDaily ~ Region + fWY + maxDailylag1 + yday, data = testMax, na.action = na.omit))
+summary(M.testlag2 <- glm(maxDaily ~ Region + fWY + maxDailylag1 + maxDailylag2 + yday, data = testMax, na.action = na.omit))
+
+acf(residuals(M.testlag0))
+acf(residuals(M.testlag1))
+acf(residuals(M.testlag2))
+```
+1 lag should be fine
+
+Test different time variables
+```{r}
+summary(M.maxDay1 <- glm(maxDaily~Region + fWY + yday + I(yday^2) + maxDailylag1, data = tempDaily, na.action = na.omit))
+summary(M.maxDay2 <- glm(maxDaily~Region + fWY + Month + I(Month^2) + maxDailylag1, data = tempDaily, na.action = na.omit))
+summary(M.maxDay3 <- glm(maxDaily~Region + fWY + syday + maxDailylag1, data = tempDaily, na.action = na.omit))
+
+AIC(M.maxDay1, M.maxDay2, M.maxDay3)
+
+```
+Quadratic julian day (yday) best
+
+Interactions
+```{r}
+summary(M.maxDay4 <- glm(maxDaily~Region + fWY + yday + I(yday^2) + maxDailylag1 + fWY:(yday + I(yday^2)), data = tempDaily, na.action = na.omit))
+
+summary(M.maxDay5 <- glm(maxDaily~Region + fWY + yday + I(yday^2) + maxDailylag1 + fWY:Region, data = tempDaily, na.action = na.omit))
+
+summary(M.maxDay6 <- glm(maxDaily~Region + fWY + yday + I(yday^2) + maxDailylag1 + + fWY:(yday + I(yday^2)) + fWY:Region, data = tempDaily, na.action = na.omit))
+
+summary(M.maxDay7 <- glm(maxDaily~Region + fWY + yday + I(yday^2) + maxDailylag1 + (yday + I(yday^2)):Region, data = tempDaily, na.action = na.omit))
+
+AIC(M.maxDay4, M.maxDay5, M.maxDay6, M.maxDay7)
+```
+
+Chosen Model: **((M.maxDay4 <- glm(maxDaily~Region + fWY + yday + I(yday^2) + maxDailylag1 + fWY:(yday + I(yday^2))))**
+
+Diagnostic plots
+```{r}
+res.mmax1 = resid(M.max4, type = "pearson")
+plot(res.mmax1)
+plot(tempDaily$Month, res.mmax1)
+plot(tempDaily$Region, res.mmax1)
+plot(tempDaily$fWY, res.mmax1)
+
+visreg(M.max4, "fWY", by = "Region")
+visreg(M.max4, "Month", by = "Region")
+visreg(M.max4, "Region", by = "Month")
+visreg(M.max4, "fWY", by = "Month")
+
+```
+
+Mixed models
+```{r}
+library(lme4)
+library(lmerTest)
+
+# Model no lag, lag(1), lag(2)
+summary(M.maxDay4A <- lmer(maxDaily~Region + fWY + yday_s + I(yday_s^2) + maxDailylag1_s + fWY:(yday_s + I(yday_s^2)) + (1|Station), data = tempDaily, na.action = na.omit))
+
+# Check temporal autocorrelation
+# How correlated day 1 is to day 2, 3, etc. 
+acf(residuals(M.maxDay4A))
+
+# Diagnostic Plots
+# https://www.ssc.wisc.edu/sscc/pubs/MM/MM_DiagInfer.html
+# What is the right diagnostic plot for lmer?
+# Using month
+par(mfrow = c(2,3))
+
+res.mmax2 = resid(M.max1a, type = "pearson")
+lev1a = hatvalues(M.max1a)
+plot(M.max1a)
+qqnorm(resid(M.max1a))
+qqline(resid(M.max1a))
+plot(lev1a, y = res.mmax2)
+
+plot(res.mmax2)
+plot(tempDaily$Month, res.mmax2)
+plot(tempDaily$Region, res.mmax2)
+plot(tempDaily$fWY, res.mmax2)
+```
+
+Best Model: **M.max1a <- lmer(maxDaily~Region + Month + I(Month^2) + fWY + fWY:(Month + I(Month^2)) + (1|Station), data = tempDaily, na.action = na.omit))**
+
+### Conclusions
+
+* Month: Summer>Fall>Spring>Winter
+* Region: San Joaquin, South higher max temps
+* Year: 
