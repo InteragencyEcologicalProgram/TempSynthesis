@@ -17,6 +17,9 @@ library(tidyr)
 library(visreg)
 library(itsadug)
 library(mgcv)
+library(ggplot2)
+library(dplyr)
+library(ggpubr)
 
 ```
 
@@ -86,32 +89,41 @@ ggplot(RelTempDiff_ANH, aes(x= julian, y = RelTempDiff, color = factor(Hour)))+ 
 ## better but still not great
 ###plotly to see the data clearer
 #first with Hour
-plotANHhour <- ggplot(RelTempDiff_ANH, aes(x= julian, y = RelTempDiff, color = factor(Hour)))+ 
-  geom_point(size = .4) + labs(title = Antioch) 
+plotANHhour <- ggplot(RelTempDiff_ANH, aes(x= julian, y = RelTempDiff, color = factor(Hour)))+ geom_point(size = .4) 
 ## need to add the station as the legend for quick view#
 
 ggplotly(plotANHhour)
 # now with TOD as a factor 
-plotANHTOD <- ggplot(RelTempDiff_ANH, aes(x= julian, y = RelTempDiff, color = factor(TOD)))+ geom_point(size = .4)
+plotANHTOD <- ggplot(RelTempDiff_ANH, aes(x= julian, y = RelTempDiff, color = factor(TOD)))+ geom_point(size = .6)
 ggplotly(plotANH)
 
 ## TOD seems like it will be easier for us to use for our figures for the viewers, but the models will be run hourly
 
 ## RRI##
 ##with TOD
-plotRRITOD <- ggplot(RelTempDiff_RRI, aes(x= julian, y = RelTempDiff, color = factor(TOD)))+ geom_point(size = .4)
+plotRRITOD <- ggplot(RelTempDiff_RRI, aes(x= julian, y = RelTempDiff, color = factor(TOD)))+ geom_point(size = .6)
 ggplotly(plotRRI)
 
 ## MAL##
-plotMALTOD <- ggplot(RelTempDiff_MAL, aes(x= julian, y = RelTempDiff, color = factor(TOD)))+ geom_point(size = .4)
+plotMALTOD <- ggplot(RelTempDiff_MAL, aes(x= julian, y = RelTempDiff, color = factor(TOD)))+ geom_point(size = .6)
 ggplotly(plotMALTOD)
 
 ##MRZ##
-plotMRZTOD <- ggplot(RelTempDiff_MRZ, aes(x= julian, y = RelTempDiff, color = factor(TOD)))+ geom_point(size = .4)
+plotMRZTOD <- ggplot(RelTempDiff_MRZ, aes(x= julian, y = RelTempDiff, color = factor(TOD)))+ geom_point(size = .6)
 ggplotly(plotMRZTOD)
 
 
 ## Suggestions for making the data easier to view and see: color code by TOD (change groups) add a loess line with gmsmooth
+## now going to try to plot all the TOD temp differences in a 4 panel
+figure <- ggarrange(plotANHTOD, plotMALTOD, plotMRZTOD, plotRRI, labels = c("Antioch", "Mallard", "Martinez", "Rough and Ready Island"), ncol = 2, nrow = 2)
+## didnt work I dont know where ggarrange function is I thought from the tutorial it looks like it was from ggplot
+## now lets just try using the facet wrap
+
+plotANHTOD + facet_wrap(plotMALTOD) + facet_wrap(plotMRZTOD) + facet_wrap(plotRRITOD) 
+
+# Nope am missing the end part of the argument?
+
+
 ```
 
 
