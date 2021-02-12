@@ -75,51 +75,6 @@ tempMonM$sMonth = sin(pi*tempMonM$Month/12)
 ## Monthly Max Temps  
 **Scientific Questions:**
 
-1. Has maximum temperature increased over time?
-2. Are there regional trends in maximum temperature increase? 
-3. Do we see differences in max temp by water year type? (e.g. cooler summer temps in wet years)
-
-**Questions for Rosie:**    
-
-- It feels like what I am primarily interested in is: 
-  (max,min,mean,range)Temp ~ WY(or year) + Region (+ WYType), with a recognition of the importance of yday, month or season
-  - However, I cannot have WY and WYType in the same model, right?
-  - Instead, include WYType + Year (instead of WY)?
-  - When I leave WY as numeric, it comes out significant, but is this accurate? Or is it better to have it as a factor, and say "the last 5 years are higher based on slope?"
-
-- Random variables
-  - We talked about putting year as random variable. Does our question then become is there a difference in mean temp by region, wytype, time of year? Or what does the question really become? Confused what we are asking when we are using only categorical variables, and if this is useful. 
-  - Can I include region in my model but also have Station as a random variable (aka nested random variable within fixed variable)? 
-  - We don't really care about month, season specifically, unless there is an interaction of some sort (e.g. we can detect trends for certain months), so should this be a random variable?
-  - How to incorporate random variables correctly (e.g. nested? crossed? syntax?)
-  - Random variable interactions. Random effects, random intercept, random intercept plus slope models
-  - Correlation structure
-  - method = REML or ML
-
-- Does it make sense to order the factors somehow for intercept and model interpretation? (aka lowest or highest variable first)
-
-- How to interpret output
-  - Reminder of interpreting parameters vs interactions
-  - Are we looking at how rate of change of temp differs by season (or is this only if we have an interaction between year:season), or just how temp differs by season? E.g. a low winter coefficient just indicates that there are lower temps in the winter, not that the change in temp is lower for winter?
-  - How do I plot this in a way to see the model differences by category?
-  - How do I plot categorical variables in a useful way?
-  - How to compare mixed models (Still AIC?) Look at Zuur
-    - Start with as many variables as relevant. 1. Figure out random structure, 2. Figure out fixed structure, 3. Compare models with the same random but different fixed structures
-    - AIC(), anova()
-    - Try random intercept, random intercept slope
-  - What do I say about the random effects? 
-
-- Checking models for assumptions
-  - Normalized residuals based on REML fit
-    - Residuals vs fitted values (homogeneity)
-    - Plot residuals against each explanatory variable
-- Seasonal/daily decomposition to look at trends?
-
-**Other thoughts**    
-
-- Change regions based on dendrogram? 
-- Change regions based on how they group together in results?
-
 ```{r monthlyMaxPlot}
 # Monthly Trends
 max1 <- ggplot(tempMonM) + 
@@ -209,7 +164,6 @@ summary(M.max1 <- glm(maxAvTemp~Region + Month + I(Month^2) + fWY, data = tempMo
 summary(M.max2 <- glm(maxAvTemp~Region + sMonth + fWY, data = tempMonM))
 summary(M.max3 <- glm(maxAvTemp~Region + Season + fWY , data = tempMonM))
 AIC(M.max1, M.max2, M.max3)
-
 ```
 
 Proceed with quadratic Month as AIC lowest
@@ -297,7 +251,7 @@ plot(tempMonM$fWY, res.mmax3)
 
 ### Conclusions
 
-* Month: Summer>Fall>Spring>Winter
+* Month:
 * Region: San Joaquin, South higher max temps
 * Year: 
 
@@ -1271,7 +1225,7 @@ ggplotly(sumMax2)
 ```{r InteractionsPlotsSummerMax}
 # WYType:Month
 ggplot(Summer) + 
-  geom_boxplot(aes(x = Region, y = maxAvTemp, fill = WYType2_Sac)) + 
+  geom_boxplot(aes(x = Month, y = maxAvTemp, fill = WYType2_Sac)) + 
     labs(title = "WYType:Month") +
   scale_fill_viridis(option = "viridis", discrete = TRUE) + theme_bw()
 
@@ -1307,9 +1261,7 @@ Proceed with factor month - lowest AIC
 ```{r}
 # Interactions?
 summary(M.sMax4 <- glm(maxAvTemp~Region + fMonth + fWY + fWY:fMonth, data = Summer))
-
 summary(M.sMax7 <- glm(maxAvTemp~Region + fMonth + fWY + Region:fMonth, data = Summer))
-
 summary(M.sMax5 <- glm(maxAvTemp~Region + fMonth + fWY + fWY:Region, data = Summer))
 summary(M.sMax6 <- glm(maxAvTemp~Region + fMonth + fWY + fWY:Region + fWY:fMonth, data = Summer))
 
