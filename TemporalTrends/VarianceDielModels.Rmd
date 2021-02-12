@@ -527,13 +527,10 @@ ggplot(tempHours_sub, aes(Date, Temp, color = TOD)) + geom_point() + facet_wrap(
 tempHours_2 <- tempHours %>%
   group_by(fWY, Month, Region,TOD) %>%
   summarize(meanTemp = mean(Temp),
-    meanHour = mean(Hour)) %>%
-  mutate(Month2 = ifelse(Month<10, paste0("0",Month)) factor(Month))) %>%
-  mutate(YrMon = paste0(fWY,Month2))
+    meanHour = mean(Hour)) 
 
-tempHours_2$Month2
 
-ggplot(tempHours_2, aes(YrMon, meanTemp, color = TOD)) + geom_point() + facet_wrap(~Region) + scale_color_viridis(discrete=TRUE) + theme_bw()
+ggplot(tempHours_2, aes(fWY, meanTemp, color = TOD)) + geom_point() + facet_wrap(~Region) + scale_color_viridis(discrete=TRUE) + theme_bw()
 
 
 ```
