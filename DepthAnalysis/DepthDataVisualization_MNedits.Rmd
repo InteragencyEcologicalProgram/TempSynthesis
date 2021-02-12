@@ -372,9 +372,7 @@ depthDiff_rel3 <- depthDiff_rel2 %>%
 depthDiff_rel3$TOD<-factor(depthDiff_rel3$TOD, levels=c("Early:1-6","Morning:6-12","Afternoon:12-18", "Evening:18-24"))
 
 ############################################################
-#Convert hour to a trig funciton so that 0 and 24 are equal
-#also julian day.
-depthDiff_rel3 = mutate(depthDiff_rel3, sHour = cos(2*pi*(Hour)/24), sjulian = cos(2*pi*(julian)/365))
+
 
 
 #plot by month
@@ -480,6 +478,11 @@ depthDiff_rel3$julian <- yday(depthDiff_rel3$Date)
 depthDiff_rel3 <- depthDiff_rel3 %>%
   mutate(WY = ifelse(Month > 10, Year + 1, Year))
 
+#Convert hour to a trig funciton so that 0 and 24 are equal
+#also julian day.
+depthDiff_rel3 = mutate(depthDiff_rel3, sHour = cos(2*pi*(Hour)/24), sjulian = cos(2*pi*(julian)/365))
+
+write.csv(depthDiff_rel3, "Data/RelativeTempDiff.csv")
 # Run model 
 
 # Filter to Station
