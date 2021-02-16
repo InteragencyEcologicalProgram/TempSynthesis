@@ -85,7 +85,6 @@ tempDailyM$Season <- factor(tempDailyM$Season, levels = c("Spring", "Summer", "F
 3. Does the range differ by region (taking into account month)?
 4. Does the range differ at particular stations in a region? 
 
-
 ### Trends
 
 What does temperature look like overall by hour?
@@ -106,17 +105,27 @@ summaryRange <- tempDailyM %>%
             se = sd(rangeTemp)/sqrt(n))
 ```
 
-  Greatest range in the summer (June-July) in South and Suisun Marsh
+**Greatest range in the summer (June-July) in South and Suisun Marsh**
+
 ```{r}
 # Range by season (mean + se)
-ggplot(summaryRange) + geom_col(aes(Region, mean.Range, fill = Season), size = 3, position= position_dodge()) + scale_fill_viridis(discrete = TRUE) + theme_bw()
+ggplot(summaryRange) + geom_col(aes(Region, mean.Range, fill = Season), size = 3, position= position_dodge()) + scale_fill_viridis(discrete = TRUE) +  theme_bw() + theme(axis.text = element_text(size = 14),
+                     axis.title = element_text(size =14),
+                     legend.text = element_text(size = 14),
+                     legend.title = element_text(size = 14),
+axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
+#####THIS ONE#####
 # Range by month (mean + se)
 ggplot(data = summaryRange, aes(x = fMonth, y = mean.Range, group = Region, color = Region)) + 
   geom_point(size = 3) +
   geom_line()+
   geom_errorbar(aes(ymin = mean.Range-se, ymax = mean.Range+se), width = 0.5, position = position_dodge(0.05))+ 
-  scale_color_viridis(discrete = TRUE) + theme_bw()
+  scale_color_viridis(discrete = TRUE) +   theme_bw() + theme(axis.text = element_text(size = 14),
+                     axis.title = element_text(size =14),
+                     legend.text = element_text(size = 14),
+                     legend.title = element_text(size = 14))
+
 
 # Region by Season boxplot
 ggplot(tempDailyM_2, aes(x = Region, y = meanRange, fill = Season)) +   geom_boxplot() +
@@ -136,7 +145,9 @@ tempDailyM_2 <- tempDailyM %>%
   ungroup()
 ```
 
-By Water Year
+By Water Year Type
+
+**Highest ranges during dry years in the summer**
 ```{r include = FALSE}
 ggplot(tempDailyM_2, aes(x = fMonth, y = medianRange, fill = WYType2_Sac)) +   geom_boxplot() +
    scale_fill_viridis(option = "viridis", discrete = TRUE) + 
@@ -153,26 +164,18 @@ ggplot(tempDailyM_2, aes(x = fMonth, y = medianRange, color = WYType2_Sac)) +   
                      legend.title = element_text(size = 14))
 ```
 
-
-
-By Season
-
+Monthly Patterns
+**Summer>Spring>Fall>Winter**
+**Suisun Marsh > South > San Joaquin**
 ```{r include=FALSE}
-ggplot(tempDailyM_2, aes(x = Region, y = medianRange, fill = Season)) +   geom_boxplot() +
+ggplot(tempDailyM_2, aes(x = Region, y = meanRange, fill = Season)) +   geom_boxplot() +
    scale_fill_viridis(option = "viridis", discrete = TRUE) + 
   theme_bw() + theme(axis.text = element_text(size = 14),
                      axis.title = element_text(size =14),
                      legend.text = element_text(size = 14),
                      legend.title = element_text(size = 14))
 
-ggplot(tempDailyM_2, aes(x = Region, y = medianRange, fill = Season)) +   geom_boxplot() +
-   scale_fill_viridis(option = "viridis", discrete = TRUE) + 
-  theme_bw() + theme(axis.text = element_text(size = 14),
-                     axis.title = element_text(size =14),
-                     legend.text = element_text(size = 14),
-                     legend.title = element_text(size = 14))
-
-ggplot(tempDailyM_2, aes(x = fMonth, y = medianRange, fill = Region)) +   geom_boxplot() +
+ggplot(tempDailyM_2, aes(x = fMonth, y = meanRange, fill = Region)) +   geom_boxplot() +
    scale_fill_viridis(option = "viridis", discrete = TRUE) + 
   theme_bw() + theme(axis.text = element_text(size = 14),
                      axis.title = element_text(size =14),
@@ -183,21 +186,19 @@ ggplot(tempDailyM_2, aes(x = fMonth, y = medianRange, fill = Region)) +   geom_b
 **Median Range: Approximately 0.25 - 1.5C**  
 **Larger range values and variability in the South**
 
-
-
 ## 2. How does range change on annual scale?
 
-* Overall little change 
+**Overall little change**
 
 ### Plots by Date
 ```{r}
 tempDailyM_s <- tempDailyM %>% group_by(Region) %>% sample_frac(.2)
 
 # Fraction of data by year
-ggplot(tempDailyM_s, aes(x = Date, y = rangeTemp)) + geom_jitter(alpha = 0.2) + geom_smooth(se = TRUE)
+ggplot(tempDailyM_s, aes(x = Date, y = rangeTemp)) + geom_jitter(alpha = 0.2) + geom_smooth(se = TRUE) + theme_bw()
 
 # By WY Type
-ggplot(tempDailyM_s, aes(x = Date, y = rangeTemp, color = WYType2_Sac)) + geom_jitter()
+ggplot(tempDailyM_s, aes(x = Date, y = rangeTemp, color = WYType2_Sac)) + geom_jitter() + theme_bw()
 
 tempDailyM_3 <- tempDailyM %>%
   group_by(Region, fWY) %>%
@@ -218,11 +219,17 @@ tempDailyM_5 <- tempDailyM %>%
 
 ### Mean range by year and region
 ```{r}
-ggplot(tempDailyM_3, aes(x = fWY, y = meanRange, group = Region, color = Region)) + geom_point(size = 3) + geom_line() + scale_color_viridis(discrete = TRUE, option = "viridis")  +theme_bw() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+#####THIS ONE#####
+ggplot(tempDailyM_3, aes(x = fWY, y = meanRange, group = Region, color = Region)) + geom_point(size = 3) + geom_line() + scale_color_viridis(discrete = TRUE, option = "viridis")  +   theme_bw() + theme(axis.text = element_text(size = 14),
+                     axis.title = element_text(size =14),
+                     legend.text = element_text(size = 14),
+                     legend.title = element_text(size = 14),
+axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
 ```
 
 * Very erratic in the South
-* Relatively stable in Sac River, suisun Bay, San Joaquin
+* Relatively stable in Sac River, Suisun Bay, San Joaquin
 * Possible slight increase in summer in San Joaquin
 ```{r}
 ggplot(tempDailyM_4, aes(x = fWY, y = meanRange, group = Season, color = Season)) + facet_wrap(~Region) + geom_point(size = 3) + geom_line() + scale_color_viridis(discrete = TRUE, option = "viridis") +theme_bw() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
@@ -233,12 +240,10 @@ ggplot(tempDailyM_4, aes(x = fWY, y = meanRange, group = Season, color = Season)
 ggplot(tempDailyM_5, aes(x = fWY, y = meanRange, group = fMonth, color = fMonth)) + facet_wrap(~Region) + geom_point(size = 3) + geom_line() + scale_color_viridis(discrete = TRUE, option = "viridis") +theme_bw() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 ```
 
-Plots of interest
-
 ## 3. Does the range differ by region?
 
 * Greatest ranges: Suisun Marsh spring, South Summer
-* Region: High variability in Suisun Marsh, South
+* Region: High ranges and variability of range in Suisun Marsh, South
 * Season: Range generally greater in the late spring, summer
 * WY Type: Range generally slightly smaller in wet years
 
@@ -283,6 +288,7 @@ ggplot(tempDailyM_2, aes(x = Season, y = medianRange, color = Region)) +   geom_
 
 Curious about those with large median ranges
 ```{r}
+#####THIS ONE#####
 highRange <- filter(tempDailyM_2, medianRange > 3)
 ggplot(highRange, aes(x = fWY, y = medianRange, color = Station, shape = Region)) + geom_jitter(size = 4)+scale_color_viridis(option = "viridis", discrete = TRUE) +
   facet_wrap(~Season) +
@@ -384,9 +390,6 @@ Models
 Model temp autocorrelation
 
 ```{r}
-library(lme4)
-library(lmerTest)
-
 # Account for Temporal Autocorrelation 
 tempDailyM <- tempDailyM %>% 
     group_by(Region, Station) %>%
@@ -465,6 +468,9 @@ plot(res.range)
 plot(tempDaily2$yday^2, res.range)
 plot(tempDaily2$Region, res.range)
 plot(tempDaily2$fWY, res.range)
+
+visreg(M.range7, "fWY", by = "Region")
+visreg(M.range7, "Region", by = "yday")
 ```
 
 
@@ -521,21 +527,81 @@ tempHours <- tempInfo %>%
 
 ```{r}
 tempHours_sub <- filter(tempHours, fWY == "2012")
+ydayseason <- tempHours %>%
+  select(Season, yDay) %>%
+  group_by(Season) %>%
+  summarize(max = max(yDay),
+            min = min(yDay))
 
-ggplot(tempHours_sub, aes(Date, Temp, color = TOD)) + geom_point() + facet_wrap(~Region) + scale_color_viridis(discrete=TRUE) + theme_bw()
+# Testing the plot
+ggplot(tempHours_sub, aes(Date, Temp, color = TOD)) + geom_point() + facet_wrap(~Region) + scale_color_viridis(discrete=TRUE) + theme_bw()+ theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
-tempHours_2 <- tempHours %>%
-  group_by(fWY, Month, Region,TOD) %>%
-  summarize(meanTemp = mean(Temp),
-    meanHour = mean(Hour)) 
-
-
-ggplot(tempHours_2, aes(fWY, meanTemp, color = TOD)) + geom_point() + facet_wrap(~Region) + scale_color_viridis(discrete=TRUE) + theme_bw()
-
-
+# Making rectangles for seasons
+rects <- data.frame(xstart = c(0, 60,152, 244, 335), xend = c(60,152,244, 335, 366), col = c("grey", "green", "pink", "orange","grey"))
 ```
 
+North Delta
+```{r}
 
+tempHours_ND <- filter(tempHours, Region == "North Delta")
+tempHours_ND_sum <- tempHours_ND %>%
+  group_by(Region, Station, fWY, Season, Date, TOD) %>%
+  summarize(meanTemp = mean(Temp))
+tempHours_BKS <- tempHours_ND %>% filter(Station == "BKS")
+tempHours_ND_sum2 <- tempHours_ND %>%
+  group_by(Region, Station, WYType2_Sac,yDay, TOD) %>%
+  summarize(meanTemp = mean(Temp))
+
+
+# North Delta Max and min
+ggplot(tempHours_ND_sum, aes(x = fWY, y = meanTemp, fill = TOD)) + geom_boxplot(position = position_dodge()) + facet_wrap(~Season) +
+  scale_fill_viridis(discrete=TRUE) + theme_bw() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+# North Delta yday by WY Type (Temp max and min averaged per day)
+ggplot() + 
+  geom_rect(data = rects, aes(xmin = xstart, xmax = xend, ymin = -Inf, ymax = Inf, fill = col), alpha = 0.2) + 
+  geom_point(data =tempHours_ND, aes(yday, Temp, color = TOD)) + facet_wrap(~WYType2_Sac) + scale_color_viridis(discrete=TRUE) +
+  geom_hline(yintercept = 22, color = "black") +  
+  geom_hline(yintercept = 25, color = "red") +
+theme_bw()+ theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+# North Delta yday by WYType (Temp averaged over WYType)
+ggplot(tempHours_ND_sum2, aes(x = yDay, y = meanTemp, color = TOD, shape = Station)) + geom_point() + facet_grid(WYType2_Sac~.) + scale_color_viridis(discrete=TRUE) +
+    geom_line(y = 22, color = "black") +  
+  geom_line(y = 25, color = "red") +theme_bw() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+# BKS
+ggplot(tempHours_BKS, aes(Date, Temp, color = TOD)) + geom_point() +  scale_color_viridis(discrete=TRUE) + 
+    geom_line(y = 22, color = "black") +  
+  geom_line(y = 25, color = "red") +theme_bw()+ theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+Sac River
+```{r}
+tempHours_Sac <- filter(tempHours, Region == "Sac River")
+tempHours_Sac_sum <- tempHours_Sac %>%
+  group_by(Region, Station, fWY, Season, Date, TOD) %>%
+  summarize(meanTemp = mean(Temp))
+tempHours_Sac_sum2 <- tempHours_Sac %>%
+  group_by(Region, Station, WYType2_Sac,yday, TOD) %>%
+  summarize(meanTemp = mean(Temp))
+
+# Sac River Max min
+ggplot(tempHours_Sac_sum, aes(x = fWY, y = meanTemp, fill = TOD)) + geom_boxplot(position = position_dodge()) + facet_wrap(~Season) +
+  scale_fill_viridis(discrete=TRUE) + theme_bw() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+# Sac River yday by WY Type (Temp for each day)
+ggplot(tempHours_Sac, aes(yday, Temp, color = TOD)) + geom_point() + facet_wrap(~WYType2_Sac) + scale_color_viridis(discrete=TRUE) +
+  geom_line(y = 22, color = "black") +  
+  geom_line(y = 25, color = "red") +
+theme_bw()+ theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+# Sac River yday by WYType (temp averaged by WYType)
+ggplot(tempHours_Sac_sum2, aes(x = yday, y = meanTemp, color = TOD, shape = Station)) + geom_point() + facet_grid(WYType2_Sac~.) + scale_color_viridis(discrete=TRUE) +
+    geom_line(y = 22, color = "black") +  
+  geom_line(y = 25, color = "red") +theme_bw() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+```
 
 
 
