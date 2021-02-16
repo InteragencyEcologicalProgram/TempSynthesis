@@ -1,0 +1,104 @@
+---
+title: "TempHeatStress"
+author: "Catarina Pien"
+date: "2/16/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(lubridate)
+library(viridis) # color palette
+library(plotly) # interactive plots
+library(pscl) # glm
+library(visreg) # visualize model results
+library(lattice)
+library(lme4) # glmm
+library(lmerTest) #glmm p values
+```
+
+Read in 
+```{r}
+setwd("C:/Users/cpien/OneDrive - California Department of Water Resources/Work/ClimateChange/R_code/TempSynthesis/")
+
+#tempFilt <- readRDS("Data/tempFilt.rds") 
+tempToUse <- readRDS("Data/temp10years_20200922.rds")
+#tempAn <- readRDS("Data/tempAnnual.rds")
+tempMon <- readRDS("Data/tempMonthly.rds")
+tempDaily <- readRDS("Data/tempDaily.rds")
+#tempHeat <- readRDS("Data/heatstressDaily.rds")
+```
+
+Code to make sure every month has data
+```{r nMon}
+# Filter to only data that has temps from every month so as not to skew the data that only has part of the year represented.
+nMon <- tempMon %>% group_by(Station, WY) %>%
+  summarize(nMon = n())
+
+nMon$WY <- as.numeric(nMon$WY)
+```
+
+## Daily Range
+```{r Models Daily Max}
+tempDaily <- filter(tempDaily, WY > 2008 & WY < 2020)
+tempDaily$yday = yday(tempDaily$Date)
+tempDaily$Year = year(tempDaily$Date)
+tempDaily$fYear = factor(tempDaily$Year)
+tempDaily$fWY = factor(tempDaily$WY)
+tempDaily$Month = month(tempDaily$Date)
+tempDaily$fMonth = ordered(tempDaily$Month)
+tempDailyM <- left_join(tempDaily, nMon) %>%
+  filter(nMon == 12)
+
+tempDaily$WYType2_Sac = as.factor(tempDaily$WYType2_Sac)
+tempToUse$Hour <- hour(tempToUse$Datetime)
+
+#try a sine-transformation on "month" so we can include it in linear models
+tempDailyM$syday = sin(pi*tempDailyM$yday/365)
+
+# Add season
+tempToUse <- tempToUse %>%
+  mutate(Season = ifelse(Month %in% c(12, 1, 2), "Winter", 
+                         ifelse(Month %in% c(3,4,5), "Spring", 
+                                ifelse(Month %in% c(6,7,8), "Summer",
+                                       "Fall"))))
+tempToUse$Season <- factor(tempToUse$Season, levels = c("Spring", "Summer", "Fall", "Winter"))
+
+
+# Add season
+tempDailyM <- tempDailyM %>%
+  mutate(Season = ifelse(Month %in% c(12, 1, 2), "Winter", 
+                         ifelse(Month %in% c(3,4,5), "Spring", 
+                                ifelse(Month %in% c(6,7,8), "Summer",
+                                       "Fall"))))
+tempDailyM$Season <- factor(tempDailyM$Season, levels = c("Spring", "Summer", "Fall", "Winter"))
+```
+
+**Scientific Questions**  
+
+1. What is the approximate daily range? 
+2. How does range change on annual scale? 
+3. Does the range differ by region (taking into account month)?
+4. Does the range differ at particular stations in a region? 
+
+### Trends
+
+What does temperature look like overall by hour?
+```{r }
+# Overall temperature trends by Month and Region 
+temp_s <- tempToUse %>% group_by(Region) %>% sample_frac(.1)
+ggplot(temp_s, aes(x = factor(Hour), y = Temp)) + geom_boxplot() + facet_grid(Region~Season)+theme_bw()
+```
+
+Table of Ranges by Region, Season, Month
+```{r}
+summaryRange <- tempDailyM %>%
+  group_by(Region, Season, fMonth) %>%
+  summarize(mean.Range = mean(rangeTemp),
+            median.Range = median(rangeTemp),
+            n = n(),
+            sd = sd(rangeTemp),
+            se = sd(rangeTemp)/sqrt(n))
+```
