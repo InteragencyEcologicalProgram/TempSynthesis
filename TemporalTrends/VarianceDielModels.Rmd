@@ -537,7 +537,7 @@ ydayseason <- tempHours %>%
 ggplot(tempHours_sub, aes(Date, Temp, color = TOD)) + geom_point() + facet_wrap(~Region) + scale_color_viridis(discrete=TRUE) + theme_bw()+ theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
 # Making rectangles for seasons
-rects <- data.frame(xstart = c(0, 60,152, 244, 335), xend = c(60,152,244, 335, 366), col = c("grey", "green", "pink", "orange","grey"))
+rects <- data.frame(xstart = c(0, 60,152, 244, 335), xend = c(60,152,244, 335, 366), col = c("Winter", "Spring", "Summer", "Fall","Winter"))
 ```
 
 North Delta
@@ -559,7 +559,7 @@ ggplot(tempHours_ND_sum, aes(x = fWY, y = meanTemp, fill = TOD)) + geom_boxplot(
 
 # North Delta yday by WY Type (Temp max and min averaged per day)
 ggplot() + 
-  geom_rect(data = rects, aes(xmin = xstart, xmax = xend, ymin = -Inf, ymax = Inf, fill = col), alpha = 0.2) + 
+  geom_rect(data = rects, aes(xmin = xstart, xmax = xend, ymin = -Inf, ymax = Inf, fill = col), alpha = 0.3) + 
   geom_point(data =tempHours_ND, aes(yday, Temp, color = TOD)) + facet_wrap(~WYType2_Sac) + scale_color_viridis(discrete=TRUE) +
   geom_hline(yintercept = 22, color = "black") +  
   geom_hline(yintercept = 25, color = "red") +
