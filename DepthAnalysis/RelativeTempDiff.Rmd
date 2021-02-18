@@ -20,13 +20,14 @@ library(mgcv)
 library(ggplot2)
 library(dplyr)
 library(ggpubr)
+library(viridis)
 
 ```
 
 WD, Read in Data, Separate by Station
 ```{r}
 ## set wd, read in CSV relative tempdiff, bring over all data
-relativetempdiff <- read.csv("Data/RelativeTempDiff.csv")
+relativetempdiff <- read.csv("DepthAnalysis/Data/RelativeTempDiff.csv")
 ## relativetempdiff has all of our parameters: julian day, WY, sinejulian, sinehour etc and is the correct timeframe
 
 ## filter the relativetempdiff for each station so I can bring in the models or try the models first
