@@ -480,6 +480,9 @@ depthDiff_rel3$julian <- yday(depthDiff_rel3$Date)
 depthDiff_rel3 <- depthDiff_rel3 %>%
   mutate(WY = ifelse(Month > 10, Year + 1, Year))
 
+### creating a new project## 
+
+write.csv(depthDiff_rel3, "relativetempdiff.csv")
 # Run model 
 
 # Filter to Station
@@ -512,6 +515,43 @@ m.TempDiff2 <- glm(RelTempDiff ~ sjulian + sHour + sjulian:sHour + TempDiffLag +
 summary(m.TempDiff2)
 library(visreg)
 visreg(m.TempDiff2)
+acf(resid(m.TempDiff1))
+acf(resid(m.TempDiff2))
+
+tempdiff3 <- glm(RelTempDiff ~ sjulian + sHour + sjulian:sHour + TempDiffLag , data = RelTempDiff_ANH)
+#### we want to use this model above with the interaction, it is significant.
+### as julian gets more positive the effect of hour increases, so because the effect of hr is negative: the change over the course of the day is not as significant in the winter than in the summer##
+### need to graph more and look into the other stations and see what they give us.
+## run on other ones and see what the model outputs
+acf(resid(tempdiff3)) ### dont need lag2
+summary(tempdiff3)
+visreg(tempdiff3)### visreg plot and 
+summary(tempdiff)
+##
+visreg(tempdiff3, xvar = sjulian, by = sHour)
+ggplot(RelTempDiff_ANH, aes(sHour, Hour)) + geom_point()
+
+## try running model with other stations
+tempdiffRRI <- glm(RelTempDiff ~ sjulian + sHour + sjulian:sHour + TempDiffLag , data = RelTempDiff_RRI)
+summary(tempdiffRRI)
+
+### hour is now positive at RRI
+
+tempdiffMRZ <- glm(RelTempDiff ~ sjulian + sHour + sjulian:sHour + TempDiffLag , data = RelTempDiff_MRZ)
+summary(tempdiffMRZ)
+
+## 1 = midnight, -1 = noon , slightly greater @ noon than at midnight, more temperature change during the day.
+### good idea to see what it is at julian
+ggplot(RelTempDiff_ANH, aes(sjulian, julian)) + geom_point()
+tempdiff4 <- glm(RelTempDiff ~ sjulian + sHour + TempDiffLag , data = RelTempDiff_ANH)
+summary(tempdiff4)
+
+## still saying there is higher difference in the winter than in the summer
+### ? need to look into if the discrete finds this to be true as well?? 
+
+
+
+
 
 #NOt all that much autocorrelation at teh T-2 lag. 
 
@@ -519,7 +559,7 @@ library(itsadug)
 library(mgcv)
 
 
-
+### feel free to explore these GAMS but the GLMS above may be easier to interpret
 #try using a GAM
 RelTempDiff_ANH = start_event(as.data.frame(RelTempDiff_ANH), column="Datetime", event=c("Year"), label.event="Event")
 

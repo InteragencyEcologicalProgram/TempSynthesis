@@ -123,8 +123,8 @@ plotANHTOD + facet_wrap(plotMALTOD) + facet_wrap(plotMRZTOD) + facet_wrap(plotRR
 
 # Nope am missing the end part of the argument?
 ## there are really 3 variables x = julian day y = reltempdiff and the factor is TOD... is that why I am having so much trouble combing?
-
-
 ```
+
+
 
 
