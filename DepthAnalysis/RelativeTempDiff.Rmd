@@ -32,11 +32,18 @@ WD, Read in Data, Separate by Station
 ## filter the relativetempdiff for each station so I can bring in the models or try the models first
 View(relativetempdiff)
 
+str(relativetempdiff)
+
 RelTempDiff_MRZ <- relativetempdiff %>% filter(Station == "MRZ")
 RelTempDiff_RRI <- relativetempdiff %>% filter(Station == "RRI")
 RelTempDiff_MAL <- relativetempdiff %>% filter(Station == "MAL")
 RelTempDiff_ANH <- relativetempdiff %>% filter(Station == "ANH")
 
+## mins, max, medians for manuscript
+mean(relativetempdiff$Surface, na.rm = TRUE)
+min(relativetempdiff$Surface, na.rm = TRUE)
+summary(relativetempdiff$Surface)
+summary(relativetempdiff)
 ```
 
 
@@ -89,7 +96,7 @@ ggplot(RelTempDiff_ANH, aes(x= julian, y = RelTempDiff, color = factor(Hour)))+ 
 ## better but still not great
 ###plotly to see the data clearer
 #first with Hour
-plotANHhour <- ggplot(RelTempDiff_ANH, aes(x= julian, y = RelTempDiff, color = factor(Hour)))+ geom_point(size = .4) 
+plotANHhour <- ggplot(RelTempDiff_ANH, aes(x= julian, y = RelTempDiff, color = factor(Hour)))+ geom_point(size = .6) 
 ## need to add the station as the legend for quick view#
 
 ggplotly(plotANHhour)
