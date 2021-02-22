@@ -88,6 +88,33 @@ max1 <- ggplot(tempMonM) +
                      legend.title = element_text(size = 14))
 ggplotly(max1)
 
+# Month and Region
+max1a <- ggplot(tempMonM) + 
+  geom_jitter(aes(x = fWY, y = maxAvTemp, color = fMonth), size = .9) +
+  facet_wrap(~Region) + 
+  scale_color_viridis(option = "viridis", discrete = TRUE) + 
+  theme_bw() + theme(strip.text = element_text(size = 14),
+                     axis.text = element_text(size = 14),
+                     axis.title = element_text(size =14),
+                     legend.text = element_text(size = 14),
+                     legend.title = element_text(size = 14),
+                     axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+ggplotly(max1a)
+max1a
+
+tempMonTile <- tempMonM %>%
+  group_by(fWY, Region) %>%
+  summarize(meanMaxTemp = mean(maxAvTemp))
+
+ggplot(tempMonTile) + 
+  geom_tile(aes(x = fWY, y = Region, fill = meanMaxTemp)) +
+  labs(title = "Average maximum temperature by Region") +
+  scale_fill_viridis(option = "cividis") + 
+  theme_bw() + theme(axis.text = element_text(size = 14),
+                     axis.title = element_text(size =14),
+                     legend.text = element_text(size = 14),
+                     legend.title = element_text(size = 14))
+
 # Regional Trends
 max2 <- ggplot(tempMonM) + 
   geom_jitter(aes(x = WY, y = maxAvTemp, color = Region), size = .7)+
