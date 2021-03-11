@@ -1,7 +1,9 @@
 ---
 title: "Relative Temperature Difference"
-output: html_document
-editor_options: 
+output:
+  html_document: default
+  pdf_document: default
+editor_options:
   chunk_output_type: console
 ---
 #Libraries needed
@@ -21,7 +23,9 @@ library(ggplot2)
 library(dplyr)
 library(ggpubr)
 library(viridis)
-
+library(stargazer)
+install.packages("stargazer")
+library(stargazer)
 ```
 
 WD, Read in Data, Separate by Station
@@ -77,6 +81,10 @@ summary(modelANH)
 summary(modelMAL)
 summary(modelMRZ)
 summary(modelRRI)
+
+### Models results in a table
+stargazer(modelANH)
+
 
 ### deeper look into each station with ggplot and then ggplotly
 
@@ -156,5 +164,13 @@ plot_labels <- data.frame(Station = c("ANH", "MAL", "MRZ", "RRI"), label = c("A"
 # Add those labels to your plot
 plotTOD + labs(x = "Julian Day", y = "Relative Temperature Diff (C)") + 
   geom_text(x = 350, y = -3.5, aes(label = label), size =6, data = plot_labels)
+```
+Nans and summary stats, model results 
+
+```{r}
+summary(relativetempdiff)
+
+stargazer(modelANH, modelMAL, modelMRZ, modelRRI, type = "html", column.labels = c("ANH", "MAL", "MRZ", "RRI"), title = "Continuous Dataset Model Results", out ="allglmdpethmodeloutputs.html")
+
 ```
 
