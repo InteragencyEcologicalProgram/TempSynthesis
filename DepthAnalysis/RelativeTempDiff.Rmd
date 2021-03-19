@@ -1,0 +1,176 @@
+---
+title: "Relative Temperature Difference"
+output:
+  html_document: default
+  pdf_document: default
+editor_options:
+  chunk_output_type: console
+---
+#Libraries needed
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+### load all libraries, added all libraries from previous depthdatavisualiztion.rmd whether we necessarily needed them or not.
+library(tidyverse)
+library(lubridate)
+library(readr)
+library(plotly)
+library(tidyr)
+library(visreg)
+library(itsadug)
+library(mgcv)
+library(ggplot2)
+library(dplyr)
+library(ggpubr)
+library(viridis)
+library(stargazer)
+install.packages("stargazer")
+library(stargazer)
+```
+
+WD, Read in Data, Separate by Station
+```{r}
+## set wd, read in CSV relative tempdiff, bring over all data
+relativetempdiff <- read.csv("DepthAnalysis/Data/RelativeTempDiff.csv")
+## relativetempdiff has all of our parameters: julian day, WY, sinejulian, sinehour etc and is the correct timeframe
+
+## filter the relativetempdiff for each station so I can bring in the models or try the models first
+View(relativetempdiff)
+
+RelTempDiff_MRZ <- relativetempdiff %>% filter(Station == "MRZ")
+RelTempDiff_RRI <- relativetempdiff %>% filter(Station == "RRI")
+RelTempDiff_MAL <- relativetempdiff %>% filter(Station == "MAL")
+RelTempDiff_ANH <- relativetempdiff %>% filter(Station == "ANH")
+
+```
+
+
+
+##Plots
+```{r}
+
+## max differnce per station
+
+ggplot(RelTempDiff_MRZ, aes(x = Hour, y = RelTempDiff)) + geom_point() 
+
+ggplot(RelTempDiff_RRI, aes(x = Hour, y = RelTempDiff)) + geom_point()
+
+ggplot(RelTempDiff_MAL, aes(x = Hour, y = RelTempDiff)) + geom_point()
+
+ggplot(RelTempDiff_ANH, aes(x = Hour, y = RelTempDiff)) + geom_point()
+
+### now plot all stations together with their relative temperature difference
+
+ggplot(relativetempdiff, aes(x = Hour, y = RelTempDiff)) + geom_point() + facet_wrap(~Station)
+
+```
+
+
+
+## Models
+```{r}
+### run models for each station use as results interpretation
+
+
+modelANH <- glm(RelTempDiff ~ sjulian + sHour + sjulian:sHour + TempDiffLag , data = RelTempDiff_ANH)
+modelMAL <- glm(RelTempDiff ~ sjulian + sHour + sjulian:sHour + TempDiffLag , data = RelTempDiff_MAL)
+modelMRZ <- glm(RelTempDiff ~ sjulian + sHour + sjulian:sHour + TempDiffLag , data = RelTempDiff_MRZ)
+modelRRI <- glm(RelTempDiff ~ sjulian + sHour + sjulian:sHour + TempDiffLag , data = RelTempDiff_RRI)
+### now let's look at the model outputs (will put into a table)
+summary(modelANH)
+summary(modelMAL)
+summary(modelMRZ)
+summary(modelRRI)
+
+### Models results in a table
+stargazer(modelANH)
+
+
+### deeper look into each station with ggplot and then ggplotly
+
+##ANH##
+
+
+##looking at the interaction between sjulian and shour
+ggplot(RelTempDiff_ANH, aes(x= sjulian, y = sHour))+ geom_point() ## not a great plot
+## with hour as a factor
+ggplot(RelTempDiff_ANH, aes(x= julian, y = RelTempDiff, color = factor(Hour)))+ geom_point(size = .4)
+## better but still not great
+###plotly to see the data clearer
+#first with Hour
+plotANHhour <- ggplot(RelTempDiff_ANH, aes(x= julian, y = RelTempDiff, color = factor(Hour)))+ geom_point(size = .4) 
+## need to add the station as the legend for quick view#
+
+ggplotly(plotANHhour)
+# now with TOD as a factor 
+plotANHTOD <- ggplot(RelTempDiff_ANH, aes(x= julian, y = RelTempDiff, color = factor(TOD)))+ geom_point(size = .6)
+ggplotly(plotANHTOD)
+
+## TOD seems like it will be easier for us to use for our figures for the viewers, but the models will be run hourly
+
+## RRI##
+##with TOD
+plotRRITOD <- ggplot(RelTempDiff_RRI, aes(x= julian, y = RelTempDiff, color = factor(TOD)))+ geom_point(size = .6)
+ggplotly(plotRRI)
+
+## MAL##
+plotMALTOD <- ggplot(RelTempDiff_MAL, aes(x= julian, y = RelTempDiff, color = factor(TOD)))+ geom_point(size = .6)
+ggplotly(plotMALTOD)
+
+##MRZ##
+plotMRZTOD <- ggplot(RelTempDiff_MRZ, aes(x= julian, y = RelTempDiff, color = factor(TOD)))+ geom_point(size = .6)
+ggplotly(plotMRZTOD)
+
+
+## Suggestions for making the data easier to view and see: color code by TOD (change groups) add a loess line with gmsmooth
+## now going to try to plot all the TOD temp differences in a 4 panel
+figure <- ggarrange(plotANHTOD, plotMALTOD, plotMRZTOD, plotRRITOD, labels = c("Antioch", "Mallard", "Martinez", "Rough and Ready Island"), ncol = 2, nrow = 2)
+## didnt work I dont know where ggarrange function is I thought from the tutorial it looks like it was from ggplot
+## now lets just try using the facet wrap
+
+plotANHTOD + facet_wrap(plotMALTOD) + facet_wrap(plotMRZTOD) + facet_wrap(plotRRITOD) 
+
+# Nope am missing the end part of the argument?
+
+
+```
+
+*Cat's notes here:*
+To use facet_wrap you need all of the data to be in one dataset. So use your original dataset.
+```{r}
+plotTOD <- ggplot(relativetempdiff, aes(x= julian, y = RelTempDiff))+ geom_point(aes(color = TOD),size = .6) + facet_wrap(~Station) + 
+  theme_bw() + theme(strip.text = element_text(size = 14),
+                     axis.text = element_text(size = 14),
+                     axis.title = element_text(size =14),
+                     legend.text = element_text(size = 14),
+                     legend.title = element_text(size = 14)) +
+  scale_color_viridis(discrete = TRUE)
+plotTOD
+```
+
+For your ggarrange, you had a typo in one of the plots and you need to call the plot. Here is your result, which doesn't look as good as the facet. 
+
+```{r}
+figure
+```
+
+I have not found the perfect solution for making multi-panel plots, but if you use facet, you can annotate each of your plots.
+
+https://r-graphics.org/recipe-annotate-facet
+```{r}
+# Make a data frame for your labels
+plot_labels <- data.frame(Station = c("ANH", "MAL", "MRZ", "RRI"), label = c("A", "B", "C", "D"))
+
+# Add those labels to your plot
+plotTOD + labs(x = "Julian Day", y = "Relative Temperature Diff (C)") + 
+  geom_text(x = 350, y = -3.5, aes(label = label), size =6, data = plot_labels)
+```
+Nans and summary stats, model results 
+
+```{r}
+summary(relativetempdiff)
+
+stargazer(modelANH, modelMAL, modelMRZ, modelRRI, type = "html", column.labels = c("ANH", "MAL", "MRZ", "RRI"), title = "Continuous Dataset Model Results", out ="allglmdpethmodeloutputs.html")
+
+```
+
