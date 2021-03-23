@@ -134,6 +134,7 @@ plotANHTOD + facet_wrap(plotMALTOD) + facet_wrap(plotMRZTOD) + facet_wrap(plotRR
 *Cat's notes here:*
 To use facet_wrap you need all of the data to be in one dataset. So use your original dataset.
 ```{r}
+
 ## change the order of the TOD
 relativetempdiff$TOD <- as.factor(relativetempdiff$TOD)
 relativetempdiff$TOD<-  factor(relativetempdiff$TOD, levels(relativetempdiff$TOD)[c(2,4,1,3)])
@@ -143,13 +144,25 @@ levels(relativetempdiff$TOD)
 relativetempdiff_sample <- relativetempdiff %>% sample_frac(.1)
 
 ### plot with faucet wrap
+
+relativetempdiff$TOD <- factor(relativetempdiff$TOD, levels = c("Early:1-6", "Morning:6-12", "Afternoon:12-18", "Evening:18-24"))
+levels(relativetempdiff$TOD) <- list("Early:1-6" = "Early:1-6", "Morning:7-12" = "Morning:6-12", "Afternoon:13-18" = "Afternoon:12-18", "Evening:19-24" = "Evening:18-24")
+
+
 plotTOD <- ggplot(relativetempdiff, aes(x= julian, y = RelTempDiff))+ geom_point(aes(color = TOD),size = .6) + facet_wrap(~Station) + 
   theme_bw() + theme(strip.text = element_text(size = 14),
                      axis.text = element_text(size = 14),
                      axis.title = element_text(size =14),
                      legend.text = element_text(size = 14),
                      legend.title = element_text(size = 14)) +
+
   scale_color_viridis(discrete = TRUE) + guides(colour = guide_legend(override.aes = list(size=4)))
+
+  labs(y = "Relative Temperature Difference (C)",
+       x = "Julian Day") +
+  scale_color_viridis(discrete = TRUE) +
+    guides(color = guide_legend(title = "Time of Day", override.aes=list(size = 4)))
+
 plotTOD
 
 ## adding trend lines
@@ -177,6 +190,21 @@ plotlinesonly <- ggplot(relativetempdiff, aes(x= julian, y = RelTempDiff))+ geom
   scale_color_viridis(discrete = TRUE)+ guides(colour = guide_legend(override.aes = list(size=4)))
 plotlinesonly
 ```
+
+```{r}
+plotTODLine <- ggplot(relativetempdiff, aes(x= julian, y = RelTempDiff))+ geom_smooth(aes(color = TOD), method = "loess", se = TRUE) + facet_wrap(~Station) + 
+  theme_bw() + theme(strip.text = element_text(size = 14),
+                     axis.text = element_text(size = 14),
+                     axis.title = element_text(size =14),
+                     legend.text = element_text(size = 14),
+                     legend.title = element_text(size = 14)) +
+  labs(y = "Relative Temperature Difference (C)", 
+       x = "Julian Day") +
+  scale_color_viridis(discrete = TRUE) +
+    guides(color = guide_legend(title = "Time of Day", override.aes=list(size = 4)))
+plotTODLine
+```
+
 
 For your ggarrange, you had a typo in one of the plots and you need to call the plot. Here is your result, which doesn't look as good as the facet. 
 

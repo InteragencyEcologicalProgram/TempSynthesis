@@ -1,0 +1,17 @@
+---
+title: "Depth Temp syn Models"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+stargazer(as.data.frame(modelANH), type = "text")
+stargazer(relativetempdiff, type = "text")
+stargazer(modelANH, type = "html", out ="glmANH.html")
+stargazer(modelANH, modelMAL, modelMRZ, modelRRI, type = "html", column.labels = c("ANH", "MAL", "MRZ", "RRI"), out ="allglmdpethmodeloutputs.html")
+
+```
+
