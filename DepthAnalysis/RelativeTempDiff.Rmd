@@ -24,7 +24,6 @@ library(dplyr)
 library(ggpubr)
 library(viridis)
 library(stargazer)
-install.packages("stargazer")
 library(stargazer)
 ```
 
@@ -82,9 +81,6 @@ summary(modelMAL)
 summary(modelMRZ)
 summary(modelRRI)
 
-### Models results in a table
-stargazer(modelANH)
-
 
 ### deeper look into each station with ggplot and then ggplotly
 
@@ -138,14 +134,48 @@ plotANHTOD + facet_wrap(plotMALTOD) + facet_wrap(plotMRZTOD) + facet_wrap(plotRR
 *Cat's notes here:*
 To use facet_wrap you need all of the data to be in one dataset. So use your original dataset.
 ```{r}
+## change the order of the TOD
+relativetempdiff$TOD <- as.factor(relativetempdiff$TOD)
+relativetempdiff$TOD<-  factor(relativetempdiff$TOD, levels(relativetempdiff$TOD)[c(2,4,1,3)])
+levels(relativetempdiff$TOD)
+
+### subset data to use when making the plots before finalized
+relativetempdiff_sample <- relativetempdiff %>% sample_frac(.1)
+
+### plot with faucet wrap
 plotTOD <- ggplot(relativetempdiff, aes(x= julian, y = RelTempDiff))+ geom_point(aes(color = TOD),size = .6) + facet_wrap(~Station) + 
   theme_bw() + theme(strip.text = element_text(size = 14),
                      axis.text = element_text(size = 14),
                      axis.title = element_text(size =14),
                      legend.text = element_text(size = 14),
                      legend.title = element_text(size = 14)) +
-  scale_color_viridis(discrete = TRUE)
+  scale_color_viridis(discrete = TRUE) + guides(colour = guide_legend(override.aes = list(size=4)))
 plotTOD
+
+## adding trend lines
+plotTODlines <- ggplot(relativetempdiff, aes(x= julian, y = RelTempDiff))+ geom_point(aes(color = TOD),size = 0.02, alpha = .1) +
+geom_smooth(aes(color = TOD), method = "loess", se = F, fullrange = T) +
+  facet_wrap(~Station) + 
+  theme_bw() + theme(strip.text = element_text(size = 14),
+                     axis.text = element_text(size = 14),
+                     axis.title = element_text(size =14),
+                     legend.text = element_text(size = 14),
+                     legend.title = element_text(size = 14)) +
+  scale_color_viridis(discrete = TRUE) + guides(colour = guide_legend(override.aes = list(size=4)))
+
+plotTODlines
+
+## just the trend lines
+plotlinesonly <- ggplot(relativetempdiff, aes(x= julian, y = RelTempDiff))+ geom_smooth(aes(color = TOD), 
+  method = "loess", se = T, fullrange = T) +
+  facet_wrap(~Station) + 
+  theme_bw() + theme(strip.text = element_text(size = 14),
+                     axis.text = element_text(size = 14),
+                     axis.title = element_text(size =14),
+                     legend.text = element_text(size = 14),
+                     legend.title = element_text(size = 14)) +
+  scale_color_viridis(discrete = TRUE)+ guides(colour = guide_legend(override.aes = list(size=4)))
+plotlinesonly
 ```
 
 For your ggarrange, you had a typo in one of the plots and you need to call the plot. Here is your result, which doesn't look as good as the facet. 
@@ -165,12 +195,20 @@ plot_labels <- data.frame(Station = c("ANH", "MAL", "MRZ", "RRI"), label = c("A"
 plotTOD + labs(x = "Julian Day", y = "Relative Temperature Diff (C)") + 
   geom_text(x = 350, y = -3.5, aes(label = label), size =6, data = plot_labels)
 ```
-Nans and summary stats, model results 
+Nans and summary stats, model results table
 
 ```{r}
 summary(relativetempdiff)
 
 stargazer(modelANH, modelMAL, modelMRZ, modelRRI, type = "html", column.labels = c("ANH", "MAL", "MRZ", "RRI"), title = "Continuous Dataset Model Results", out ="allglmdpethmodeloutputs.html")
+
+```
+model results figures
+```{r}
+par(mfrow = c(2,2))
+visreg(modelANH)
+plot(modelANH)
+
 
 ```
 
