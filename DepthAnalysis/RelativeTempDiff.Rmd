@@ -156,8 +156,7 @@ plotTOD <- ggplot(relativetempdiff, aes(x= julian, y = RelTempDiff))+ geom_point
                      legend.text = element_text(size = 14),
                      legend.title = element_text(size = 14)) +
 
-  scale_color_viridis(discrete = TRUE) + guides(colour = guide_legend(override.aes = list(size=4)))
-
+  scale_color_viridis(discrete = TRUE) + guides(colour = guide_legend(override.aes = list(size=4)))+
   labs(y = "Relative Temperature Difference (C)",
        x = "Julian Day") +
   scale_color_viridis(discrete = TRUE) +
@@ -174,7 +173,10 @@ geom_smooth(aes(color = TOD), method = "loess", se = F, fullrange = T) +
                      axis.title = element_text(size =14),
                      legend.text = element_text(size = 14),
                      legend.title = element_text(size = 14)) +
-  scale_color_viridis(discrete = TRUE) + guides(colour = guide_legend(override.aes = list(size=4)))
+  scale_color_viridis(discrete = TRUE) + guides(colour = guide_legend(override.aes = list(size=4)))+
+  labs(y = "Relative Temperature Difference (C)",
+       x = "Julian Day") +
+  scale_color_viridis(discrete = TRUE) + guides(colour = guide_legend(title = "Time of Day", override.aes = list(size=4)))
 
 plotTODlines
 
@@ -187,7 +189,11 @@ plotlinesonly <- ggplot(relativetempdiff, aes(x= julian, y = RelTempDiff))+ geom
                      axis.title = element_text(size =14),
                      legend.text = element_text(size = 14),
                      legend.title = element_text(size = 14)) +
-  scale_color_viridis(discrete = TRUE)+ guides(colour = guide_legend(override.aes = list(size=4)))
+  scale_color_viridis(discrete = TRUE) + guides(colour = guide_legend(override.aes = list(size=4)))+
+  labs(y = "Relative Temperature Difference (C)",
+       x = "Julian Day") +
+  scale_color_viridis(discrete = TRUE) + guides(colour = guide_legend(title = "Time of Day", override.aes = list(size=4)))
+
 plotlinesonly
 ```
 
