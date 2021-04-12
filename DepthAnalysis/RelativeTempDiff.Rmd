@@ -24,7 +24,6 @@ library(dplyr)
 library(ggpubr)
 library(viridis)
 library(stargazer)
-install.packages("stargazer")
 library(stargazer)
 ```
 
@@ -70,9 +69,15 @@ ggplot(relativetempdiff, aes(x = Hour, y = RelTempDiff)) + geom_point() + facet_
 ## Models
 ```{r}
 ### run models for each station use as results interpretation
+## filter out bad data pts for ANH
+RelTempDiff_ANH = RelTempDiff_ANH[-35780,]
+##adjusting model
+RelTempDiff_ANH = mutate(RelTempDiff_ANH, year2 = as.factor(Year))
+RelTempDiff_ANH = filter(RelTempDiff_ANH, !is.na(TempDiffLag), !is.na(RelTempDiff), !is.na(TempDiffLag2))
 
-
-modelANH <- glm(RelTempDiff ~ sjulian + sHour + sjulian:sHour + TempDiffLag , data = RelTempDiff_ANH)
+## adding year as a factor
+modelANH <- glm(RelTempDiff ~ sjulian + sHour + sjulian:sHour + TempDiffLag + year2 , data = RelTempDiff_ANH)
+## original models below
 modelMAL <- glm(RelTempDiff ~ sjulian + sHour + sjulian:sHour + TempDiffLag , data = RelTempDiff_MAL)
 modelMRZ <- glm(RelTempDiff ~ sjulian + sHour + sjulian:sHour + TempDiffLag , data = RelTempDiff_MRZ)
 modelRRI <- glm(RelTempDiff ~ sjulian + sHour + sjulian:sHour + TempDiffLag , data = RelTempDiff_RRI)
@@ -81,11 +86,27 @@ summary(modelANH)
 summary(modelMAL)
 summary(modelMRZ)
 summary(modelRRI)
+```
+Take a look into models 
+```{r}
+visreg(modelANH)
+visreg(modelANH,xvar = "sjulian", by = "sHour")
+plot(modelANH)
+### points on normal Q-Q to pull up
+RelTempDiff_ANH[35776,]
 
-### Models results in a table
-stargazer(modelANH)
+visreg(modelMAL)
+plot(modelMAL)
+acf(modelANH)
 
+visreg(modelMRZ)
+plot(modelMRZ)
 
+visreg(modelRRI)
+plot(modelRRI)
+```
+
+```{r}
 ### deeper look into each station with ggplot and then ggplotly
 
 ##ANH##
@@ -138,8 +159,20 @@ plotANHTOD + facet_wrap(plotMALTOD) + facet_wrap(plotMRZTOD) + facet_wrap(plotRR
 *Cat's notes here:*
 To use facet_wrap you need all of the data to be in one dataset. So use your original dataset.
 ```{r}
+
+## change the order of the TOD
+relativetempdiff$TOD <- as.factor(relativetempdiff$TOD)
+relativetempdiff$TOD<-  factor(relativetempdiff$TOD, levels(relativetempdiff$TOD)[c(2,4,1,3)])
+levels(relativetempdiff$TOD)
+
+### subset data to use when making the plots before finalized
+relativetempdiff_sample <- relativetempdiff %>% sample_frac(.1)
+
+### plot with faucet wrap
+
 relativetempdiff$TOD <- factor(relativetempdiff$TOD, levels = c("Early:1-6", "Morning:6-12", "Afternoon:12-18", "Evening:18-24"))
 levels(relativetempdiff$TOD) <- list("Early:1-6" = "Early:1-6", "Morning:7-12" = "Morning:6-12", "Afternoon:13-18" = "Afternoon:12-18", "Evening:19-24" = "Evening:18-24")
+
 
 plotTOD <- ggplot(relativetempdiff, aes(x= julian, y = RelTempDiff))+ geom_point(aes(color = TOD),size = .6) + facet_wrap(~Station) + 
   theme_bw() + theme(strip.text = element_text(size = 14),
@@ -147,11 +180,46 @@ plotTOD <- ggplot(relativetempdiff, aes(x= julian, y = RelTempDiff))+ geom_point
                      axis.title = element_text(size =14),
                      legend.text = element_text(size = 14),
                      legend.title = element_text(size = 14)) +
+
+  scale_color_viridis(discrete = TRUE) + guides(colour = guide_legend(override.aes = list(size=4)))+
   labs(y = "Relative Temperature Difference (C)",
        x = "Julian Day") +
   scale_color_viridis(discrete = TRUE) +
     guides(color = guide_legend(title = "Time of Day", override.aes=list(size = 4)))
+
 plotTOD
+
+## adding trend lines
+plotTODlines <- ggplot(relativetempdiff, aes(x= julian, y = RelTempDiff))+ geom_point(aes(color = TOD),size = 0.02, alpha = .1) +
+geom_smooth(aes(color = TOD), method = "loess", se = F, fullrange = T) +
+  facet_wrap(~Station) + 
+  theme_bw() + theme(strip.text = element_text(size = 14),
+                     axis.text = element_text(size = 14),
+                     axis.title = element_text(size =14),
+                     legend.text = element_text(size = 14),
+                     legend.title = element_text(size = 14)) +
+  scale_color_viridis(discrete = TRUE) + guides(colour = guide_legend(override.aes = list(size=4)))+
+  labs(y = "Relative Temperature Difference (C)",
+       x = "Julian Day") +
+  scale_color_viridis(discrete = TRUE) + guides(colour = guide_legend(title = "Time of Day", override.aes = list(size=4)))
+
+plotTODlines
+
+## just the trend lines
+plotlinesonly <- ggplot(relativetempdiff, aes(x= julian, y = RelTempDiff))+ geom_smooth(aes(color = TOD), 
+  method = "loess", se = T, fullrange = T) +
+  facet_wrap(~Station) + 
+  theme_bw() + theme(strip.text = element_text(size = 14),
+                     axis.text = element_text(size = 14),
+                     axis.title = element_text(size =14),
+                     legend.text = element_text(size = 14),
+                     legend.title = element_text(size = 14)) +
+  scale_color_viridis(discrete = TRUE) + guides(colour = guide_legend(override.aes = list(size=4)))+
+  labs(y = "Relative Temperature Difference (C)",
+       x = "Julian Day") +
+  scale_color_viridis(discrete = TRUE) + guides(colour = guide_legend(title = "Time of Day", override.aes = list(size=4)))
+
+plotlinesonly
 ```
 
 ```{r}
@@ -186,12 +254,20 @@ plot_labels <- data.frame(Station = c("ANH", "MAL", "MRZ", "RRI"), label = c("A"
 plotTOD + labs(x = "Julian Day", y = "Relative Temperature Diff (C)") + 
   geom_text(x = 350, y = -3.5, aes(label = label), size =6, data = plot_labels)
 ```
-Nans and summary stats, model results 
+Nans and summary stats, model results table
 
 ```{r}
 summary(relativetempdiff)
 
 stargazer(modelANH, modelMAL, modelMRZ, modelRRI, type = "html", column.labels = c("ANH", "MAL", "MRZ", "RRI"), title = "Continuous Dataset Model Results", out ="allglmdpethmodeloutputs.html")
+
+```
+model results figures
+```{r}
+par(mfrow = c(2,2))
+visreg(modelANH)
+plot(modelANH)
+
 
 ```
 
