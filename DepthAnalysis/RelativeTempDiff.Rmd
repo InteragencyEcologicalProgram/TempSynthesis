@@ -33,6 +33,14 @@ WD, Read in Data, Separate by Station
 relativetempdiff <- read.csv("DepthAnalysis/Data/RelativeTempDiff.csv")
 ## relativetempdiff has all of our parameters: julian day, WY, sinejulian, sinehour etc and is the correct timeframe
 
+# Add factor variables
+relativetempdiff$fWY = factor(relativetempdiff$WY)
+relativetempdiff$fYear = factor(relativetempdiff$Year)
+
+# Change TOD labels
+relativetempdiff$TOD <- factor(relativetempdiff$TOD, levels = c("Early:1-6", "Morning:6-12", "Afternoon:12-18", "Evening:18-24"))
+levels(relativetempdiff$TOD) <- list("Early:1-6" = "Early:1-6", "Morning:7-12" = "Morning:6-12", "Afternoon:13-18" = "Afternoon:12-18", "Evening:19-24" = "Evening:18-24")
+
 ## filter the relativetempdiff for each station so I can bring in the models or try the models first
 View(relativetempdiff)
 
@@ -42,6 +50,7 @@ RelTempDiff_MAL <- relativetempdiff %>% filter(Station == "MAL")
 RelTempDiff_ANH <- relativetempdiff %>% filter(Station == "ANH")
 
 ```
+
 
 
 
@@ -64,37 +73,213 @@ ggplot(relativetempdiff, aes(x = Hour, y = RelTempDiff)) + geom_point() + facet_
 
 ```
 
+Look at year differences
+```{r}
+# All stations
+ggplot(relativetempdiff) + geom_jitter(aes(x = julian, y = RelTempDiff, color = fWY)) + facet_wrap(~Station)
+
+# Julian-WY
+# 2017 interesting
+# Note 2020 and 2012 have some missing data?
+ggplot(relativetempdiff) + geom_smooth(aes(x = julian, y = RelTempDiff, color = fWY), method = "loess") + facet_wrap(~Station)+ scale_color_viridis(discrete = TRUE) + 
+  theme(strip.text = element_text(size = 15),
+        axis.text = element_text(size = 15))
+
+# Hour-WY
+# Not much difference. 2012 and 2020 may be off because of aformementioned missing data. 
+ggplot(relativetempdiff) + geom_smooth(aes(x = Hour, y = RelTempDiff, color = fWY), method = "loess") + facet_wrap(~Station) + scale_color_viridis(discrete = TRUE) + 
+  theme(strip.text = element_text(size = 15),
+        axis.text = element_text(size = 15))
+```
 
 
 ## Models
 ```{r}
 ### run models for each station use as results interpretation
-## filter out bad data pts for ANH
-RelTempDiff_ANH = RelTempDiff_ANH[-35780,]
-##adjusting model
-RelTempDiff_ANH = mutate(RelTempDiff_ANH, year2 = as.factor(Year))
-RelTempDiff_ANH = filter(RelTempDiff_ANH, !is.na(TempDiffLag), !is.na(RelTempDiff), !is.na(TempDiffLag2))
 
-## adding year as a factor
-modelANH <- glm(RelTempDiff ~ sjulian + sHour + sjulian:sHour + TempDiffLag + year2 , data = RelTempDiff_ANH)
+
+
+
+
+
+
+
 ## original models below
 modelMAL <- glm(RelTempDiff ~ sjulian + sHour + sjulian:sHour + TempDiffLag , data = RelTempDiff_MAL)
 modelMRZ <- glm(RelTempDiff ~ sjulian + sHour + sjulian:sHour + TempDiffLag , data = RelTempDiff_MRZ)
 modelRRI <- glm(RelTempDiff ~ sjulian + sHour + sjulian:sHour + TempDiffLag , data = RelTempDiff_RRI)
 ### now let's look at the model outputs (will put into a table)
+
 summary(modelANH)
 summary(modelMAL)
 summary(modelMRZ)
 summary(modelRRI)
 ```
+
+
+ANH
+```{r}
+## filter out bad data pts for ANH
+RelTempDiff_ANH = RelTempDiff_ANH[-35780,]
+
+##adjusting model
+RelTempDiff_ANH = filter(RelTempDiff_ANH, !is.na(TempDiffLag), !is.na(RelTempDiff), !is.na(TempDiffLag2))
+
+## Models
+modelANH1 <- glm(RelTempDiff ~ sjulian + sHour + TempDiffLag + fWY , data = RelTempDiff_ANH)
+
+modelANH2 <- glm(RelTempDiff ~ sjulian + sHour + sjulian:sHour + TempDiffLag + fWY , data = RelTempDiff_ANH)
+
+modelANH3 <- glm(RelTempDiff ~ sjulian + sHour + TempDiffLag + fWY:sjulian , data = RelTempDiff_ANH)
+
+modelANH4 <- glm(RelTempDiff ~ sjulian + sHour + sjulian:sHour + TempDiffLag + fWY:sjulian , data = RelTempDiff_ANH)
+
+AIC(modelANH1, modelANH2, modelANH3, modelANH4)
+
+# Validation
+par(mfrow = c(2,2))
+plot(modelANH2)
+
+with(summary(modelANH2), 1 - deviance/null.deviance)
+```
+
+MAL
+```{r}
+
+##adjusting model
+RelTempDiff_MAL = filter(RelTempDiff_MAL, !is.na(TempDiffLag), !is.na(RelTempDiff), !is.na(TempDiffLag2))
+
+
+modelMAL1 <- glm(RelTempDiff ~ sjulian + sHour + TempDiffLag + fYear , data = RelTempDiff_MAL)
+
+modelMAL2 <- glm(RelTempDiff ~ sjulian + sHour + sjulian:sHour + TempDiffLag + fYear , data = RelTempDiff_MAL)
+
+modelMAL3 <- glm(RelTempDiff ~ sjulian + sHour + + fYear:sjulian + TempDiffLag  , data = RelTempDiff_MAL)
+
+modelMAL4 <- glm(RelTempDiff ~ sjulian + sHour + sjulian:sHour + TempDiffLag + fYear:sjulian , data = RelTempDiff_MAL)
+
+AIC(modelMAL1, modelMAL2, modelMAL3, modelMAL4)
+
+summary(modelMAL2)
+
+# Validation
+par(mfrow = c(2,2))
+plot(modelMAL2)
+
+#R2
+with(summary(modelMAL2), 1 - deviance/null.deviance)
+```
+
+MRZ
+```{r}
+
+##adjusting model
+RelTempDiff_MRZ = filter(RelTempDiff_MRZ, !is.na(TempDiffLag), !is.na(RelTempDiff), !is.na(TempDiffLag2))
+
+
+modelMRZ1 <- glm(RelTempDiff ~ sjulian + sHour + TempDiffLag + fYear , data = RelTempDiff_MRZ)
+
+modelMRZ2 <- glm(RelTempDiff ~ sjulian + sHour + sjulian:sHour + TempDiffLag + fYear , data = RelTempDiff_MRZ)
+
+modelMRZ3 <- glm(RelTempDiff ~ sjulian + sHour + + fYear:sjulian + TempDiffLag  , data = RelTempDiff_MRZ)
+
+modelMRZ4 <- glm(RelTempDiff ~ sjulian + sHour + sjulian:sHour + TempDiffLag + fYear:sjulian , data = RelTempDiff_MRZ)
+
+AIC(modelMRZ1, modelMRZ2, modelMRZ3, modelMRZ4)
+
+summary(modelMRZ2)
+
+# Validation
+par(mfrow = c(2,2))
+plot(modelMRZ2)
+
+#R2
+with(summary(modelMRZ2), 1 - deviance/null.deviance)
+```
+
+
+
+RRI
+```{r}
+
+##adjusting model
+RelTempDiff_RRI = filter(RelTempDiff_RRI, !is.na(TempDiffLag), !is.na(RelTempDiff), !is.na(TempDiffLag2))
+
+
+modelRRI1 <- glm(RelTempDiff ~ sjulian + sHour + TempDiffLag + fYear , data = RelTempDiff_RRI)
+
+modelRRI2 <- glm(RelTempDiff ~ sjulian + sHour + sjulian:sHour + TempDiffLag + fYear , data = RelTempDiff_RRI)
+
+modelRRI3 <- glm(RelTempDiff ~ sjulian + sHour + + fYear:sjulian + TempDiffLag  , data = RelTempDiff_RRI)
+
+modelRRI4 <- glm(RelTempDiff ~ sjulian + sHour + sjulian:sHour + TempDiffLag + fYear:sjulian , data = RelTempDiff_RRI)
+
+AIC(modelRRI1, modelRRI2, modelRRI3, modelRRI4)
+
+summary(modelRRI4)
+
+# Validation
+par(mfrow = c(2,2))
+plot(modelRRI4)
+
+#R2
+with(summary(modelRRI4), 1 - deviance/null.deviance)
+```
+
+Mixed Models
+```{r}
+library(lme4)
+library(lmerTest)
+
+modelmRRI1 <- lmer(RelTempDiff ~ sjulian + sHour + TempDiffLag + (1|fYear), data = RelTempDiff_RRI)
+
+summary(modelmRRI1)
+
+modelmRRI2 <- glm(RelTempDiff ~ sjulian + sHour + sjulian:sHour + TempDiffLag + (1|fYear) , data = RelTempDiff_RRI)
+
+# Validation
+plot(modelmRRI1)
+qqnorm(modelmRRI1)
+qqline(modelmRRI1)
+
+```
+
+
+Plot Results
+https://cran.r-project.org/web/packages/sjPlot/vignettes/plot_interactions.html
+```{r}
+library(sjPlot)
+library(sjmisc)
+
+# ggplot(relativetempdiff, aes(x = Hour, y = sHour)) + geom_point()
+# 1 = 0, 24 midnight
+# -1 = 12 noon
+
+### JULIAN 
+# ggplot(relativetempdiff, aes(x = julian, y = sjulian)) + geom_point()
+## 1 = winter
+## 0 = spring, fall
+## -1 = summer
+par(mfrow = c(2,1))
+plot_model(modelRRI4, type= "int")
+plot_model(modelRRI4, type= "pred", terms = c("sjulian", "fYear"))
+plot_model(modelRRI4, type= "pred", terms = c("sjulian", "sHour", "fYear"))
+
+```
+
+
+
+
+
+
+
 Take a look into models 
 ```{r}
+par(mfrow = c(2,2))
 visreg(modelANH)
 visreg(modelANH,xvar = "sjulian", by = "sHour")
 plot(modelANH)
 ### points on normal Q-Q to pull up
-RelTempDiff_ANH[35776,]
-
 visreg(modelMAL)
 plot(modelMAL)
 acf(modelANH)
@@ -170,8 +355,7 @@ relativetempdiff_sample <- relativetempdiff %>% sample_frac(.1)
 
 ### plot with faucet wrap
 
-relativetempdiff$TOD <- factor(relativetempdiff$TOD, levels = c("Early:1-6", "Morning:6-12", "Afternoon:12-18", "Evening:18-24"))
-levels(relativetempdiff$TOD) <- list("Early:1-6" = "Early:1-6", "Morning:7-12" = "Morning:6-12", "Afternoon:13-18" = "Afternoon:12-18", "Evening:19-24" = "Evening:18-24")
+
 
 
 plotTOD <- ggplot(relativetempdiff, aes(x= julian, y = RelTempDiff))+ geom_point(aes(color = TOD),size = .6) + facet_wrap(~Station) + 
