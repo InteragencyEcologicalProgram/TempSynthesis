@@ -1,11 +1,11 @@
 ---
-title: "Diel Trends"
+title: "VarianceDielModels"
 author: "Catarina Pien"
-date: "10/23/2020"
+date: "3/30/2021"
 output: html_document
-editor_options: 
-  chunk_output_type: console
 ---
+
+
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -84,6 +84,38 @@ tempDailyM <- tempDailyM %>%
                                        "Fall"))))
 tempDailyM$Season <- factor(tempDailyM$Season, levels = c("Spring", "Summer", "Fall", "Winter"))
 ```
+
+Edit dataset for Peggy (Calendar Year)
+```{r}
+
+
+tempToUse3 <- readRDS("Data/temp11yearsCalYr_20210330.rds")
+tempToUse3$Hour <- hour(tempToUse3$Datetime)
+tempMonCalYr <- tempToUse3 %>% 
+  group_by(Region, Station, HabitatType, Year, Month) %>%
+  summarize(maxTemp = max(Temp),
+            minTemp = min(Temp),
+            meanTemp = round(mean(Temp),1),
+            rangeTemp = maxTemp-minTemp) %>%
+  ungroup()
+
+
+nMon2 <- tempMonCalYr %>% group_by(Station, Year) %>%
+  summarize(nMon = n())
+
+nMon2$Year <- as.numeric(nMon2$Year)
+
+
+tempToUse3M <- left_join(tempToUse3, nMon2) %>%
+  filter(nMon == 12) %>%
+  filter(Year>2008)
+
+# write.csv(tempToUse3M, "Data/HourlyAnalysisFilteredCalYr.csv")
+# saveRDS(tempToUse3M, "Data/HourlyAnalysisFilteredCalYr.rds")
+```
+
+
+
 
 **Scientific Questions**  
 
@@ -205,7 +237,9 @@ tempDailyM_s <- tempDailyM %>% group_by(Region) %>% sample_frac(.2)
 ggplot(tempDailyM_s, aes(x = Date, y = rangeTemp)) + geom_jitter(alpha = 0.2) + geom_smooth(se = TRUE) + theme_bw()
 
 # By WY Type
-ggplot(tempDailyM_s, aes(x = Date, y = rangeTemp, color = WYType2_Sac)) + geom_jitter() + theme_bw()
+ggplot(tempDailyM_s, aes(x = Date, y = rangeTemp, color = WYType2_Sac)) + geom_jitter() + facet_wrap(~Region) + theme_bw() + scale_color_viridis(discrete = TRUE)
+
+ggplot(tempDailyM_s, aes(x = fWY, y = rangeTemp, fill = WYType2_Sac)) + geom_violin() + facet_wrap(~Region) + theme_bw() + scale_fill_viridis(discrete = TRUE)
 
 tempDailyM_3 <- tempDailyM %>%
   group_by(Region, fWY) %>%
@@ -426,12 +460,12 @@ acf(residuals(M.range3))
 
 ```
 
-**Chosen but not best model: M.range2 <- lmer(rangeTemp~yday + I(yday_s^2) + Region + fWY + rangeDailylag1_s + (1|Station)**
+**Chosen but not best model: rangeTemp~ yday_s + I(yday_s^2) + Region + fWY + rangeDailylag1_s + rangeDailylag2_s + (1|Station)
 Year as random variable is slightly better but we care about year for now
 
 Other models:
 ```{r}
-
+# no WY Type
 summary(M.range4 <- lmer(rangeTemp~Season + Region + fWY + rangeDailylag1_s + (1|Station), data = tempDaily2, na.action = na.omit))
 
 summary(M.range5 <- lmer(rangeTemp~syday + Region + fWY + rangeDailylag1_s + (1|Station), data = tempDaily2, na.action = na.omit))

@@ -39,7 +39,6 @@ LatLon <- select(staInfo, c("Station", "StationName", "Latitude", "Longitude"))
 
 WYType <- read.csv("Data/WYType.csv") %>% # Get WY, WY type, Index 
   select(-c(starts_with("Runoff"))) %>%
-  rename(WY = Year) %>%
    mutate(Index_c = Index_Sac + Index_SJ) 
 
 WYSimple <- select(WYType, c("WY", "WYType2_Sac", "Index_c"))
@@ -95,6 +94,10 @@ StationNyears <- StationYearCombo %>%
             nYear = n()) %>%
   ungroup()
 ```
+
+
+
+
 
 Some exploratory plots to look at data
 ```{r exploratory plots}
@@ -184,6 +187,46 @@ tempToUse$WY = as.numeric(tempToUse$WY)
 today = format(today(), "%Y%m%d")
 #saveRDS(tempToUse, paste0("Data/temp10years_", today, ".rds"))
 ```
+
+
+Edit dataset for Peggy
+```{r}
+StationYearCombo2 <- tempFilt %>%
+  group_by(Region, Station, Year,  Date) %>%
+  summarize(perDay = n()) %>%
+  ungroup() %>%
+  group_by(Region, Station, Year) %>%
+  summarize(totalDays = n()) %>%
+  ungroup()
+
+StationNyears2 <- StationYearCombo2 %>%
+  filter(totalDays>250) %>%
+  group_by(Region, Station) %>%
+  summarize(firstYear = first(Year),
+            lastYear = last(Year),
+            nYear = n()) %>%
+  ungroup()
+
+DataYrSubset2 <- filter(StationNyears2, nYear > 9 & lastYear == 2019) %>%
+  left_join(StationYearCombo2) 
+
+tempToUseCalYr <- inner_join(tempFilt, DataYrSubset2, by = c("Region","Station", "Year")) %>%
+  filter(Region != "Far North") %>%
+  filter(totalDays > 250)
+
+
+today = format(today(), "%Y%m%d")
+#saveRDS(tempToUseCalYr, paste0("Data/temp11yearsCalYr_", today, ".rds"))
+
+
+
+```
+
+
+
+
+
+
 
 ## Mean, Max, Min {.tabset}
 
