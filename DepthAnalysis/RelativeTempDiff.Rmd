@@ -214,17 +214,67 @@ modelRRI3 <- glm(RelTempDiff ~ sjulian + sHour + + fYear:sjulian + TempDiffLag  
 
 modelRRI4 <- glm(RelTempDiff ~ sjulian + sHour + sjulian:sHour + TempDiffLag + fYear:sjulian , data = RelTempDiff_RRI)
 
+modelRRI5 <- glm(RelTempDiff ~ sjulian + sHour + sjulian:sHour + TempDiffLag + fYear:sjulian , data = RelTempDiff_RRI)
+
 AIC(modelRRI1, modelRRI2, modelRRI3, modelRRI4)
 
 summary(modelRRI4)
 
+
+
+
 # Validation
 par(mfrow = c(2,2))
 plot(modelRRI4)
+plot(hist(resid(modelRRI4)))
 
 #R2
 with(summary(modelRRI4), 1 - deviance/null.deviance)
 ```
+
+Model RRI and MRZ
+```{r}
+library(mgcv)
+
+# https://noamross.github.io/gams-in-r-course/
+  
+  
+# autoregressive
+# gamm() - incorporating random effects and autocorrelation
+  # look into nlme for description of autocorrelation function
+  # arma, AR1
+  # look up random effect notation in nlme
+  # gamm model predictions - gratia
+
+# center and standardize TempDiffLag, easier for predictions
+gamMRZ <-  gam(relativetempdiff ~ te(julian, Hour, bs = "cc") + TempDiffLag + fWY, family = scat)
+
+bam(Temperature_difference ~ te(Julian_day_s, Hour, by = fWaterYear) + fWaterYear, bs=c("cc","cc"))
+
+# bam and gam random effects
++ s(fWaterYear,bs="re")
+
+
+    # tp is default
+    # cc = cyclic smooth
+    # by = doesn't need a smooth
+    # by = will make a smoother for each WY
+    # factor smooth interaction: pooling effects by WY (see paper)
+
+# Add WY 
+# Check fit
+# bam and gam have their own functions for model predictions
+# gam.check() for model validation 
+
+```
+
+
+
+
+
+
+
+
 
 Mixed Models
 ```{r}
@@ -241,6 +291,10 @@ modelmRRI2 <- glm(RelTempDiff ~ sjulian + sHour + sjulian:sHour + TempDiffLag + 
 plot(modelmRRI1)
 qqnorm(modelmRRI1)
 qqline(modelmRRI1)
+
+# https://stats.stackexchange.com/questions/76671/mixed-effect-model-validation
+plot(modelmRRI1, resid(., scaled=TRUE) ~ fitted(.) | fYear, abline = 0)
+
 
 ```
 
@@ -265,6 +319,11 @@ plot_model(modelRRI4, type= "int")
 plot_model(modelRRI4, type= "pred", terms = c("sjulian", "fYear"))
 plot_model(modelRRI4, type= "pred", terms = c("sjulian", "sHour", "fYear"))
 
+# sequence of range of variables
+# expand.grid to get every combination of different variables
+# can include factors
+# predict function to generate model predictions
+# add confidence intervals, may need to convert se to CI
 ```
 
 
