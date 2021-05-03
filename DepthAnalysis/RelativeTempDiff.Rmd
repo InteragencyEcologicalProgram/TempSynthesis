@@ -24,7 +24,6 @@ library(dplyr)
 library(ggpubr)
 library(viridis)
 library(stargazer)
-library(stargazer)
 ```
 
 WD, Read in Data, Separate by Station
@@ -37,12 +36,19 @@ relativetempdiff <- read.csv("DepthAnalysis/Data/RelativeTempDiff.csv")
 relativetempdiff$fWY = factor(relativetempdiff$WY)
 relativetempdiff$fYear = factor(relativetempdiff$Year)
 
+# Filter to just water years 2013-2019 
+relativetempdiff <- filter(relativetempdiff, WY < 2020 & WY > 2012)
+
 # Change TOD labels
 relativetempdiff$TOD <- factor(relativetempdiff$TOD, levels = c("Early:1-6", "Morning:6-12", "Afternoon:12-18", "Evening:18-24"))
 levels(relativetempdiff$TOD) <- list("Early:1-6" = "Early:1-6", "Morning:7-12" = "Morning:6-12", "Afternoon:13-18" = "Afternoon:12-18", "Evening:19-24" = "Evening:18-24")
 
+# filter to no NAs
+relativetempdiff <- filter(relativetempdiff, !is.na(RelTempDiff))
+
+
 ## filter the relativetempdiff for each station so I can bring in the models or try the models first
-View(relativetempdiff)
+
 
 RelTempDiff_MRZ <- relativetempdiff %>% filter(Station == "MRZ")
 RelTempDiff_RRI <- relativetempdiff %>% filter(Station == "RRI")
@@ -232,12 +238,11 @@ plot(hist(resid(modelRRI4)))
 with(summary(modelRRI4), 1 - deviance/null.deviance)
 ```
 
-Model RRI and MRZ
+GAMs - Model RRI and MRZ only 
 ```{r}
 library(mgcv)
 
 # https://noamross.github.io/gams-in-r-course/
-  
   
 # autoregressive
 # gamm() - incorporating random effects and autocorrelation
@@ -246,8 +251,72 @@ library(mgcv)
   # look up random effect notation in nlme
   # gamm model predictions - gratia
 
+str(RelTempDiff_RRI)
+
+# RRI Model
+# What is the relative temperature difference at RRI? 
+
+# RelTempDiff ~ interaction(julian, Hour) + re(fWY) + autocorrelation 
+
+
+
+# Use normal smooth and separate variables
+gamRRI1 <- bam(RelTempDiff ~ s(julian, bs = "cc", k = 25) + s(Hour, bs = "cc", k = 15) + fWY, data = RelTempDiff_RRI, method = "REML")
+par(mfrow = c(2,2))
+gam.check(gamRRI1)
+
+# Use tensor smooth for interactions of different scales
+gamRRI2 <- bam(RelTempDiff ~ te(julian, Hour, k = c(15, 10), bs = c("cc")) + fWY, data = RelTempDiff_RRI, method = "REML")
+par(mfrow = c(2,2))
+gam.check(gamRRI2)
+par(mfrow = c(1,1))
+vis.gam(x = gamRRI2,
+        view = c("julian", "Hour"),
+        color = "heat", plot.type = "contour")
+
+# Family = scat
+gamRRI2b <- bam(RelTempDiff ~ te(julian, Hour, k = c(15,10), bs = "cc") + fWY, data = RelTempDiff_RRI, family = scat, method = "REML")
+summary(gamRRI2b)
+gam.check(gamRRI2b)
+vis.gam(x = gamRRI2b,
+        view = c("julian", "Hour"),
+        color = "heat", plot.type = "contour")
+
+# Include all 3
+gamRRI3 <- bam(RelTempDiff ~ te(julian, Hour, fWY, d = c(2, 1), k = c(15,10), bs = c("cc", "tp")), data = RelTempDiff_RRI, family = scat, method = "REML")
+gam.check(gamRRI3)
+
+
+# Interaction with different levels
+gamRRI4 <- bam(RelTempDiff ~ te(julian, Hour, by = fWY, k = c(12,12), bs = c("cc", "cc")) + fWY, data = RelTempDiff_RRI, AR.start=RelTempDiff_RRI$TempDiffLag, discrete = TRUE, family = scat, method = "REML")
+par(mfrow = c(2,2))
+gam.check(gamRRI4)
+par(mfrow = c(1,1))
+vis.gam(x = gamRRI4,
+        view = c("julian", "Hour"),
+        color = "heat", plot.type = "contour")
+summary(gamRRI4)
+
+
+# Random effect of year
+gamRRI5 <- bam(RelTempDiff ~ te(julian, Hour, k = c(15,10), bs = "cc") + s(fWY, bs = "re"), data = RelTempDiff_RRI, family = scat, method = "REML")
+summary(gamRRI5)
+par(mfrow = c(2,2))
+gam.check(gamRRI5)
+par(mfrow = c(1,1))
+vis.gam(x = gamRRI5,
+        view = c("julian", "Hour"),
+        color = "heat", plot.type = "contour")
+
+
+
+
+par(mfrow = c(2,2))
+gam.check(gamRRI2)
+
+
 # center and standardize TempDiffLag, easier for predictions
-gamMRZ <-  gam(relativetempdiff ~ te(julian, Hour, bs = "cc") + TempDiffLag + fWY, family = scat)
+gamMRZ1 <-  gam(RelTempDiff ~ te(julian, Hour, bs = "cc") + TempDiffLag + fWY, family = scat)
 
 bam(Temperature_difference ~ te(Julian_day_s, Hour, by = fWaterYear) + fWaterYear, bs=c("cc","cc"))
 
@@ -269,6 +338,15 @@ bam(Temperature_difference ~ te(Julian_day_s, Hour, by = fWaterYear) + fWaterYea
 ```
 
 
+```{r}
+library(itsadug)
+gamm1 <- gamm(RelTempDiff ~ te(julian, Hour, bs = c("cc", "cc")) + fWY, data = RelTempDiff_RRI, method = "REML" )
+
+summary(gamm1$gam)
+gamm1
+plot(gamm1$gam)
+gam.check(gamm1)
+```
 
 
 
@@ -412,7 +490,7 @@ levels(relativetempdiff$TOD)
 ### subset data to use when making the plots before finalized
 relativetempdiff_sample <- relativetempdiff %>% sample_frac(.1)
 
-### plot with faucet wrap
+### plot with facet wrap
 
 
 
