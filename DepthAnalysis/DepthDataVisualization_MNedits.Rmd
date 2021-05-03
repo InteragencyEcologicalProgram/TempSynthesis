@@ -21,7 +21,7 @@ library(readr)
 dir <- getwd()
 # Run this then check your dir (type dir in console).
 setwd(paste0(dir, "/DepthAnalysis/")) # If your "dir" does not include the DepthAnalysis folder run this line. If it does ignore this line.
-depth <- readRDS("/DepthAnalysis/Data/depthdata_heatstress_20201005.rds") # Run this
+depth <- readRDS("/Data/depthdata_heatstress_20201005.rds") # Run this
 #depth$Datetime <- attr(depth$Datetime, "tzone") <- "PDT"
 ```
 
@@ -462,7 +462,6 @@ Run model for temp difference
 * Figure out what a lower estimate means (greater difference or smaller difference?)
 * Figure by station and TOD (panel)
 ```{r}
-
 # Cut off first 3 days
 # Include temperature lag 
 depthDiff_rel3 <- depthDiff_rel3 %>%
@@ -559,8 +558,20 @@ summary(tempdiff4)
 
 
 
-#NOt all that much autocorrelation at teh T-2 lag. 
+#NOt all that much autocorrelation at teh T-2 lag.
+```
 
+Add a correlation term
+
+```{r}
+
+acf(m.TempDiff1)
+
+```
+
+
+GAMs
+```{r}
 library(itsadug)
 library(mgcv)
 
