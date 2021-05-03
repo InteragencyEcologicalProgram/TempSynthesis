@@ -129,10 +129,11 @@ heatDays2 <- tempHeat %>%
   group_by(Region, Station,WY,  fWY, StressAllDay) %>%
   summarize(nDays = n()) %>%  
   ungroup() %>%
- complete(StressAllDay, nesting(Region, Station, fWY), fill = list(nDays=0)) %>%
-  arrange(Region, Station, WY, fWY) %>%
   left_join(heatDaysSamp) %>%
-  mutate(propDays = round(nDays/totalDays,3))
+  mutate(propDays = round(nDays/totalDays,3)) %>%
+  complete(StressAllDay, nesting(Region, Station, fWY), fill = list(propDays=0)) %>%
+   complete(StressAllDay, nesting(Region, Station, fWY), fill = list(nDays=0)) %>%
+  arrange(Region, Station, WY, fWY) 
 
 
 #write.csv(heatDays1, "Data/heatDays.csv")
@@ -158,24 +159,29 @@ StationCol = highHeat %>%
                                                   ifelse(Region == "Suisun Marsh", "turquoise", ifelse(Region == "North Delta", "chartreuse4",
                                                                                                         ifelse(Region == "Sac River", "ivory4", "darkslategrey"))))))) %>%
   arrange(as.numeric(Region)) %>%
-  select(c(3,8)) %>%
+  select(c(3,9)) %>%
   unique()
 
 axisColor <- as.vector(StationCol$colors)
 
 # By Station
 ggplot(highHeat, aes(fWY, fct_reorder(Station, as.numeric(Region)), fill = nDays)) + geom_tile() +
-scale_fill_viridis(option = "plasma") + theme_wtemp+ theme(axis.text.y = element_text(color = axisColor)) 
+scale_fill_viridis(option = "plasma") + theme_wtemp+ theme(axis.text.y = element_text(color = axisColor),
+                                                           axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1) ) 
 
 ggplot(highHeat, aes(fWY, fct_reorder(Station, as.numeric(Region)), fill = propDays)) + geom_tile() +
-scale_fill_viridis(option = "viridis") + theme_wtemp+ theme(axis.text.y = element_text(color = axisColor))
+scale_fill_viridis(option = "viridis") + 
+  theme_wtemp+ theme(axis.text.y = element_text(color = axisColor,  size = 11),
+                     axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1) )
 
 
 
 # By Region
-ggplot(highHeat, aes(fWY, Region, fill = nDays)) + geom_tile() + scale_fill_viridis(option = "plasma")+ theme_wtemp
+ggplot(highHeat, aes(fWY, Region, fill = nDays)) + geom_tile() + scale_fill_viridis(option = "plasma")+ theme_wtemp +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1) )
 
-ggplot(highHeat, aes(fWY, Region, fill = propDays)) + geom_tile() + scale_fill_viridis() + theme_wtemp
+ggplot(highHeat, aes(fWY, Region, fill = propDays)) + geom_tile() + scale_fill_viridis() + theme_wtemp +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1) )
 
 ```
 
@@ -184,26 +190,163 @@ Plot no recovery
 NoRecovery <- filter(heatDays2, StressAllDay == "Y")
 
 # By Station
-ggplot(NoRecovery, aes(fWY, Station, fill = nDays)) + geom_tile() + scale_fill_viridis(option= "plasma") + theme_wtemp + theme(axis.text.y = element_text(color = axisColor)) 
+ggplot(NoRecovery, aes(fWY, Station, fill = nDays)) + geom_tile() + scale_fill_viridis(option= "plasma") + theme_wtemp + theme(axis.text.y = element_text(color = axisColor),
+                                                                                                axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
-ggplot(NoRecovery, aes(fWY, Station, fill = propDays)) + geom_tile() + scale_fill_viridis(option= "viridis") + theme_wtemp + theme(axis.text.y = element_text(color = axisColor)) 
+
+ggplot(NoRecovery, aes(fWY, Station, fill = propDays)) + geom_tile() + scale_fill_viridis(option= "viridis") + theme_wtemp + 
+  theme(axis.text.y = element_text(color = axisColor),                                        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
 
 # By Region
-ggplot(NoRecovery, aes(fWY, Region, fill = nDays)) + geom_tile() + scale_fill_viridis(option = "plasma") + theme_wtemp 
+ggplot(NoRecovery, aes(fWY, Region, fill = nDays)) + geom_tile() + scale_fill_viridis(option = "plasma") + theme_wtemp + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
 
-ggplot(NoRecovery, aes(fWY, Region, fill = propDays)) + geom_tile() + scale_fill_viridis() + theme_wtemp 
+ggplot(NoRecovery, aes(fWY, Region, fill = propDays)) + geom_tile() + scale_fill_viridis() + theme_wtemp + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
 
 ```
 
 
-1b. How many days at low stress?
+1b. New thresholds
+```{r}
+# Flagging starts on day 3 of >21C
+tempHeat2 <- tempDaily %>%
+  select(-meanDaily) %>%
+  group_by(Region, Station, WY) %>%
+  mutate(Thr21 = ifelse(maxDaily > 21, 1L, 0L)) %>% 
+  mutate(Stress = ifelse(ifelse(Thr21 == lag(Thr21, 1) & Thr21 == lag(Thr21, 2) & Thr21 == 1, "High", "Low"))) %>%
+  ungroup() %>%
+  group_by(Region, Station, WY, Date) %>%
+  mutate(StressAllDay = ifelse(Stress == "High" & minDaily>21, "Y", "N")) %>%
+  select(-starts_with("Thr")) %>%
+  filter(!is.na(Stress)) # Remove NAs coming from lag term
+
+```
+
+
+## Temp variables
+```{r Models Daily Max}
+tempHeat2 <- filter(heat, WY > 2008 & WY < 2020)
+tempHeat2$yday = yday(tempHeat2$Date)
+tempHeat2$Year = year(tempHeat2$Date)
+tempHeat2$fYear = factor(tempHeat2$Year)
+tempHeat2$fWY = factor(tempHeat2$WY)
+tempHeat2$Month = month(tempHeat2$Date)
+tempHeat2$fMonth = ordered(tempHeat2$Month)
+tempHeat2M <- left_join(tempHeat2, nMon) %>%
+  filter(nMon == 12)
+tempHeat2$Station = factor(tempHeat2$Station)
+tempHeat2$WYType2_Sac = as.factor(tempHeat2$WYType2_Sac)
+tempToUse$Hour <- hour(tempToUse$Datetime)
+
+#try a sine-transformation on "month" so we can include it in linear models
+tempHeat2M$syday = sin(pi*tempHeat2M$yday/365)
+
+# Add season
+tempHeat2M <- tempHeat2M %>%
+  mutate(Season = ifelse(Month %in% c(12, 1, 2), "Winter", 
+                         ifelse(Month %in% c(3,4,5), "Spring", 
+                                ifelse(Month %in% c(6,7,8), "Summer",
+                                       "Fall"))))
+tempHeat2M$Season <- factor(tempHeat2M$Season, levels = c("Spring", "Summer", "Fall", "Winter"))
+```
+
+
+Number of days at each stress level
+```{r}
+# Calculate number of samples in a year or water year
+heatDaysSamp2 <- tempHeat2 %>%
+  group_by(Region, Station, WY, fWY) %>%
+  summarize(totalDays = n()) %>%
+  filter(totalDays > 250)
+
+# Calculate number of days and proportion of days at each stress level
+stressDays1 <- tempHeat2 %>%
+  group_by(Region, Station, WY, fWY, Stress) %>%
+  summarize(nDays = n()) %>%
+    ungroup() %>%
+ complete(Stress, nesting(Region, Station, WY, fWY), fill = list(nDays=0)) %>%
+  left_join(heatDaysSamp2) %>%
+  mutate(propDays = round(nDays/totalDays,3)) %>%
+  ungroup() %>%
+  drop_na()
+
+# Look at days where there is no recovery
+stressDays2 <- tempHeat2 %>%
+  group_by(Region, Station,WY,  fWY, StressAllDay) %>%
+  summarize(nDays = n()) %>%  
+  ungroup() %>%
+ complete(StressAllDay, nesting(Region, Station, fWY), fill = list(nDays=0)) %>%
+  arrange(Region, Station, WY, fWY) %>%
+  left_join(heatDaysSamp2) %>%
+  mutate(propDays = round(nDays/totalDays,3))
+
+
+#write.csv(heatDays1, "Data/heatDays.csv")
+#write.csv(heatDays2, "Data/noRecovery.csv")
+```
+
+
+```{r}
+highStress <- filter(stressDays1, Stress == "High")
+
+# Assign axis colors by region
+StationCols = highStress %>%
+  mutate(colors = ifelse(Region == "San Joaquin", "maroon4",
+                                    ifelse(Region == "South", "orangered",
+                                           ifelse(Region == "Suisun Bay", "blue",
+                                                  ifelse(Region == "Suisun Marsh", "turquoise", ifelse(Region == "North Delta", "chartreuse4",
+                                                                                                        ifelse(Region == "Sac River", "ivory4", "darkslategrey"))))))) %>%
+  arrange(as.numeric(Region)) %>%
+  select(c(3,9)) %>%
+  unique()
+
+axisColors <- as.vector(StationCols$colors)
+
+# By Station
+ggplot(highStress, aes(fWY, fct_reorder(Station, as.numeric(Region)), fill = nDays)) + geom_tile() +
+scale_fill_viridis(option = "plasma") + theme_wtemp+ theme(axis.text.y = element_text(color = axisColor),
+                                                           axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1) ) 
+
+ggplot(highStress, aes(fWY, fct_reorder(Station, as.numeric(Region)), fill = propDays)) + geom_tile() +
+scale_fill_viridis(option = "viridis") + theme_wtemp+ 
+  theme(axis.text.y = element_text(color = axisColor, size = 12),
+                                                            axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1) )
+
+
+
+# By Region
+ggplot(highStress, aes(fWY, Region, fill = nDays)) + geom_tile() + scale_fill_viridis(option = "plasma")+ theme_wtemp +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1) )
+
+ggplot(highStress, aes(fWY, Region, fill = propDays)) + geom_tile() + scale_fill_viridis() + theme_wtemp +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1) )
+```
+
+```{r}
+NoRecovery2 <- filter(stressDays2, StressAllDay == "Y")
+
+# By Station
+ggplot(NoRecovery2, aes(fWY, Station, fill = nDays)) + geom_tile() + scale_fill_viridis(option= "plasma") + theme_wtemp + theme(axis.text.y = element_text(color = axisColors),
+                                                                                                axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+
+ggplot(NoRecovery2, aes(fWY, Station, fill = propDays)) + geom_tile() + scale_fill_viridis(option= "viridis") + theme_wtemp + theme(axis.text.y = element_text(color = axisColor),
+                                                                                                                                   axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+
+# By Region
+ggplot(NoRecovery2, aes(fWY, Region, fill = nDays)) + geom_tile() + scale_fill_viridis(option = "plasma") + theme_wtemp + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
+
+ggplot(NoRecovery2, aes(fWY, Region, fill = propDays)) + geom_tile() + scale_fill_viridis() + theme_wtemp + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+
+1c. How many days at low stress?
 
 Plot by region and station
 ```{r}
-
-lowHeat <- filter(heatDays1, Stress == "Low")
+lowHeat <- filter(stressDays1, Stress == "Low")
 
 # Assign axis colors by region
 StationCol2 = lowHeat %>%
@@ -227,26 +370,22 @@ scale_fill_viridis(option = "viridis") + theme_wtemp+ theme(axis.text.y = elemen
 
 
 # By Region
-ggplot(lowHeat, aes(fWY, Region, fill = nDays)) + geom_tile() + scale_fill_viridis(option = "plasma")+ theme_wtemp
+ggplot(lowHeat, aes(fWY, Region, fill = nDays)) + geom_tile() + scale_fill_viridis(option = "plasma")+ theme_wtemp + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
-ggplot(lowHeat, aes(fWY, Region, fill = propDays)) + geom_tile() + scale_fill_viridis() + theme_wtemp
+ggplot(lowHeat, aes(fWY, Region, fill = propDays)) + geom_tile() + scale_fill_viridis() + theme_wtemp + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
 ```
 
-Plot no recovery
+
+Checking out the South
 ```{r}
-NoRecovery <- filter(heatDays2, StressAllDay == "Y")
+Check <- tempHeat2 %>% filter(Region %in% c("South", "North Delta"),
+                         WY %in% c("2016", "2017"))
 
-# By Station
-ggplot(NoRecovery, aes(fWY, Station, fill = nDays)) + geom_tile() + scale_fill_viridis(option= "plasma") + theme_wtemp + theme(axis.text.y = element_text(color = axisColor2)) 
+ggplot(subset(Check, Check$Region == 
+                "South"), aes(Date, maxDaily)) + geom_point() + facet_wrap(~Station) +
+  geom_line(y = 21, color = "red")
 
-ggplot(NoRecovery, aes(fWY, Station, fill = propDays)) + geom_tile() + scale_fill_viridis(option= "viridis") + theme_wtemp + theme(axis.text.y = element_text(color = axisColor)) 
-
-
-# By Region
-ggplot(NoRecovery, aes(fWY, Region, fill = nDays)) + geom_tile() + scale_fill_viridis(option = "plasma") + theme_wtemp 
-
-ggplot(NoRecovery, aes(fWY, Region, fill = propDays)) + geom_tile() + scale_fill_viridis() + theme_wtemp 
 ```
 
 
@@ -295,39 +434,66 @@ tempHeatBi <- tempHeat %>%
          StressAllDay2 = ifelse(StressAllDay == "Y", 1, 0))
 ```
 
+
+
+```{r}
+
+```
+
+
+
+
+
+
+
 Models - binomial 
 Mixed model to include Station and Month
 ```{r}
 library(car)
-Mheat1 <- glm(StressHigh ~ fWY * Region + yday, family = binomial(link = "logit"), data = tempHeatBi)
+Mheat1 <- glm(cbind(nDays, totalDays) ~ fWY + Region, family = binomial(link="logit"), data = highStress)
 summary(Mheat1)
-vif(Mheat1)
-
-library(lme4)
-
-Mheat1 <- lmer()
-
-```
 
 
-
-
-```{r}
-Mheat1 <- glm(StressHigh ~ Region + fWY , family = binomial, data = tempHeatBi); summary(Mheat1)
-
-Mheat1 <- glmer(nDays/totalDays~Region + fWY + (1|Station), weights = totalDays, family = "binomial", data = highHeat)
-
-Mheat2 <- glm(StressHigh ~ Region * fWY , family = binomial, data = tempHeatBi); summary(Mheat2)
+Mheat2 <- glm(cbind(nDays, totalDays) ~ fWY * Region, family = binomial(link = "logit"), data = highStress)
+summary(Mheat2)
 
 AIC(Mheat1, Mheat2)
-
-par(mfrow=c(2,2))
+par(mfrow = c(2,2))
 plot(Mheat2)
 ```
 
-Mixed modeling
+Mixed Models
 ```{r}
-Mheat10 <- glmer(StressHigh ~ Region + fWY + (1|Station) + (1|fMonth) , family = binomial, data = tempHeatBi);summary(Mheat10)
+library(lme4)
 
+Mheat3 <- glmer(cbind(nDays, totalDays) ~ fWY + Region + (1|Station), family = binomial, data = highStress)
+summary(Mheat3)
+```
+
+
+Trying to use a normal lmer with an offset
+
+```{r}
+hist(highStress$nDays)
+
+
+# Make offset
+highStress$logTotalDays <- log(highStress$totalDays)
+
+# Model
+Mheat4 <- lmer(nDays~ fWY*Region + offset(logTotalDays) + (1|Station), data = highStress)
+summary(Mheat4)
+
+# Plot residuals
+par(mfrow = c(1,2))
+qqnorm(resid(Mheat4))
+qqline(resid(Mheat4))
+plot(Mheat4)
+
+EP1 <- resid(Mheat4, type = "pearson")
+qqrplot(EP1)
+
+
+visreg(Mheat4, "fWY", by = "Region")
 ```
 

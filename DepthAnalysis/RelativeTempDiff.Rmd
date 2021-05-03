@@ -24,7 +24,6 @@ library(dplyr)
 library(ggpubr)
 library(viridis)
 library(stargazer)
-install.packages("stargazer")
 library(stargazer)
 ```
 
@@ -33,6 +32,14 @@ WD, Read in Data, Separate by Station
 ## set wd, read in CSV relative tempdiff, bring over all data
 relativetempdiff <- read.csv("DepthAnalysis/Data/RelativeTempDiff.csv")
 ## relativetempdiff has all of our parameters: julian day, WY, sinejulian, sinehour etc and is the correct timeframe
+
+# Add factor variables
+relativetempdiff$fWY = factor(relativetempdiff$WY)
+relativetempdiff$fYear = factor(relativetempdiff$Year)
+
+# Change TOD labels
+relativetempdiff$TOD <- factor(relativetempdiff$TOD, levels = c("Early:1-6", "Morning:6-12", "Afternoon:12-18", "Evening:18-24"))
+levels(relativetempdiff$TOD) <- list("Early:1-6" = "Early:1-6", "Morning:7-12" = "Morning:6-12", "Afternoon:13-18" = "Afternoon:12-18", "Evening:19-24" = "Evening:18-24")
 
 ## filter the relativetempdiff for each station so I can bring in the models or try the models first
 View(relativetempdiff)
@@ -43,6 +50,7 @@ RelTempDiff_MAL <- relativetempdiff %>% filter(Station == "MAL")
 RelTempDiff_ANH <- relativetempdiff %>% filter(Station == "ANH")
 
 ```
+
 
 
 
@@ -65,6 +73,24 @@ ggplot(relativetempdiff, aes(x = Hour, y = RelTempDiff)) + geom_point() + facet_
 
 ```
 
+Look at year differences
+```{r}
+# All stations
+ggplot(relativetempdiff) + geom_jitter(aes(x = julian, y = RelTempDiff, color = fWY)) + facet_wrap(~Station)
+
+# Julian-WY
+# 2017 interesting
+# Note 2020 and 2012 have some missing data?
+ggplot(relativetempdiff) + geom_smooth(aes(x = julian, y = RelTempDiff, color = fWY), method = "loess") + facet_wrap(~Station)+ scale_color_viridis(discrete = TRUE) + 
+  theme(strip.text = element_text(size = 15),
+        axis.text = element_text(size = 15))
+
+# Hour-WY
+# Not much difference. 2012 and 2020 may be off because of aformementioned missing data. 
+ggplot(relativetempdiff) + geom_smooth(aes(x = Hour, y = RelTempDiff, color = fWY), method = "loess") + facet_wrap(~Station) + scale_color_viridis(discrete = TRUE) + 
+  theme(strip.text = element_text(size = 15),
+        axis.text = element_text(size = 15))
+```
 
 
 ## Models
@@ -72,20 +98,259 @@ ggplot(relativetempdiff, aes(x = Hour, y = RelTempDiff)) + geom_point() + facet_
 ### run models for each station use as results interpretation
 
 
-modelANH <- glm(RelTempDiff ~ sjulian + sHour + sjulian:sHour + TempDiffLag , data = RelTempDiff_ANH)
+
+
+
+
+
+
+## original models below
 modelMAL <- glm(RelTempDiff ~ sjulian + sHour + sjulian:sHour + TempDiffLag , data = RelTempDiff_MAL)
 modelMRZ <- glm(RelTempDiff ~ sjulian + sHour + sjulian:sHour + TempDiffLag , data = RelTempDiff_MRZ)
 modelRRI <- glm(RelTempDiff ~ sjulian + sHour + sjulian:sHour + TempDiffLag , data = RelTempDiff_RRI)
 ### now let's look at the model outputs (will put into a table)
+
 summary(modelANH)
 summary(modelMAL)
 summary(modelMRZ)
 summary(modelRRI)
-
-### Models results in a table
-stargazer(modelANH)
+```
 
 
+ANH
+```{r}
+## filter out bad data pts for ANH
+RelTempDiff_ANH = RelTempDiff_ANH[-35780,]
+
+##adjusting model
+RelTempDiff_ANH = filter(RelTempDiff_ANH, !is.na(TempDiffLag), !is.na(RelTempDiff), !is.na(TempDiffLag2))
+
+## Models
+modelANH1 <- glm(RelTempDiff ~ sjulian + sHour + TempDiffLag + fWY , data = RelTempDiff_ANH)
+
+modelANH2 <- glm(RelTempDiff ~ sjulian + sHour + sjulian:sHour + TempDiffLag + fWY , data = RelTempDiff_ANH)
+
+modelANH3 <- glm(RelTempDiff ~ sjulian + sHour + TempDiffLag + fWY:sjulian , data = RelTempDiff_ANH)
+
+modelANH4 <- glm(RelTempDiff ~ sjulian + sHour + sjulian:sHour + TempDiffLag + fWY:sjulian , data = RelTempDiff_ANH)
+
+AIC(modelANH1, modelANH2, modelANH3, modelANH4)
+
+# Validation
+par(mfrow = c(2,2))
+plot(modelANH2)
+
+with(summary(modelANH2), 1 - deviance/null.deviance)
+```
+
+MAL
+```{r}
+
+##adjusting model
+RelTempDiff_MAL = filter(RelTempDiff_MAL, !is.na(TempDiffLag), !is.na(RelTempDiff), !is.na(TempDiffLag2))
+
+
+modelMAL1 <- glm(RelTempDiff ~ sjulian + sHour + TempDiffLag + fYear , data = RelTempDiff_MAL)
+
+modelMAL2 <- glm(RelTempDiff ~ sjulian + sHour + sjulian:sHour + TempDiffLag + fYear , data = RelTempDiff_MAL)
+
+modelMAL3 <- glm(RelTempDiff ~ sjulian + sHour + + fYear:sjulian + TempDiffLag  , data = RelTempDiff_MAL)
+
+modelMAL4 <- glm(RelTempDiff ~ sjulian + sHour + sjulian:sHour + TempDiffLag + fYear:sjulian , data = RelTempDiff_MAL)
+
+AIC(modelMAL1, modelMAL2, modelMAL3, modelMAL4)
+
+summary(modelMAL2)
+
+# Validation
+par(mfrow = c(2,2))
+plot(modelMAL2)
+
+#R2
+with(summary(modelMAL2), 1 - deviance/null.deviance)
+```
+
+MRZ
+```{r}
+
+##adjusting model
+RelTempDiff_MRZ = filter(RelTempDiff_MRZ, !is.na(TempDiffLag), !is.na(RelTempDiff), !is.na(TempDiffLag2))
+
+
+modelMRZ1 <- glm(RelTempDiff ~ sjulian + sHour + TempDiffLag + fYear , data = RelTempDiff_MRZ)
+
+modelMRZ2 <- glm(RelTempDiff ~ sjulian + sHour + sjulian:sHour + TempDiffLag + fYear , data = RelTempDiff_MRZ)
+
+modelMRZ3 <- glm(RelTempDiff ~ sjulian + sHour + + fYear:sjulian + TempDiffLag  , data = RelTempDiff_MRZ)
+
+modelMRZ4 <- glm(RelTempDiff ~ sjulian + sHour + sjulian:sHour + TempDiffLag + fYear:sjulian , data = RelTempDiff_MRZ)
+
+AIC(modelMRZ1, modelMRZ2, modelMRZ3, modelMRZ4)
+
+summary(modelMRZ2)
+
+# Validation
+par(mfrow = c(2,2))
+plot(modelMRZ2)
+
+#R2
+with(summary(modelMRZ2), 1 - deviance/null.deviance)
+```
+
+
+
+RRI
+```{r}
+
+##adjusting model
+RelTempDiff_RRI = filter(RelTempDiff_RRI, !is.na(TempDiffLag), !is.na(RelTempDiff), !is.na(TempDiffLag2))
+
+
+modelRRI1 <- glm(RelTempDiff ~ sjulian + sHour + TempDiffLag + fYear , data = RelTempDiff_RRI)
+
+modelRRI2 <- glm(RelTempDiff ~ sjulian + sHour + sjulian:sHour + TempDiffLag + fYear , data = RelTempDiff_RRI)
+
+modelRRI3 <- glm(RelTempDiff ~ sjulian + sHour + + fYear:sjulian + TempDiffLag  , data = RelTempDiff_RRI)
+
+modelRRI4 <- glm(RelTempDiff ~ sjulian + sHour + sjulian:sHour + TempDiffLag + fYear:sjulian , data = RelTempDiff_RRI)
+
+modelRRI5 <- glm(RelTempDiff ~ sjulian + sHour + sjulian:sHour + TempDiffLag + fYear:sjulian , data = RelTempDiff_RRI)
+
+AIC(modelRRI1, modelRRI2, modelRRI3, modelRRI4)
+
+summary(modelRRI4)
+
+
+
+
+# Validation
+par(mfrow = c(2,2))
+plot(modelRRI4)
+plot(hist(resid(modelRRI4)))
+
+#R2
+with(summary(modelRRI4), 1 - deviance/null.deviance)
+```
+
+Model RRI and MRZ
+```{r}
+library(mgcv)
+
+# https://noamross.github.io/gams-in-r-course/
+  
+  
+# autoregressive
+# gamm() - incorporating random effects and autocorrelation
+  # look into nlme for description of autocorrelation function
+  # arma, AR1
+  # look up random effect notation in nlme
+  # gamm model predictions - gratia
+
+# center and standardize TempDiffLag, easier for predictions
+gamMRZ <-  gam(relativetempdiff ~ te(julian, Hour, bs = "cc") + TempDiffLag + fWY, family = scat)
+
+bam(Temperature_difference ~ te(Julian_day_s, Hour, by = fWaterYear) + fWaterYear, bs=c("cc","cc"))
+
+# bam and gam random effects
++ s(fWaterYear,bs="re")
+
+
+    # tp is default
+    # cc = cyclic smooth
+    # by = doesn't need a smooth
+    # by = will make a smoother for each WY
+    # factor smooth interaction: pooling effects by WY (see paper)
+
+# Add WY 
+# Check fit
+# bam and gam have their own functions for model predictions
+# gam.check() for model validation 
+
+```
+
+
+
+
+
+
+
+
+
+Mixed Models
+```{r}
+library(lme4)
+library(lmerTest)
+
+modelmRRI1 <- lmer(RelTempDiff ~ sjulian + sHour + TempDiffLag + (1|fYear), data = RelTempDiff_RRI)
+
+summary(modelmRRI1)
+
+modelmRRI2 <- glm(RelTempDiff ~ sjulian + sHour + sjulian:sHour + TempDiffLag + (1|fYear) , data = RelTempDiff_RRI)
+
+# Validation
+plot(modelmRRI1)
+qqnorm(modelmRRI1)
+qqline(modelmRRI1)
+
+# https://stats.stackexchange.com/questions/76671/mixed-effect-model-validation
+plot(modelmRRI1, resid(., scaled=TRUE) ~ fitted(.) | fYear, abline = 0)
+
+
+```
+
+
+Plot Results
+https://cran.r-project.org/web/packages/sjPlot/vignettes/plot_interactions.html
+```{r}
+library(sjPlot)
+library(sjmisc)
+
+# ggplot(relativetempdiff, aes(x = Hour, y = sHour)) + geom_point()
+# 1 = 0, 24 midnight
+# -1 = 12 noon
+
+### JULIAN 
+# ggplot(relativetempdiff, aes(x = julian, y = sjulian)) + geom_point()
+## 1 = winter
+## 0 = spring, fall
+## -1 = summer
+par(mfrow = c(2,1))
+plot_model(modelRRI4, type= "int")
+plot_model(modelRRI4, type= "pred", terms = c("sjulian", "fYear"))
+plot_model(modelRRI4, type= "pred", terms = c("sjulian", "sHour", "fYear"))
+
+# sequence of range of variables
+# expand.grid to get every combination of different variables
+# can include factors
+# predict function to generate model predictions
+# add confidence intervals, may need to convert se to CI
+```
+
+
+
+
+
+
+
+Take a look into models 
+```{r}
+par(mfrow = c(2,2))
+visreg(modelANH)
+visreg(modelANH,xvar = "sjulian", by = "sHour")
+plot(modelANH)
+### points on normal Q-Q to pull up
+visreg(modelMAL)
+plot(modelMAL)
+acf(modelANH)
+
+visreg(modelMRZ)
+plot(modelMRZ)
+
+visreg(modelRRI)
+plot(modelRRI)
+```
+
+```{r}
 ### deeper look into each station with ggplot and then ggplotly
 
 ##ANH##
@@ -138,15 +403,82 @@ plotANHTOD + facet_wrap(plotMALTOD) + facet_wrap(plotMRZTOD) + facet_wrap(plotRR
 *Cat's notes here:*
 To use facet_wrap you need all of the data to be in one dataset. So use your original dataset.
 ```{r}
+
+## change the order of the TOD
+relativetempdiff$TOD <- as.factor(relativetempdiff$TOD)
+relativetempdiff$TOD<-  factor(relativetempdiff$TOD, levels(relativetempdiff$TOD)[c(2,4,1,3)])
+levels(relativetempdiff$TOD)
+
+### subset data to use when making the plots before finalized
+relativetempdiff_sample <- relativetempdiff %>% sample_frac(.1)
+
+### plot with faucet wrap
+
+
+
+
 plotTOD <- ggplot(relativetempdiff, aes(x= julian, y = RelTempDiff))+ geom_point(aes(color = TOD),size = .6) + facet_wrap(~Station) + 
   theme_bw() + theme(strip.text = element_text(size = 14),
                      axis.text = element_text(size = 14),
                      axis.title = element_text(size =14),
                      legend.text = element_text(size = 14),
                      legend.title = element_text(size = 14)) +
-  scale_color_viridis(discrete = TRUE)
+
+  scale_color_viridis(discrete = TRUE) + guides(colour = guide_legend(override.aes = list(size=4)))+
+  labs(y = "Relative Temperature Difference (C)",
+       x = "Julian Day") +
+  scale_color_viridis(discrete = TRUE) +
+    guides(color = guide_legend(title = "Time of Day", override.aes=list(size = 4)))
+
 plotTOD
+
+## adding trend lines
+plotTODlines <- ggplot(relativetempdiff, aes(x= julian, y = RelTempDiff))+ geom_point(aes(color = TOD),size = 0.02, alpha = .1) +
+geom_smooth(aes(color = TOD), method = "loess", se = F, fullrange = T) +
+  facet_wrap(~Station) + 
+  theme_bw() + theme(strip.text = element_text(size = 14),
+                     axis.text = element_text(size = 14),
+                     axis.title = element_text(size =14),
+                     legend.text = element_text(size = 14),
+                     legend.title = element_text(size = 14)) +
+  scale_color_viridis(discrete = TRUE) + guides(colour = guide_legend(override.aes = list(size=4)))+
+  labs(y = "Relative Temperature Difference (C)",
+       x = "Julian Day") +
+  scale_color_viridis(discrete = TRUE) + guides(colour = guide_legend(title = "Time of Day", override.aes = list(size=4)))
+
+plotTODlines
+
+## just the trend lines
+plotlinesonly <- ggplot(relativetempdiff, aes(x= julian, y = RelTempDiff))+ geom_smooth(aes(color = TOD), 
+  method = "loess", se = T, fullrange = T) +
+  facet_wrap(~Station) + 
+  theme_bw() + theme(strip.text = element_text(size = 14),
+                     axis.text = element_text(size = 14),
+                     axis.title = element_text(size =14),
+                     legend.text = element_text(size = 14),
+                     legend.title = element_text(size = 14)) +
+  scale_color_viridis(discrete = TRUE) + guides(colour = guide_legend(override.aes = list(size=4)))+
+  labs(y = "Relative Temperature Difference (C)",
+       x = "Julian Day") +
+  scale_color_viridis(discrete = TRUE) + guides(colour = guide_legend(title = "Time of Day", override.aes = list(size=4)))
+
+plotlinesonly
 ```
+
+```{r}
+plotTODLine <- ggplot(relativetempdiff, aes(x= julian, y = RelTempDiff))+ geom_smooth(aes(color = TOD), method = "loess", se = TRUE) + facet_wrap(~Station) + 
+  theme_bw() + theme(strip.text = element_text(size = 14),
+                     axis.text = element_text(size = 14),
+                     axis.title = element_text(size =14),
+                     legend.text = element_text(size = 14),
+                     legend.title = element_text(size = 14)) +
+  labs(y = "Relative Temperature Difference (C)", 
+       x = "Julian Day") +
+  scale_color_viridis(discrete = TRUE) +
+    guides(color = guide_legend(title = "Time of Day", override.aes=list(size = 4)))
+plotTODLine
+```
+
 
 For your ggarrange, you had a typo in one of the plots and you need to call the plot. Here is your result, which doesn't look as good as the facet. 
 
@@ -165,12 +497,20 @@ plot_labels <- data.frame(Station = c("ANH", "MAL", "MRZ", "RRI"), label = c("A"
 plotTOD + labs(x = "Julian Day", y = "Relative Temperature Diff (C)") + 
   geom_text(x = 350, y = -3.5, aes(label = label), size =6, data = plot_labels)
 ```
-Nans and summary stats, model results 
+Nans and summary stats, model results table
 
 ```{r}
 summary(relativetempdiff)
 
 stargazer(modelANH, modelMAL, modelMRZ, modelRRI, type = "html", column.labels = c("ANH", "MAL", "MRZ", "RRI"), title = "Continuous Dataset Model Results", out ="allglmdpethmodeloutputs.html")
+
+```
+model results figures
+```{r}
+par(mfrow = c(2,2))
+visreg(modelANH)
+plot(modelANH)
+
 
 ```
 

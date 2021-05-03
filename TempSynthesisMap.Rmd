@@ -1,0 +1,92 @@
+---
+title: "TempSynthesisMap"
+author: "Catarina Pien"
+date: "4/12/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(lubridate)
+library(viridis) # color palette
+library(plotly)
+library(pscl)
+library(visreg)
+library(lattice)
+```
+
+Read in 
+```{r}
+setwd("C:/Users/cpien/OneDrive - California Department of Water Resources/Work/ClimateChange/R_code/TempSynthesis/")
+
+#tempFilt <- readRDS("Data/tempFilt.rds") 
+#tempToUse <- readRDS("Data/temp10years_20200922.rds")
+#tempAn <- readRDS("Data/tempAnnual.rds")
+tempMon <- readRDS("Data/tempMonthly.rds")
+tempDaily <- readRDS("Data/tempDaily.rds")
+tempDailyM <- readRDS("Data/HourlyAnalysisFiltered.rds")
+LatLon <- read.csv("Data/StationsMetadata.csv")
+
+```
+
+```{r}
+tempInfo <- tempDailyM %>%
+  group_by(Region, Station) %>%
+  summarize(n = length(unique(WY))) %>%
+  left_join(LatLon)
+
+```
+
+```{r}
+library(ggmap)
+library(sf)
+library(deltamapr)
+library(ggspatial)
+
+stations_sf <- st_as_sf(tempInfo, coords = c("Longitude", "Latitude"), crs = 4326)
+
+# Redefine your boundaries
+coordDict = list( 
+    'minLat' = 37.25,
+    'maxLat' = 39,
+    'minLon' = -122.75,
+    'maxLon' = -121
+)
+# Map 
+map_obj <- get_stamenmap(
+  bbox = c(left = coordDict[['minLon']], bottom = coordDict[['minLat']], right = coordDict[['maxLon']], top = coordDict[['maxLat']]), # the bounding box
+  zoom = 9, # zoom lvl; higher number = more detail (but also more processing power)
+  maptype = 'terrain-background'# type of basemap; 'terrain' is my default, but check help(get_stamenmap) for a full list
+  )
+```
+
+
+```{r}
+map_final <- ggmap(map_obj) + 
+  geom_sf(data = WW_Delta, fill = "steelblue", alpha = 0.5, inherit.aes = FALSE) + 
+  geom_sf(data = stations_sf, size = 3, shape = 21, 
+          aes(fill = Region), inherit.aes = FALSE)+
+  annotation_north_arrow(location = "tr", which_north = "true", 
+        pad_x = unit(.1, "in"), pad_y = unit(0.2, "in"),
+        style = north_arrow_fancy_orienteering) +
+  annotation_scale(location = "bl", bar_cols = c("black", "white", "black", "white")) +
+  annotate(geom = "text", x = -122.4, y = 37.85, label = "San Francisco Bay", fontface = "italic", color = "grey22", size = 3.5 ) +
+  scale_fill_brewer(palette = "Dark2") +
+ # scale_fill_viridis(discrete = TRUE) +
+  theme_bw()+
+  theme(axis.title = element_blank(),
+        axis.text = element_text(size = 14),
+        legend.text = element_text(size = 12),
+        legend.title = element_blank(),
+        legend.position = c(0.15, .87),
+        legend.margin = margin(0, 0.1, 0.1, 0.1, "cm") )
+map_final
+```
+```{r}
+map_final
+ggsave("StationMap.jpeg", width = 8, height = 8, device = 'png', dpi = 300, bg = "transparent")
+
+```
+
