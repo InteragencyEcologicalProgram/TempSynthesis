@@ -289,26 +289,35 @@ Do I need to standardize julian day or Hour?
 # Detecting anomaly
 
 # Predict Surface Temperature
-gAnRRIa <- bam(Surface~ te(julian, Hour, k = c(20, 10), 
-                           bs = c("cc", "cc")), 
+gAnRRIa <- bam(Surface~ s(julian, k = 20, bs = "cc") + s(Hour, k = 10, bs = "cc"), 
                data = RelTempDiff_RRI,
                method = "fREML", 
                nthreads = 3, 
                discrete = TRUE)
 
+hist(RelTempDiff_RRI$Surface)
+hist(RelTempDiff_MAL$Surface)
+
+ggplot(RelTempDiff_RRI, aes(x = factor(Month), y = Surface)) + geom_boxplot()
+
 rAn = acf(resid(gAnRRIa),  plot=FALSE)$acf[2]
 
+acf(resid(gAnRRIa))
+
 # Do I need autocorrelation in this model? 
-gAnRRI <- bam(Temp~ te(julian, Hour, k = c(20, 12), 
-                       bs = c("cc", "cc")), 
-              data = SurfaceTempRRI, 
+gAnRRI <- bam(Surface~ s(julian, k = 20, bs = "cc") + s(Hour, k = 10, bs = "cc"),
+              data = RelTempDiff_RRI, 
               method = "fREML", 
               rho = rAn, 
-              AR.start = SurfaceTempRRI$start.event, 
+              AR.start = RelTempDiff_RRI$start.event, 
               nthreads = 3, 
               discrete = TRUE)
 
+acf(resid_gam(gAnRRI))
+
+par(mfrow = c(2,2))
 gam.check(gAnRRI)
+plot(gAnRRI)
 # Doesn't look very good. Can we still use this? 
 
 vis.gam(x = gAnRRI,
@@ -348,6 +357,7 @@ RelTempDiff_RRI = start_event(as.data.frame(RelTempDiff_RRI), column="Datetime",
 # Determine rho by first running the model without the AR term
 gRRI1a <- bam(RelTempDiff~ te(julian, Hour, k = c(20, 10), bs = c("cc", "cc")), data = RelTempDiff_RRI, 
             family = scat, method = "fREML", nthreads = 3, discrete = TRUE)
+
 r1 = acf(resid(gRRI1a),  plot=FALSE)$acf[2]
 par(mfrow = c(2,2))
 gam.check(gRRI1a)
