@@ -1,6 +1,5 @@
 #Let's pull out everything for GAMs
 
-knitr::opts_chunk$set(echo = TRUE)
 library(lubridate)
 library(tidyverse)
 library(vegan)
@@ -90,12 +89,12 @@ acf(resid(g5))
 ###############################################
 #OK, I need to optomize k
 g5.1 =  bam(TempMax ~  
-            te(Latitude, Longitude, julian, d = c(2,1), k = c(50, 10), bs = c("cr","cr", "cc")), 
+            te(Latitude, Longitude, julian, d = c(2,1), k = c(50, 12), bs = c("cr","cr", "cc")), 
           data =tempmean2, method = "fREML", family = "scat", discrete = TRUE, nthreads = 3)
 
 r5 = acf(resid(g5.1),  plot=FALSE)$acf[2]
 g5.1 =  bam(TempMax ~  
-            te(Latitude, Longitude, julian, d = c(2,1), k = c(100, 12), bs = c("cr", "cc")), 
+            te(Latitude, Longitude, julian, d = c(2,1), k = c(50, 12), bs = c("cr", "cc")), 
           data =tempmean2, method = "fREML",  rho=r5, AR.start=tempmean2$start.event, family = "scat",
           discrete = TRUE, nthreads = 3)
 gam.check(g5.1)
@@ -106,33 +105,35 @@ acf(resid_gam(g5.1))
 #basic model of mean temp based on day and location
 
 g5ave =  bam(Tempave  ~  
-               te(Latitude, Longitude, julian, bs = c("cr","cr", "cc")),
-          data =tempmean2, method = "REML")
+               te(Latitude, Longitude, julian, d = c(2,1), k = c(50, 12), bs = c("cr", "cc")), 
+             data =tempmean2, method = "fREML", family = "scat", discrete = TRUE, nthreads = 3)
 
 r5ave = acf(resid(g5ave), plot=FALSE)$acf[2]
 
 
 
 g5ave =  bam(Tempave  ~  
-               te(Latitude, Longitude, julian, bs = c("cr","cr", "cc")), 
-          data =tempmean2, method = "REML",  rho=r5ave, AR.start=tempmean2$start.event)
+               te(Latitude, Longitude, julian, d = c(2,1), k = c(50, 12), bs = c("cr", "cc")), 
+          data =tempmean2, method = "fREML",  rho=r5ave, AR.start=tempmean2$start.event, family = "scat",
+          discrete = T, nthreads = 3)
 
 plot(g5ave)
-
-
-#basic model of mean temp based on day and location
+gam.check(g5ave)
+acf(resid_gam(g5ave))
+#basic model of minimum temp based on day and location
 
 g5min =  bam(TempMin  ~  
-               te(Latitude, Longitude, julian, bs = c("cr","cr", "cc")),
-             data =tempmean2, method = "REML")
+               te(Latitude, Longitude, julian,  d = c(2,1), k = c(50, 12), bs = c("cr", "cc")),
+             data =tempmean2, method = "fREML", family = "scat", discrete = TRUE, nthreads = 3)
 
 r5min = acf(resid(g5min), plot=FALSE)$acf[2]
 
 
 
 g5min =  bam(TempMin  ~  
-               te(Latitude, Longitude, julian, bs = c("cr","cr", "cc")),
-             data =tempmean2, method = "REML",  rho=r5min, AR.start=tempmean2$start.event)
+               te(Latitude, Longitude, julian, d = c(2,1), k = c(50, 12), bs = c("cr", "cc")),
+             data =tempmean2, method = "fREML", family = "scat", discrete = TRUE, nthreads = 3,
+             rho=r5min, AR.start=tempmean2$start.event)
 
 
 
@@ -142,19 +143,27 @@ g5min =  bam(TempMin  ~
 
 
 #basic model of temperature range based on day and location
+#The range data is being really weird. It's sorta Poisson looking? Maybe it needs a negative binomial distribution?
 
-g5range =  bam(Temprange  ~  
-                 te(Latitude, Longitude, julian, bs = c("cr","cr", "cc")), 
-             data =tempmean2, method = "REML")
+ggplot(tempmean2, aes(x = Temprange)) + geom_histogram(bins = 50)
+
+g5range =  bam((Temprange+0.01)   ~  
+                 te(Latitude, Longitude, julian,  d = c(2,1), k = c(50, 12), bs = c("cr", "cc")),
+               data =tempmean2, method = "fREML", Gamma(link = "inverse"), discrete = TRUE, nthreads = 3)
 
 r5range = acf(resid(g5range), plot=FALSE)$acf[2]
 
 
+g5range =  bam((Temprange+0.01) ~  
+                 te(Latitude, Longitude, julian,  d = c(2,1), k = c(50, 12), bs = c("cr", "cc")),
+               data =tempmean2, method = "fREML",Gamma(link = "inverse"),   discrete = TRUE, nthreads = 3,
+rho=r5range, AR.start=tempmean2$start.event)
 
-g5range =  bam(Temprange ~  
-                 te(Latitude, Longitude, julian, bs = c("cr","cr", "cc")),
-             data =tempmean2, method = "REML",  rho=r5range, AR.start=tempmean2$start.event)
-
+plot(g5range)
+summary(g5range)
+gam.check(g5range)
+acf(resid_gam(g5range))
+#Well, that's not aweful.
 
 
 load("spatialdata.RData")
@@ -163,6 +172,9 @@ regions = st_transform(regions, crs = 4326)
 
 stas = read.csv("StationLatLongs.csv")
 ch = chull(stas$Longitude, stas$Latitude)
+hull = stas[ch,]
+
+
 coordinates(stas) = ~ Longitude + Latitude
 crs(stas) <- "+proj=longlat +datum=NAD83"
 
@@ -177,7 +189,7 @@ stas = st_as_sf(stas) %>%
 #map of the delt with just sites close to stations
 
 
-hull = stas[ch,]
+
 #  coordinates(hull) = ~ Longitude + Latitude
 #crs(hull) <- "+proj=longlat +datum=NAD83"
 library(sfheaders)
@@ -194,6 +206,9 @@ chbuff = st_as_sf(hullp) %>%
 
 deltabuff = st_buffer(delta, dist = 0.01) %>%
   st_intersection(chbuff)
+
+save(deltabuff, file = "deltabuff.RData")
+
 #####################################################################
 #predicions
 
@@ -234,36 +249,55 @@ WQ_pred<-function(Full_data=Data,
   return(newdata)
 }
 
-
-newdata_year <- WQ_pred(Full_data=tempmean2, n=400) #, 
-                        #Julian_days = yday(ymd(paste("2014", 1:12, "15", sep="-"))))
+#my computer will only run six months at a time.
+newdata_year <- WQ_pred(Full_data=tempmean2, n=500,
+                        Julian_days = yday(ymd(paste("2014", 1:6, "15", sep="-"))))
 
 newdata_year = rename(newdata_year, julian = Julian_day)
+
+#Now the second half of the year
+newdata_year2 <- WQ_pred(Full_data=tempmean2, n=500,
+                        Julian_days = yday(ymd(paste("2014", 7:12, "15", sep="-"))))
+
+newdata_year2 = rename(newdata_year2, julian = Julian_day)
+
+#can I stick them all together?
+newdata_yearx = bind_rows(newdata_year, newdata_year2)
+#Nope. Strange.
 
 modellc4_predictions<-predict(g5.1, newdata=newdata_year, type="response", se.fit=TRUE, discrete=T) # Create predictions
 modellave_predictions<-predict(g5ave, newdata=newdata_year, type="response", se.fit=TRUE, discrete=T) # Create predictions
 modellminpredictions<-predict(g5min, newdata=newdata_year, type="response", se.fit=TRUE, discrete=T)
 modellrange_predictions<-predict(g5range, newdata=newdata_year, type="response", se.fit=TRUE, discrete=T)
+
+
+modellc4_predictions2<-predict(g5.1, newdata=newdata_year2, type="response", se.fit=TRUE, discrete=T) # Create predictions
+modellave_predictions2<-predict(g5ave, newdata=newdata_year2, type="response", se.fit=TRUE, discrete=T) # Create predictions
+modellminpredictions2<-predict(g5min, newdata=newdata_year2, type="response", se.fit=TRUE, discrete=T)
+modellrange_predictions2<-predict(g5range, newdata=newdata_year2, type="response", se.fit=TRUE, discrete=T)
+
+
+
 #mean temp model
 newdataave<-newdata_year%>%
-  mutate(Prediction=modellave_predictions$fit)%>%
-  mutate(SE=modellave_predictions$se.fit,
+  mutate(Prediction=modellave_predictions2$fit)%>%
+  mutate(SE=modellave_predictions2$se.fit,
          L95=Prediction-SE*1.96,
          U95=Prediction+SE*1.96)
 
 
 #max temp model
 newdata<-newdata_year%>%
-  mutate(Prediction=modellc4_predictions$fit)%>%
-  mutate(SE=modellc4_predictions$se.fit,
+  mutate(Prediction=modellc4_predictions2$fit)%>%
+  mutate(SE=modellc4_predictions2$se.fit,
          L95=Prediction-SE*1.96,
          U95=Prediction+SE*1.96) %>%
   filter(Prediction <35, Prediction >0)
 
 #min temp model
 newdatamin<-newdata_year%>%
-  mutate(Prediction=modellminpredictions$fit)%>%
-  mutate(SE=modellminpredictions$se.fit,
+  mutate(Prediction=modellminpredictions2$fit)%>%
+  mutate(SE=modellminpredictions2$se.fit,
          L95=Prediction-SE*1.96,
          U95=Prediction+SE*1.96)
 
@@ -273,7 +307,11 @@ newdatarange<-newdata_year%>%
   mutate(SE=modellrange_predictions$se.fit,
          L95=Prediction-SE*1.96,
          U95=Prediction+SE*1.96) %>%
-  filter(Prediction <10)
+  filter(Prediction <= 16, Prediction >= 0)
+
+
+save(g5.1, g5ave, g5min, g5range, newdata, newdata_year, newdataave,
+     newdatamin, newdatarange, file = "GAMresults5MAY2021.RData")
 
 # Function to rasterize all dates. Creates a 3D raster Latitude x Longitude x Date 
 Rasterize_all <- function(data, var, out_crs=4326, n=100){
@@ -291,11 +329,13 @@ Rasterize_all <- function(data, var, out_crs=4326, n=100){
 }
 
 # Create full rasterization of all predictions for interactive visualizations
-rastered_preds<-Rasterize_all(newdata, Prediction)
-rastered_predsave = Rasterize_all(newdataave, Prediction)
-rastered_predsmin = Rasterize_all(newdatamin, Prediction)
+
+ rastered_preds<-Rasterize_all(newdata, Prediction)
+ rastered_predsave = Rasterize_all(newdataave, Prediction)
+ rastered_predsmin = Rasterize_all(newdatamin, Prediction)
 rastered_predsrange = Rasterize_all(newdatarange, Prediction)
 
+save(rastered_preds, rastered_predsave, rastered_predsmin, rastered_predsrange, file = "RasteredPreds5MAY2021.RData")
 
 # Same for SE
 rastered_SE<-Rasterize_all(newdata, SE)
@@ -305,185 +345,38 @@ rastered_SErange<-Rasterize_all(newdatarange, SE)
 # Bind SE and predictions together
 rastered_predsSE<-c(rastered_preds, rastered_SE)
 
-#############################################################################
-#plotting functions
-
-raster_plot<-function(data, labels="All", type){
-  if (type == "range") lims = c(0,6) else lims = c(5,30)
-  data = st_crop(data, deltabuff)
-  ggplot()+
-    geom_stars(data=data)+
-    facet_wrap(~Date)+
-    scale_fill_viridis_c(name="Temperature", na.value="white",
-                         limits=lims,
-                         labels= function(x) ifelse((x/2)==as.integer(x/2), as.character(x), ""),
-                         guide = guide_colorbar(direction="horizontal", title.position = "top", barwidth = 10, ticks.linewidth = 2,
-                                                barheight=1, title.hjust=0.5, label.position="bottom", label.theme=element_text(size=12), 
-                                                title.theme=element_text(size=13)))+
-    coord_sf()+
-    ylab("Latitude")+
-    xlab("Longitude")+
-    theme_bw() + theme(legend.position = "top")
-}
-
-raster_plot2<-function(data, date, labels="All"){
-  data = data[,,,date]
-  data = st_crop(data, deltabuff)
-  ggplot()+
-    geom_stars(data=data)+
-   # facet_wrap(~Date)+
-    scale_fill_viridis_c(name="Temperature", na.value="white", breaks=seq(6,26,by=1), limits = c(5,30),
-                         labels= function(x) ifelse((x/2)==as.integer(x/2), as.character(x), ""),
-                         guide = guide_colorbar(direction="horizontal", title.position = "top", barwidth = 10, ticks.linewidth = 2,
-                                                barheight=1, title.hjust=0.5, label.position="bottom", label.theme=element_text(size=12), 
-                                                title.theme=element_text(size=13)))+
-    coord_sf()+
-    ylab("Latitude")+
-    xlab("Longitude")+
-    theme_bw() + theme(legend.position = "top")
-}
 
 
-raster_plot3<-function(data, date, labels="All"){
-  data = data[,,,date]
-  data = st_crop(data, deltabuff)
-  ggplot()+
-    geom_stars(data=data)+
-    # facet_wrap(~Date)+
-    scale_fill_viridis_c(name="Temperature", na.value="white",
-                         guide = guide_colorbar(direction="horizontal", title.position = "top", barwidth = 10, ticks.linewidth = 2,
-                                                barheight=1, title.hjust=0.5, label.position="bottom", label.theme=element_text(size=12), 
-                                                title.theme=element_text(size=13)))+
-    coord_sf()+
-    ylab("Latitude")+
-    xlab("Longitude")+
-    theme_bw() + theme(legend.position = "top")
-}
+#basic model of temperature range based on day and location
+#The range data is being really weird. It's sorta Poisson looking? Maybe it needs a negative binomial distribution?
+
+ggplot(tempmean2, aes(x = Temprange)) + geom_histogram(bins = 50)
+
+g5range2 =  bam((Temprange+0.01)   ~  
+                 te(Latitude, Longitude, julian,  d = c(2,1), k = c(50, 12), bs = c("cr", "cc")),
+               data =tempmean2, method = "fREML", family = "scat", discrete = TRUE, nthreads = 3)
+
+r5range2 = acf(resid(g5range2), plot=FALSE)$acf[2]
 
 
-raster_plot_range<-function(data, labels="All"){
-  data = st_crop(data, deltabuff)
-  ggplot()+
-    geom_stars(data=data)+
-    # facet_wrap(~Date)+
-    scale_fill_viridis_c(name="Temperature", na.value="white", breaks=seq(6,26,by=1), limits = c(0,8),
-                         labels= function(x) ifelse((x/2)==as.integer(x/2), as.character(x), ""),
-                         guide = guide_colorbar(direction="horizontal", title.position = "top", barwidth = 10, ticks.linewidth = 2,
-                                                barheight=1, title.hjust=0.5, label.position="bottom", label.theme=element_text(size=12), 
-                                                title.theme=element_text(size=13)))+
-    coord_sf()+
-    ylab("Latitude")+
-    xlab("Longitude")+
-    theme_bw() + theme(legend.position = "top")
-}
+g5range2 =  bam((Temprange+0.01) ~  
+                 te(Latitude, Longitude, julian,  d = c(2,1), k = c(50, 12), bs = c("cr", "cc")),
+               data =tempmean2, method = "fREML",  family = "scat",  discrete = TRUE, nthreads = 3,
+               rho=r5range2, AR.start=tempmean2$start.event)
 
-#maximum temperatures
-raster_plot(rastered_preds, type = "Max") + ggtitle("Max Temperature")
-raster_plot2(rastered_preds, 3) + ggtitle("Max Temperature - March")
-raster_plot2(rastered_preds, 4) + ggtitle("Max Temperature - April")
-raster_plot2(rastered_preds, 10) + ggtitle("Max Temperature - October")
-raster_plot3(rastered_preds, 4) + ggtitle("Max Temperature - November")
-raster_plot3(rastered_preds, 1) + ggtitle("Max Temperature - Jan")
-raster_plot3(rastered_preds, 3) + ggtitle("Max Temperature - May")
-
-#It's treating the impact of space as constant accross time. I'd have to put in another interaction
-#if i want it to vary.
-
-#average temperatures
-raster_plot(rastered_predsave, type = "Mean") + ggtitle("Mean Temperature")
-raster_plot2(rastered_predsave, 3) + ggtitle("Mean Temperature - March")
-raster_plot3(rastered_predsave, 6) + ggtitle("Mean Temperature - June")
-raster_plot2(rastered_predsave, 9) + ggtitle("Mean Temperature - September")
-raster_plot2(rastered_predsave, 12) + ggtitle("Mean Temperature - December")
+plot(g5range2)
+summary(g5range2)
+gam.check(g5range2)
+acf(resid_gam(g5range2))
+#Well, that's not aweful.
+modellrange_predictions2b<-predict(g5range2, newdata=newdata_year, type="response", se.fit=TRUE, discrete=T)
 
 
-#minimum temps
-raster_plot(rastered_predsmin, type = "Min") + ggtitle("minimum temperature")
-raster_plot2(rastered_predsmin, 3) + ggtitle("minimum Temperatur -March")
-raster_plot3(rastered_predsmin, 6) + ggtitle("minimum Temperatur -June")
-raster_plot2(rastered_predsmin, 9) + ggtitle("minimum Temperatur -September")
-raster_plot2(rastered_predsmin, 12) + ggtitle("minimum Temperatur -December")
+#range temp model
+newdatarange2b<-newdata_year%>%
+  mutate(Prediction=modellrange_predictions2b$fit)%>%
+  mutate(SE=modellrange_predictions2b$se.fit,
+         L95=Prediction-SE*1.96,
+         U95=Prediction+SE*1.96) 
+rastered_predsrange = Rasterize_all(newdatarange2b, Prediction)
 
-#temp range
-raster_plot(rastered_predsrange) + ggtitle("daily temperature range")
-raster_plot2(rastered_predsrange, 3) + ggtitle("daily temperature range - March")
-raster_plot2(rastered_predsrange, 6) + ggtitle("daily temperature range - June")
-raster_plot2(rastered_predsrange, 9) + ggtitle("daily temperature range - Sep")
-raster_plot2(rastered_predsrange, 12) + ggtitle("daily temperature range - Dec")
-
-
-#OK, there are some very high "rang" and "maxtemp" predictions for some reason. Let's fiture this out.
-
-maxs = filter(newdata, Prediction >35)
-plot(maxs)
-rastered_max<-Rasterize_all(maxs, Prediction)
-raster_plot(rastered_max) + geom_sf(data = stas) +   geom_sf_label(data = stas, aes(label = Station))
-geom_st(rastered_max)+ geom_sf(data = stas) +   geom_sf_label(data = stas, aes(label = Station))
-#I might take out the stations down there just to make life easier. It looks like it's just station DV7
-#Ugh. That iddn't work. I might have to get creative.
-
-#It woudl be easier to see what was going on if I scale the colors for each day rather than across the seasons. 
-
-test = st_crop(rastered_preds, delta)
-plot(test)
-
-#the places with the highest max tempsa nd greatest daily range are in the east delta and upper Suisun Marsh
-#but I'm a little skeptical. Let's dig in.
-
-foo = filter(newdatarange, Prediction >6)
-foo2 = filter(tempmean2, Temprange >6)
-
-#For some reason station FLT, which is near Martinez, has the highest range. It also has a
-#lot of high max temps
-
-foo3 = filter(newdata, Prediction >30)
-foo4 = filter(tempmean2, TempMax >30)
-
-#station RCS also has a lot of really high max temps and high range values. 
-#that's the one all the way up at Kights' landing we were talking about dropping.
-
-################################################################################
-#What happens if I increase or decrease the tmperatures?
-load("GAMresults.RData")
-
-rastered_preds2 = rastered_preds %>%
-mutate(Prediction = Prediction+2)
-
-rastered_predsx2 = rastered_preds %>%
-  mutate(Prediction = Prediction*1.02)
-
-raster_plot(rastered_preds, type = "Max") + ggtitle("Max Temperature")
-raster_plot(rastered_preds2, type = "Max") + ggtitle("Max Temperature with 2 degree increase")
-raster_plot2(rastered_preds2, 3) + ggtitle("Max Temperature +2 - March")
-raster_plot2(rastered_preds2, 6) + ggtitle("Max Temperature +2 - June")
-raster_plot2(rastered_preds2, 10) + ggtitle("Max Temperature +2 - October")
-
-
-raster_plot(rastered_predsx2) + ggtitle("Max Temperature with 2 percent increase")
-raster_plot2(rastered_predsx2, 3) + ggtitle("Max Temperature - March")
-raster_plot2(rastered_predsx2, 6) + ggtitle("Max Temperature - June")
-raster_plot2(rastered_predsx2, 10) + ggtitle("Max Temperature - October")
-
-
-rastered_preds2ave = rastered_predsave %>%
-  mutate(Prediction = Prediction+2)
-
-raster_plot(rastered_preds2ave) + ggtitle("Mean Temperature with 2 degree increase")
-raster_plot2(rastered_preds2ave, 3) + ggtitle("Mean Temperature +2 - March")
-raster_plot2(rastered_preds2ave, 6) + ggtitle("Mean Temperature +2 - June")
-raster_plot2(rastered_preds2ave, 10) + ggtitle("Mean Temperature +2 - October")
-
-#ten percent increase in temperature range
-rastered_preds2range = rastered_predsrange %>%
-  mutate(Prediction = Prediction+1.1)
-
-
-raster_plot(rastered_preds2range, type = "range") + ggtitle("Temp range with 10% increase")
-raster_plot(rastered_predsrange, type = "range") + ggtitle("Temp range")
-raster_plot_range(rastered_preds2range, 3) + ggtitle("Temp range +10%- March")
-raster_plot_range(rastered_preds2range, 6) + ggtitle(" Temp range +10% - June")
-raster_plot_range(rastered_preds2range, 10) + ggtitle("Temp range +10% - October")
-
-#Save all teh results
-save(deltabuff, rastered_preds, rastered_preds2, rastered_preds2ave, rastered_predsave, rastered_predsmin,
-     rastered_predsrange, rastered_predsSE, rastered_preds2range, file = "GAMresults.RData")
