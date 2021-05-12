@@ -334,6 +334,55 @@ ggplot(depthDiff_w2, aes(x = factor(Month), y = TempDiff)) + geom_point(size=.2)
 ###################################################################
 depth_filter$WaterCol <- as.factor(depth_filter$WaterCol)
 
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Edited by Cat
+# Do this without stress 
+depthDiff_relA <- depth_filter %>%
+  select(-Stress) %>%
+  pivot_wider(names_from = WaterCol, values_from = Temp) %>%
+  arrange(Station, Datetime)
+
+# Add year, month, hour
+depthDiff_relA <- depthDiff_relA %>%
+  mutate(Hour = hour(Datetime),
+         Month = month(Datetime),
+         Year = year(Datetime))
+
+# Get rid of NAs
+depthDiff_relA <-  depthDiff_relA %>%
+  filter(!is.na(Surface),
+         !is.na(Bottom))
+
+# Calculate difference
+depthDiff_relA2 <- depthDiff_relA %>%
+  mutate(RelTempDiff = Bottom - Surface)
+
+#add daytime categories for time of day:: revised
+depthDiff_relA3 <- depthDiff_relA2 %>%
+  mutate(TOD= ifelse(Hour>0 & Hour <=7, 'Early:0-7', ifelse(Hour>7 & Hour <=15, 'Mid:7-15', ifelse(Hour>15 & Hour <=23, 'Late:16-23', NA))))
+
+#Include temperature lag 
+depthDiff_relA3 <- depthDiff_relA3 %>%
+  filter(Date > "2012-07-15") %>%
+  group_by(Station) %>%
+  mutate(TempDiffLag = lag(RelTempDiff, 1),
+         TempDiffLag2 = lag(RelTempDiff,2))
+
+# Add julian day
+depthDiff_relA3$julian <- yday(depthDiff_relA3$Date)
+
+# Add WY 
+depthDiff_relA3 <- depthDiff_relA3 %>%
+  mutate(WY = ifelse(Month > 10, Year + 1, Year))
+
+
+
+
+saveRDS(depthDiff_relA3, "Data/RelativeTempDiff2.rds")
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+
+# Normal code
 depthDiff_rel <- pivot_wider(depth_filter, names_from = WaterCol, values_from = Temp) %>%
   arrange(Station, Datetime)
 
@@ -364,12 +413,12 @@ depthDiff_rel2$Hour=hour(depthDiff_rel2$Datetime)
 
 #add daytime categories for time of day
 depthDiff_rel3 <- depthDiff_rel2 %>%
-  mutate(TOD= ifelse(Hour>0 & Hour <=6, 'Early:1-6', ifelse(Hour>6 & Hour <=12, 'Morning:6-12', ifelse(Hour>12 & Hour <=18, 'Afternoon:12-18', ifelse(Hour>18 & Hour <=23, 'Evening:18-24' ,ifelse(Hour<1 & Hour >=0, 'Evening:18-24' , NA))))))
+  mutate(TOD= ifelse(Hour>0 & Hour <=6, 'Early:1-6', ifelse(Hour>6 & Hour <=12, 'Morning:7-12', ifelse(Hour>12 & Hour <=18, 'Afternoon:13-18', ifelse(Hour>18 & Hour <=23, 'Evening:19-24' ,ifelse(Hour<1 & Hour >=0, 'Evening:19-24' , NA))))))
 
 
 
 #set levels for time of day
-depthDiff_rel3$TOD<-factor(depthDiff_rel3$TOD, levels=c("Early:1-6","Morning:6-12","Afternoon:12-18", "Evening:18-24"))
+depthDiff_rel3$TOD<-factor(depthDiff_rel3$TOD, levels=c("Early:1-6","Morning:7-12","Afternoon:13-18", "Evening:19-24"))
 
 ############################################################
 

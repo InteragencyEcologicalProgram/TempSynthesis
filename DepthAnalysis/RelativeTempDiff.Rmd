@@ -24,26 +24,35 @@ library(dplyr)
 library(ggpubr)
 library(viridis)
 library(stargazer)
-library(stargazer)
 ```
 
 WD, Read in Data, Separate by Station
 ```{r}
 ## set wd, read in CSV relative tempdiff, bring over all data
-relativetempdiff <- read.csv("DepthAnalysis/Data/RelativeTempDiff.csv")
+relativetempdiff <- readRDS("DepthAnalysis/Data/RelativeTempDiff2.rds")
 ## relativetempdiff has all of our parameters: julian day, WY, sinejulian, sinehour etc and is the correct timeframe
+
+relativetempdiff <- relativetempdiff %>% select(-Stress)
 
 # Add factor variables
 relativetempdiff$fWY = factor(relativetempdiff$WY)
 relativetempdiff$fYear = factor(relativetempdiff$Year)
 
-# Change TOD labels
-relativetempdiff$TOD <- factor(relativetempdiff$TOD, levels = c("Early:1-6", "Morning:6-12", "Afternoon:12-18", "Evening:18-24"))
-levels(relativetempdiff$TOD) <- list("Early:1-6" = "Early:1-6", "Morning:7-12" = "Morning:6-12", "Afternoon:13-18" = "Afternoon:12-18", "Evening:19-24" = "Evening:18-24")
+# Filter to just water years 2013-2019 
+relativetempdiff <- filter(relativetempdiff, WY < 2020 & WY > 2012)
+
+# filter to only those on the hour
+relativetempdiff$minute <- minute(relativetempdiff$Datetime)
+relativetempdiff <- filter(relativetempdiff, minute == "0")
+
+#no NAs
+relativetempdiff <- filter(relativetempdiff, !is.na(RelTempDiff))
+
+info <- relativetempdiff %>%
+  group_by(Station, fWY) %>%
+  summarize(n =  n())
 
 ## filter the relativetempdiff for each station so I can bring in the models or try the models first
-View(relativetempdiff)
-
 RelTempDiff_MRZ <- relativetempdiff %>% filter(Station == "MRZ")
 RelTempDiff_RRI <- relativetempdiff %>% filter(Station == "RRI")
 RelTempDiff_MAL <- relativetempdiff %>% filter(Station == "MAL")
@@ -117,59 +126,6 @@ summary(modelRRI)
 ```
 
 
-ANH
-```{r}
-## filter out bad data pts for ANH
-RelTempDiff_ANH = RelTempDiff_ANH[-35780,]
-
-##adjusting model
-RelTempDiff_ANH = filter(RelTempDiff_ANH, !is.na(TempDiffLag), !is.na(RelTempDiff), !is.na(TempDiffLag2))
-
-## Models
-modelANH1 <- glm(RelTempDiff ~ sjulian + sHour + TempDiffLag + fWY , data = RelTempDiff_ANH)
-
-modelANH2 <- glm(RelTempDiff ~ sjulian + sHour + sjulian:sHour + TempDiffLag + fWY , data = RelTempDiff_ANH)
-
-modelANH3 <- glm(RelTempDiff ~ sjulian + sHour + TempDiffLag + fWY:sjulian , data = RelTempDiff_ANH)
-
-modelANH4 <- glm(RelTempDiff ~ sjulian + sHour + sjulian:sHour + TempDiffLag + fWY:sjulian , data = RelTempDiff_ANH)
-
-AIC(modelANH1, modelANH2, modelANH3, modelANH4)
-
-# Validation
-par(mfrow = c(2,2))
-plot(modelANH2)
-
-with(summary(modelANH2), 1 - deviance/null.deviance)
-```
-
-MAL
-```{r}
-
-##adjusting model
-RelTempDiff_MAL = filter(RelTempDiff_MAL, !is.na(TempDiffLag), !is.na(RelTempDiff), !is.na(TempDiffLag2))
-
-
-modelMAL1 <- glm(RelTempDiff ~ sjulian + sHour + TempDiffLag + fYear , data = RelTempDiff_MAL)
-
-modelMAL2 <- glm(RelTempDiff ~ sjulian + sHour + sjulian:sHour + TempDiffLag + fYear , data = RelTempDiff_MAL)
-
-modelMAL3 <- glm(RelTempDiff ~ sjulian + sHour + + fYear:sjulian + TempDiffLag  , data = RelTempDiff_MAL)
-
-modelMAL4 <- glm(RelTempDiff ~ sjulian + sHour + sjulian:sHour + TempDiffLag + fYear:sjulian , data = RelTempDiff_MAL)
-
-AIC(modelMAL1, modelMAL2, modelMAL3, modelMAL4)
-
-summary(modelMAL2)
-
-# Validation
-par(mfrow = c(2,2))
-plot(modelMAL2)
-
-#R2
-with(summary(modelMAL2), 1 - deviance/null.deviance)
-```
-
 MRZ
 ```{r}
 
@@ -232,12 +188,11 @@ plot(hist(resid(modelRRI4)))
 with(summary(modelRRI4), 1 - deviance/null.deviance)
 ```
 
-Model RRI and MRZ
+GAMs - Model RRI and MRZ only 
 ```{r}
 library(mgcv)
 
 # https://noamross.github.io/gams-in-r-course/
-  
   
 # autoregressive
 # gamm() - incorporating random effects and autocorrelation
@@ -246,15 +201,73 @@ library(mgcv)
   # look up random effect notation in nlme
   # gamm model predictions - gratia
 
+str(RelTempDiff_RRI)
+
+# RRI Model
+# What is the relative temperature difference at RRI? 
+
+# RelTempDiff ~ interaction(julian, Hour) + re(fWY) + autocorrelation 
+
+
+
+# Use normal smooth and separate variables
+gamRRI1 <- bam(RelTempDiff ~ s(julian, bs = "cc", k = 25) + s(Hour, bs = "cc", k = 15) + fWY, data = RelTempDiff_RRI, method = "REML")
+par(mfrow = c(2,2))
+gam.check(gamRRI1)
+
+# Use tensor smooth for interactions of different scales
+gamRRI2 <- bam(RelTempDiff ~ te(julian, Hour, k = c(15, 10), bs = c("cc")) + fWY, data = RelTempDiff_RRI, method = "REML")
+par(mfrow = c(2,2))
+gam.check(gamRRI2)
+par(mfrow = c(1,1))
+vis.gam(x = gamRRI2,
+        view = c("julian", "Hour"),
+        color = "heat", plot.type = "contour")
+
+# Family = scat
+gamRRI2b <- bam(RelTempDiff ~ te(julian, Hour, k = c(15,10), bs = "cc") + fWY, data = RelTempDiff_RRI, family = scat, method = "REML")
+summary(gamRRI2b)
+gam.check(gamRRI2b)
+vis.gam(x = gamRRI2b,
+        view = c("julian", "Hour"),
+        color = "heat", plot.type = "contour")
+
+# Include all 3
+gamRRI3 <- bam(RelTempDiff ~ te(julian, Hour, fWY, d = c(2, 1), k = c(15,10), bs = c("cc", "tp")), data = RelTempDiff_RRI, family = scat, method = "REML")
+gam.check(gamRRI3)
+
+
+# Interaction with different levels
+gamRRI4 <- bam(RelTempDiff ~ te(julian, Hour, by = fWY, k = c(12,12), bs = c("cc", "cc")) + fWY, data = RelTempDiff_RRI, AR.start=RelTempDiff_RRI$TempDiffLag, discrete = TRUE, family = scat, method = "REML")
+par(mfrow = c(2,2))
+gam.check(gamRRI4)
+par(mfrow = c(1,1))
+vis.gam(x = gamRRI4,
+        view = c("julian", "Hour"),
+        color = "heat", plot.type = "contour")
+summary(gamRRI4)
+
+
+# Random effect of year
+gamRRI5 <- bam(RelTempDiff ~ te(julian, Hour, k = c(15,10), bs = "cc") + s(fWY, bs = "re"), data = RelTempDiff_RRI, family = scat, method = "REML")
+summary(gamRRI5)
+par(mfrow = c(2,2))
+gam.check(gamRRI5)
+par(mfrow = c(1,1))
+vis.gam(x = gamRRI5,
+        view = c("julian", "Hour"),
+        color = "heat", plot.type = "contour")
+
+
+
+
 # center and standardize TempDiffLag, easier for predictions
-gamMRZ <-  gam(relativetempdiff ~ te(julian, Hour, bs = "cc") + TempDiffLag + fWY, family = scat)
+gamMRZ1 <-  gam(RelTempDiff ~ te(julian, Hour, bs = "cc") + TempDiffLag + fWY, family = scat)
 
 bam(Temperature_difference ~ te(Julian_day_s, Hour, by = fWaterYear) + fWaterYear, bs=c("cc","cc"))
 
 # bam and gam random effects
 + s(fWaterYear,bs="re")
-
-
     # tp is default
     # cc = cyclic smooth
     # by = doesn't need a smooth
@@ -268,7 +281,185 @@ bam(Temperature_difference ~ te(Julian_day_s, Hour, by = fWaterYear) + fWaterYea
 
 ```
 
+Temperature Anomaly
 
+Do I need to standardize julian day or Hour?
+
+```{r}
+# Detecting anomaly
+
+# Predict Surface Temperature
+gAnRRIa <- bam(Surface~ s(julian, k = 20, bs = "cc") + s(Hour, k = 10, bs = "cc"), 
+               data = RelTempDiff_RRI,
+               method = "fREML", 
+               nthreads = 3, 
+               discrete = TRUE)
+
+hist(RelTempDiff_RRI$Surface)
+hist(RelTempDiff_MAL$Surface)
+
+ggplot(RelTempDiff_RRI, aes(x = factor(Month), y = Surface)) + geom_boxplot()
+
+rAn = acf(resid(gAnRRIa),  plot=FALSE)$acf[2]
+
+acf(resid(gAnRRIa))
+
+# Do I need autocorrelation in this model? 
+gAnRRI <- bam(Surface~ s(julian, k = 20, bs = "cc") + s(Hour, k = 10, bs = "cc"),
+              data = RelTempDiff_RRI, 
+              method = "fREML", 
+              rho = rAn, 
+              AR.start = RelTempDiff_RRI$start.event, 
+              nthreads = 3, 
+              discrete = TRUE)
+
+acf(resid_gam(gAnRRI))
+
+par(mfrow = c(2,2))
+gam.check(gAnRRI)
+plot(gAnRRI)
+# Doesn't look very good. Can we still use this? 
+
+vis.gam(x = gAnRRI,
+        view = c("julian", "Hour"),
+        color = "heat", plot.type = "contour")
+
+# Look at predicted (fitted) values - is this the right thing to look at? 
+predRRI <- as.data.frame(fitted.values(gAnRRI))
+colnames(predRRI) <- "Fitted"
+RRI_pred <- cbind(RelTempDiff_RRI, predRRI) 
+
+# Calculate Anomaly by subtracting predicted (based on hour and julian day) from the actual temperature
+RRI_pred <- RRI_pred %>%
+  mutate(Anomaly = Temp-Fitted)
+
+# Look at the anomaly values. 2015 should have higher ones, 2017 should have lower ones. 
+ggplot(RRI_pred, aes(x = factor(Month), y = Anomaly)) + geom_boxplot() + facet_wrap(~fWY)
+
+ggplot(RRI_pred, aes(x = factor(fWY), y = Anomaly)) + geom_boxplot() 
+
+ggplot(RRI_pred, aes(x = Datetime, y = Anomaly)) + geom_point()
+
+RelTempDiff_RRI <- left_join(RelTempDiff_RRI, RRI_pred)
+```
+
+
+
+```{r}
+library(itsadug)
+
+##adjusting model
+# RelTempDiff_RRI = filter(RelTempDiff_RRI, !is.na(TempDiffLag), !is.na(RelTempDiff), !is.na(TempDiffLag2))
+
+# Tell it what the starting event is
+RelTempDiff_RRI = start_event(as.data.frame(RelTempDiff_RRI), column="Datetime", event=c("Station"), label.event="Event")
+  
+# Determine rho by first running the model without the AR term
+gRRI1a <- bam(RelTempDiff~ te(julian, Hour, k = c(20, 10), bs = c("cc", "cc")), data = RelTempDiff_RRI, 
+            family = scat, method = "fREML", nthreads = 3, discrete = TRUE)
+
+r1 = acf(resid(gRRI1a),  plot=FALSE)$acf[2]
+par(mfrow = c(2,2))
+gam.check(gRRI1a)
+
+gRRI1 <- bam(RelTempDiff~ te(julian, Hour, k = c(20, 10), bs = c("cc", "cc")), data = RelTempDiff_RRI, 
+            family = scat, method = "fREML", rho = r1, AR.start = RelTempDiff_RRI$start.event, nthreads = 3, discrete = TRUE)
+par(mfrow = c(2,2))
+gam.check(gRRI1)
+par(mfrow = c(1,1))
+plot(gRRI1, all.terms = TRUE, pages = 1)
+summary(gRRI1)
+vis.gam(x = gRRI1,
+        view = c("julian", "Hour"),
+        color = "heat", plot.type = "contour")
+
+# Incorporate anomaly
+gRRIAn <- bam(RelTempDiff~ te(julian, Hour, k = c(20, 12), bs = c("cc", "cc")) + s(Residuals, k = 20, bs = "re"), data = RelTempDiff_RRI, 
+            family = scat, method = "fREML", rho = 0.83, AR.start = RelTempDiff_RRI$start.event, nthreads = 3, discrete = TRUE)
+
+gam.check(gRRIAn)
+
+gRRIAn2 <- bam(RelTempDiff~ te(julian, Hour, Anomaly, k = c(20, 12, 20), bs = c("cc", "cc", "tp")), 
+               data = RelTempDiff_RRI, 
+               family = scat, 
+               method = "fREML", 
+               rho = 0.83, 
+               AR.start = RelTempDiff_RRI$start.event, 
+               nthreads = 3, 
+               discrete = TRUE)
+gam.check(gRRIAn2)
+
+#https://mfasiolo.github.io/mgcViz/articles/mgcviz.html
+
+# Add year in as a linear term
+gRRI2a <- bam(RelTempDiff~ te(julian, Hour, k = c(20, 20), bs = c("cc", "cc")) + fWY, data = RelTempDiff_RRI, 
+            family = scat, method = "fREML", nthreads = 3, discrete = TRUE)
+r2 = acf(resid(gRRI2a),  plot=FALSE)$acf[2]
+par(mfrow = c(2,2))
+gam.check(gRRI2a)
+
+gRRI2 <- bam(RelTempDiff~ te(julian, Hour, k = c(20, 10), bs = c("cc", "cc")) + fWY, data = RelTempDiff_RRI, 
+            family = scat, method = "fREML", rho = r2, AR.start = RelTempDiff_RRI$start.event, nthreads = 3, discrete = TRUE)
+par(mfrow = c(2,2))
+gam.check(gRRI2)
+par(mfrow = c(1,1))
+plot(gRRI2, all.terms = TRUE, pages = 1)
+summary(gRRI2)
+vis.gam(x = gRRI2,
+        view = c("julian", "Hour"),
+        color = "heat", plot.type = "contour")
+
+
+# Add year in as an interaction
+gRRI3a <- bam(RelTempDiff ~ te(julian, Hour, by = fWY, k = c(20,10), bs = c("cc", "cc")) + fWY, data = RelTempDiff_RRI,
+             family = scat, method = "fREML", nthreads = 3, discrete = TRUE)
+r3 = acf(resid(gRRI3a),  plot=FALSE)$acf[2]
+par(mfrow = c(2,2))
+gam.check(gRRI3a)
+
+
+gRRI3 <- bam(RelTempDiff ~ te(julian, Hour, by = fWY, k = c(20,10), bs = c("cc", "cc")) + fWY, data = RelTempDiff_RRI,
+             family = scat, method = "fREML", rho = r3, AR.start = RelTempDiff_RRI$start.event, nthreads = 3, discrete = TRUE)
+par(mfrow = c(2,2))
+gam.check(gRRI3)
+par(mfrow = c(1,1))
+plot(gRRI3, all.terms = TRUE, pages = 1)
+summary(gRRI3)
+par(mfrow = c(1,1))
+vis.gam(x = gRRI3,
+        view = c("julian", "Hour"),
+        color = "heat", plot.type = "contour") # Can I make plots by year?
+
+
+
+
+# Add year in as a random effect
+
+gRRI4a <- bam(RelTempDiff~ te(julian, Hour, k = c(20, 20), bs = c("cc", "cc")) + s(fWY, bs = "re"), data = RelTempDiff_RRI, 
+            family = scat, method = "fREML", nthreads = 3, discrete = TRUE)
+r4 = acf(resid(gRRI4a),  plot=FALSE)$acf[2]
+par(mfrow = c(2,2))
+gam.check(gRRI4a)
+
+
+gRRI4 <- bam(RelTempDiff~ te(julian, Hour, k = c(20, 10), bs = c("cc", "cc")) + fWY, data = RelTempDiff_RRI, 
+            family = scat, method = "fREML", rho = r4, AR.start = RelTempDiff_RRI$start.event, nthreads = 3, discrete = TRUE)
+par(mfrow = c(2,2))
+gam.check(gRRI4)
+plot(gRRI4, all.terms = TRUE, pages = 1)
+summary(gRRI4)
+vis.gam(x = gRRI4,
+        view = c("julian", "Hour"),
+        color = "heat", plot.type = "contour")
+
+# Can't check the autocorrelation?
+acf(gRRI4)
+
+
+
+
+
+```
 
 
 
@@ -412,7 +603,7 @@ levels(relativetempdiff$TOD)
 ### subset data to use when making the plots before finalized
 relativetempdiff_sample <- relativetempdiff %>% sample_frac(.1)
 
-### plot with faucet wrap
+### plot with facet wrap
 
 
 

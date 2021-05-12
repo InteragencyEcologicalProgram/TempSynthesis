@@ -32,7 +32,7 @@ theme_wtemp <- theme_classic() +
 
 
 
-Read in 
+## Read in 
 ```{r}
 setwd("C:/Users/cpien/OneDrive - California Department of Water Resources/Work/ClimateChange/R_code/TempSynthesis/")
 
@@ -43,9 +43,8 @@ tempMon <- readRDS("Data/tempMonthly.rds")
 tempDaily <- readRDS("Data/tempDaily.rds")
 ```
 
-## Stress Levels {.tabset}
-### High Stress Days {.tabset}
-#### Data Wrangling 
+## 1. Calculating High Stress 
+### 21-25C Thresholds
 
 Identifying Heat Stress Level (High/Med/Low) 
 Identifying "StressAllDay" = when min daily temperature >25 (could change this)
@@ -77,7 +76,7 @@ nMon <- tempMon %>% group_by(Station, WY) %>%
 nMon$WY <- as.numeric(nMon$WY)
 ```
 
-## Temp variables
+ Temp variables
 ```{r Models Daily Max}
 tempHeat <- filter(heat, WY > 2008 & WY < 2020)
 tempHeat$yday = yday(tempHeat$Date)
@@ -109,13 +108,13 @@ tempHeatM$Season <- factor(tempHeatM$Season, levels = c("Spring", "Summer", "Fal
 Number of days at each stress level
 ```{r}
 # Calculate number of samples in a year or water year
-heatDaysSamp <- tempHeat %>%
+heatDaysSamp <- tempHeatM %>%
   group_by(Region, Station, WY, fWY) %>%
   summarize(totalDays = n()) %>%
   filter(totalDays > 250)
 
 # Calculate number of days and proportion of days at each stress level
-heatDays1 <- tempHeat %>%
+heatDays1 <- tempHeatM %>%
   group_by(Region, Station, WY, fWY, Stress) %>%
   summarize(nDays = n()) %>%
     ungroup() %>%
@@ -125,26 +124,27 @@ heatDays1 <- tempHeat %>%
   ungroup()
 
 # Look at days where there is no recovery
-heatDays2 <- tempHeat %>%
-  group_by(Region, Station,WY,  fWY, StressAllDay) %>%
+heatDays2 <- tempHeatM %>%
+  select(-Stress) %>%
+  group_by(Region, Station, WY,fWY, StressAllDay) %>%
   summarize(nDays = n()) %>%  
   ungroup() %>%
+   complete(StressAllDay, nesting(Region, Station, WY, fWY), fill = list(nDays=0)) %>%
   left_join(heatDaysSamp) %>%
-  mutate(propDays = round(nDays/totalDays,3)) %>%
-  complete(StressAllDay, nesting(Region, Station, fWY), fill = list(propDays=0)) %>%
-   complete(StressAllDay, nesting(Region, Station, fWY), fill = list(nDays=0)) %>%
+  mutate(propDays = round(nDays/totalDays,3))%>%
+  ungroup() %>%
   arrange(Region, Station, WY, fWY) 
 
 
-#write.csv(heatDays1, "Data/heatDays.csv")
-#write.csv(heatDays2, "Data/noRecovery.csv")
+#write.csv(heatDays1, "Data/heatDaysHighMedLow25.csv")
+#write.csv(heatDays2, "Data/noRecovery25.csv")
 ```
 
 
 
 
 
-1a. How many days at high heat stress? 
+#### Days at high stress
 
 Plot by region and station
 ```{r}
@@ -185,7 +185,7 @@ ggplot(highHeat, aes(fWY, Region, fill = propDays)) + geom_tile() + scale_fill_v
 
 ```
 
-Plot no recovery
+#### No recovery
 ```{r}
 NoRecovery <- filter(heatDays2, StressAllDay == "Y")
 
@@ -207,14 +207,14 @@ ggplot(NoRecovery, aes(fWY, Region, fill = propDays)) + geom_tile() + scale_fill
 ```
 
 
-1b. New thresholds
+### 21 Threshold
 ```{r}
 # Flagging starts on day 3 of >21C
 tempHeat2 <- tempDaily %>%
   select(-meanDaily) %>%
   group_by(Region, Station, WY) %>%
-  mutate(Thr21 = ifelse(maxDaily > 21, 1L, 0L)) %>% 
-  mutate(Stress = ifelse(ifelse(Thr21 == lag(Thr21, 1) & Thr21 == lag(Thr21, 2) & Thr21 == 1, "High", "Low"))) %>%
+  mutate(Thr21 = ifelse(maxDaily > 21, 1L, 0L)) %>%
+  mutate(Stress = ifelse(Thr21 == lag(Thr21, 1) & Thr21 == lag(Thr21, 2) & Thr21 == 1, "High", "Low")) %>%
   ungroup() %>%
   group_by(Region, Station, WY, Date) %>%
   mutate(StressAllDay = ifelse(Stress == "High" & minDaily>21, "Y", "N")) %>%
@@ -224,20 +224,19 @@ tempHeat2 <- tempDaily %>%
 ```
 
 
-## Temp variables
+Temp variables
 ```{r Models Daily Max}
-tempHeat2 <- filter(heat, WY > 2008 & WY < 2020)
+tempHeat2 <- filter(tempHeat2, WY > 2008 & WY < 2020)
 tempHeat2$yday = yday(tempHeat2$Date)
 tempHeat2$Year = year(tempHeat2$Date)
 tempHeat2$fYear = factor(tempHeat2$Year)
 tempHeat2$fWY = factor(tempHeat2$WY)
 tempHeat2$Month = month(tempHeat2$Date)
-tempHeat2$fMonth = ordered(tempHeat2$Month)
+tempHeat2$fMonth = factor(tempHeat2$Month)
 tempHeat2M <- left_join(tempHeat2, nMon) %>%
   filter(nMon == 12)
 tempHeat2$Station = factor(tempHeat2$Station)
 tempHeat2$WYType2_Sac = as.factor(tempHeat2$WYType2_Sac)
-tempToUse$Hour <- hour(tempToUse$Datetime)
 
 #try a sine-transformation on "month" so we can include it in linear models
 tempHeat2M$syday = sin(pi*tempHeat2M$yday/365)
@@ -255,13 +254,13 @@ tempHeat2M$Season <- factor(tempHeat2M$Season, levels = c("Spring", "Summer", "F
 Number of days at each stress level
 ```{r}
 # Calculate number of samples in a year or water year
-heatDaysSamp2 <- tempHeat2 %>%
+heatDaysSamp2 <- tempHeat2M %>%
   group_by(Region, Station, WY, fWY) %>%
   summarize(totalDays = n()) %>%
   filter(totalDays > 250)
 
 # Calculate number of days and proportion of days at each stress level
-stressDays1 <- tempHeat2 %>%
+stressDays1 <- tempHeat2M %>%
   group_by(Region, Station, WY, fWY, Stress) %>%
   summarize(nDays = n()) %>%
     ungroup() %>%
@@ -282,11 +281,11 @@ stressDays2 <- tempHeat2 %>%
   mutate(propDays = round(nDays/totalDays,3))
 
 
-#write.csv(heatDays1, "Data/heatDays.csv")
-#write.csv(heatDays2, "Data/noRecovery.csv")
+#write.csv(stressDays1, "Data/heatDaysHighLow21.csv")
+#write.csv(stressDays2, "Data/noRecovery21.csv")
 ```
 
-
+#### High Stress
 ```{r}
 highStress <- filter(stressDays1, Stress == "High")
 
@@ -323,6 +322,7 @@ ggplot(highStress, aes(fWY, Region, fill = propDays)) + geom_tile() + scale_fill
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1) )
 ```
 
+#### No Recovery
 ```{r}
 NoRecovery2 <- filter(stressDays2, StressAllDay == "Y")
 
@@ -342,7 +342,7 @@ ggplot(NoRecovery2, aes(fWY, Region, fill = propDays)) + geom_tile() + scale_fil
 ```
 
 
-1c. How many days at low stress?
+#### Days at low stress
 
 Plot by region and station
 ```{r}
@@ -377,7 +377,7 @@ ggplot(lowHeat, aes(fWY, Region, fill = propDays)) + geom_tile() + scale_fill_vi
 ```
 
 
-Checking out the South
+#### Checking out the South
 ```{r}
 Check <- tempHeat2 %>% filter(Region %in% c("South", "North Delta"),
                          WY %in% c("2016", "2017"))
@@ -398,7 +398,7 @@ ggplot(subset(Check, Check$Region ==
 
 
 
-2a. Has amount of high heat stress days changed over time?
+## 2. Has amount of high heat stress days changed over time?
 
 ### Look at distribution of data
 ```{r}
@@ -433,18 +433,6 @@ tempHeatBi <- tempHeat %>%
   mutate(StressHigh = ifelse(Stress == "High", 1, 0),
          StressAllDay2 = ifelse(StressAllDay == "Y", 1, 0))
 ```
-
-
-
-```{r}
-
-```
-
-
-
-
-
-
 
 Models - binomial 
 Mixed model to include Station and Month
