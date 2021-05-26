@@ -89,7 +89,7 @@ acf(resid(g5))
 ###############################################
 #OK, I need to optomize k
 g5.1 =  bam(TempMax ~  
-            te(Latitude, Longitude, julian, d = c(2,1), k = c(50, 12), bs = c("cr","cr", "cc")), 
+            te(Latitude, Longitude, julian, d = c(2,1), k = c(50, 12), bs = c("cr", "cc")), 
           data =tempmean2, method = "fREML", family = "scat", discrete = TRUE, nthreads = 3)
 
 r5 = acf(resid(g5.1),  plot=FALSE)$acf[2]
@@ -101,7 +101,7 @@ gam.check(g5.1)
 acf(resid_gam(g5.1))
 
 
-
+###################################################################################
 #basic model of mean temp based on day and location
 
 g5ave =  bam(Tempave  ~  
@@ -120,6 +120,33 @@ g5ave =  bam(Tempave  ~
 plot(g5ave)
 gam.check(g5ave)
 acf(resid_gam(g5ave))
+pacf(resid_gam(g5ave))
+acf(resid(g5ave))
+
+#OK, we still haven't dealt with autocorrelation very well. Let's try differencing. 
+tempmean2 = mutate(tempmean2, Tempavediff = diff(c(NA, Tempave)))
+
+g5ave =  bam(Tempavediff  ~  
+               te(Latitude, Longitude, julian, d = c(2,1), k = c(50, 12), bs = c("cr", "cc")), 
+             data =tempmean2, method = "fREML", family = "scat", discrete = TRUE, nthreads = 3)
+
+r5ave = acf(resid(g5ave), plot=FALSE)$acf[2]
+
+
+
+g5ave =  bam(Tempavediff  ~  
+               te(Latitude, Longitude, julian, d = c(2,1), k = c(50, 12), bs = c("cr", "cc")), 
+             data =tempmean2, method = "fREML",  rho=r5ave, AR.start=tempmean2$start.event, family = "scat",
+             discrete = T, nthreads = 3)
+
+plot(g5ave)
+gam.check(g5ave)
+acf(resid_gam(g5ave))
+pacf(resid_gam(g5ave))
+acf(resid(g5ave))
+
+
+##############################################################################
 #basic model of minimum temp based on day and location
 
 g5min =  bam(TempMin  ~  
@@ -251,7 +278,7 @@ WQ_pred<-function(Full_data=Data,
 
 #my computer will only run six months at a time.
 newdata_year <- WQ_pred(Full_data=tempmean2, n=500,
-                        Julian_days = yday(ymd(paste("2014", 1:6, "15", sep="-"))))
+                        Julian_days = yday(ymd(paste("2014", c(1,4,7,10), "15", sep="-"))))
 
 newdata_year = rename(newdata_year, julian = Julian_day)
 
@@ -264,6 +291,7 @@ newdata_year2 = rename(newdata_year2, julian = Julian_day)
 #can I stick them all together?
 newdata_yearx = bind_rows(newdata_year, newdata_year2)
 #Nope. Strange.
+
 
 modellc4_predictions<-predict(g5.1, newdata=newdata_year, type="response", se.fit=TRUE, discrete=T) # Create predictions
 modellave_predictions<-predict(g5ave, newdata=newdata_year, type="response", se.fit=TRUE, discrete=T) # Create predictions
@@ -380,3 +408,126 @@ newdatarange2b<-newdata_year%>%
          U95=Prediction+SE*1.96) 
 rastered_predsrange = Rasterize_all(newdatarange2b, Prediction)
 
+
+
+##########Wait! I can just subtract max and min to get rang!!!!
+#range temp model
+
+
+rastered_predsrange$Prediction = rastered_preds$Prediction - rastered_predsmin$Prediction 
+
+#######
+#just the summer
+newdata_yearsummer <- WQ_pred(Full_data=tempmean2, n=500,
+                        Julian_days = yday(ymd(paste("2014", c(6,7,8), "15", sep="-"))))
+
+newdata_yearsummer = rename(newdata_yearsummer, julian = Julian_day)
+modellc4_predictionsS<-predict(g5.1, newdata=newdata_yearsummer, type="response", se.fit=TRUE, discrete=T) # Create predictions
+
+newdataS<-newdata_yearsummer%>%
+  mutate(Prediction=modellc4_predictionsS$fit)%>%
+  mutate(SE=modellc4_predictionsS$se.fit,
+         L95=Prediction-SE*1.96,
+         U95=Prediction+SE*1.96) %>%
+  filter(Prediction <35, Prediction >0)
+
+save(g5.1, newdata_yearsummer, modellc4_predictionsS, file = "droughtstuff.RData")
+
+rastered_predsSum<-Rasterize_all(newdataS, Prediction)
+
+preds<-map(unique(data$julian), function(x) st_rasterize(data%>%
+                                                           filter(julian==x)%>%
+                                                           dplyr::select(Prediction), 
+                                                         template=st_as_stars(st_bbox(delta2), dx=diff(st_bbox(delta2)[c(1, 3)])/n, 
+                                                                              dy=diff(st_bbox(delta2)[c(2, 4)])/n, values = NA_real_))%>%
+             st_warp(crs=out_crs))
+
+# Then bind all dates together into 1 raster
+out <- exec(c, !!!preds, along=list(Date=unique(data$julian)))
+
+######################################################################################################
+#Do it for just 2014, 2015, and 2017
+temp2014 = filter(tempmean2, Year == 2014)
+
+#OK, I need to optomize k
+g5.12014 =  bam(TempMax ~  
+              te(Latitude, Longitude, julian, d = c(2,1), k = c(50, 12), bs = c("cr", "cc")), 
+            data =temp2014, method = "fREML", family = "scat", discrete = TRUE, nthreads = 3)
+
+r5 = acf(resid(g5.12014),  plot=FALSE)$acf[2]
+g5.12014 =  bam(TempMax ~  
+              te(Latitude, Longitude, julian, d = c(2,1), k = c(50, 12), bs = c("cr", "cc")), 
+            data =tempmean2, method = "fREML",  rho=r5, AR.start=tempmean2$start.event, family = "scat",
+            discrete = TRUE, nthreads = 3)
+
+newdata_2014 <- WQ_pred(Full_data=temp2014, n=500,
+                              Julian_days = yday(ymd(paste("2014", c(6,7,8), "15", sep="-"))))
+
+newdata_2014 = rename(newdata_2014, julian = Julian_day)
+pred2014<-predict(g5.12014, newdata=newdata_2014, type="response", se.fit=TRUE, discrete=T) # Create predictions
+
+newdataS2014<-newdata_2014%>%
+  mutate(Prediction=pred2014$fit)%>%
+  mutate(SE=pred2014$se.fit,
+         L95=Prediction-SE*1.96,
+         U95=Prediction+SE*1.96) %>%
+  filter(Prediction <35, Prediction >0)
+
+save(g5.12014, newdataS2014, pred2014, file = "droughtstuff2014.RData")
+
+rastered_preds2014<-Rasterize_all(newdataS2014, Prediction)
+
+
+temp2015 = filter(tempmean2, Year == 2015)
+
+#2015
+g5.12015 =  bam(TempMax ~  
+                  te(Latitude, Longitude, julian, d = c(2,1), k = c(50, 12), bs = c("cr", "cc")), 
+                data =temp2015, method = "fREML", family = "scat", discrete = TRUE, nthreads = 3)
+
+r5 = acf(resid(g5.12015),  plot=FALSE)$acf[2]
+g5.12015 =  bam(TempMax ~  
+                  te(Latitude, Longitude, julian, d = c(2,1), k = c(50, 12), bs = c("cr", "cc")), 
+                data =tempmean2, method = "fREML",  rho=r5, AR.start=tempmean2$start.event, family = "scat",
+                discrete = TRUE, nthreads = 3)
+
+pred2015<-predict(g5.12015, newdata=newdata_2014, type="response", se.fit=TRUE, discrete=T) # Create predictions
+
+newdataS2015<-newdata_2014%>%
+  mutate(Prediction=pred2015$fit)%>%
+  mutate(SE=pred2015$se.fit,
+         L95=Prediction-SE*1.96,
+         U95=Prediction+SE*1.96) %>%
+  filter(Prediction <35, Prediction >0)
+
+save(g5.12015, newdataS2015, pred2015, file = "droughtstuff2015.RData")
+
+rastered_preds2015<-Rasterize_all(newdataS2015, Prediction)
+
+
+#2017
+temp2017 = filter(tempmean2, Year == 2017)
+
+
+g5.12017 =  bam(TempMax ~  
+                  te(Latitude, Longitude, julian, d = c(2,1), k = c(50, 12), bs = c("cr", "cc")), 
+                data =temp2017, method = "fREML", family = "scat", discrete = TRUE, nthreads = 3)
+
+r5 = acf(resid(g5.12017),  plot=FALSE)$acf[2]
+g5.12017 =  bam(TempMax ~  
+                  te(Latitude, Longitude, julian, d = c(2,1), k = c(50, 12), bs = c("cr", "cc")), 
+                data =tempmean2, method = "fREML",  rho=r5, AR.start=tempmean2$start.event, family = "scat",
+                discrete = TRUE, nthreads = 3)
+
+pred2017<-predict(g5.12017, newdata=newdata_2014, type="response", se.fit=TRUE, discrete=T) # Create predictions
+
+newdataS2017<-newdata_2014%>%
+  mutate(Prediction=pred2017$fit)%>%
+  mutate(SE=pred2017$se.fit,
+         L95=Prediction-SE*1.96,
+         U95=Prediction+SE*1.96) %>%
+  filter(Prediction <35, Prediction >0)
+
+save(g5.12017, newdataS2015, pred2017, file = "droughtstuff2017.RData")
+
+rastered_preds2017<-Rasterize_all(newdataS2017, Prediction)
