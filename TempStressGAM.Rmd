@@ -465,7 +465,7 @@ raster_plot2(rastered_preds21a) + ggtitle("propDays > 21")
 raster_plot2(rastered_preds21abin, 3) + ggtitle("propDays > 21")
 ```
 
-Bring raster code out of function
+Bring raster code out of function - works!
 ```{r}
 rasterEx <- rastered_preds21abin[[3]] %>%
   st_crop(deltabuff)
