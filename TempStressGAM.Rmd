@@ -120,6 +120,10 @@ vis.gam(g21a,
         too.far = 0.1,
         se = -1)
 
+
+g21abinProp <- gam(propDays~ te(Latitude, Longitude, Anomaly, d = c(2,1), bs = c("tp", "tp"), k = c(12,6)) , weights = totalDays, data = highStress21, method= "REML", family = binomial)
+par(mfrow = c)
+
 g21abin <- gam(cbind(nDays, totalDays)~ te(Latitude, Longitude, Anomaly, d = c(2,1), bs = c("tp", "tp"), k = c(12,6)) ,  data = highStress21, method= "REML", family = binomial)
 summary(g21abin)
 
@@ -241,6 +245,7 @@ stas = read.csv("Data/StationsMetadata.csv") %>%
 
 
 Create a convex hull around the points and buffer by 0.01
+only predict in our station area
 ```{r}
 ch = chull(stas$Longitude, stas$Latitude) #define hull boundaries
 hull = stas[ch,]
@@ -257,6 +262,7 @@ st_crs(hullp) = 4326
 chbuff = st_as_sf(hullp) %>%
   st_buffer(dist = 0.02)
 
+# subset delta shapefile to area close to our stations
 deltabuff = st_buffer(delta, dist = 0.005) %>%
   st_intersection(chbuff) # some warning messages
 ```
@@ -271,12 +277,18 @@ stas = st_as_sf(stas) %>% st_transform(stas, crs=4326) #change to sf
 ### Create new data and make predictions 
 
 This function creates new data based off of your data limits
+- Make new lat/lons based off shapefile (delta regions)
+- Make sure these are all on water
+- expand grid for Anomaly data, join lat lons in
+- standardize all variables (??)
+- turn into sf
+- again confirm in regions boundary (??)
 ```{r}
 HD_pred<-function(Full_data=Data,
                   Delta_subregions = regions,
                   Delta_water=delta,
                   Stations = stas,
-                  n=300, 
+                  n=300, # 300 points x, 300  points y
                   AnomalyRange = -2:2
 ){
   
@@ -302,7 +314,7 @@ HD_pred<-function(Full_data=Data,
     
     st_transform(crs=st_crs(Delta_subregions))%>% # transform to crs of Delta shapefile
     
-    st_join(Delta_subregions, join = st_intersects)
+   # st_join(Delta_subregions, join = st_intersects)
   
   return(newdata)
 }
@@ -311,7 +323,9 @@ HD_pred<-function(Full_data=Data,
 ```
 
 #### Create data
-Is the n specific to lat/lon? Creating 300 lats and lons based on your specifications?
+Is the n specific to lat/lon? Creating 300 lats and lons based on your specifications? How to pick?
+
+If you don't specify the numbers, it will use integers. 
 ```{r}
 # * normal ----
 newdata_21a <- HD_pred(Full_data=highStress21, n=300,
@@ -325,7 +339,7 @@ newdata_25NRa <- HD_pred(Full_data = noRecov25, n = 300)
 
 ```
 
-#### Predictions with new data
+#### Predictions with new data - use function above 
 ```{r}
 # * normal ----
 
@@ -333,8 +347,8 @@ newdata_25NRa <- HD_pred(Full_data = noRecov25, n = 300)
 modelg21a_predictions<-predict(g21a, newdata=newdata_21a, type="response", se.fit=TRUE, discrete=T) # Create predictions
 # Edit data frame
 newdatag21a<-newdata_21a%>%
-  mutate(Prediction=modelg21abin_predictions$fit)%>%
-  mutate(SE=modelg21abin_predictions$se.fit,
+  mutate(Prediction=modelg21a_predictions$fit)%>%
+  mutate(SE=modelg21a_predictions$se.fit,
          L95=Prediction-SE*1.96,
          U95=Prediction+SE*1.96)
 
@@ -347,6 +361,8 @@ newdatag21abin<-newdata_21a%>%
   mutate(SE=modelg21abin_predictions$se.fit,
          L95=Prediction-SE*1.96,
          U95=Prediction+SE*1.96)
+summary(newdatag21abin$Prediction)
+
 # g25abin
 
 
@@ -384,6 +400,15 @@ Longitude_s=(Longitude-mean(highStress21$Longitude, na.rm=T))/sd(highStress21$Lo
 
 
 Function to rasterize data
+- What does map() do? One map for each anomaly 
+- st_rasterize will rasterize your data. dx = cell size x, dy = cell size y
+  - Take your max x - min x and divide by number of cells, same with y
+- What is exec(c) part?
+
+# map = apply
+for every unique Anomaly, we will rasterize data, where Anomaly = x (-2,0,2), select Prediction, rasterize area within delta
+
+bang bang unquotes, bang bang bang (big bang) operator: unquotes several operators at once
 ```{r}
 Rasterize_all <- function(data, var, out_crs=4326, n=100){
   var<-rlang::enquo(var)
@@ -396,25 +421,32 @@ Rasterize_all <- function(data, var, out_crs=4326, n=100){
               dx=diff(st_bbox(delta2)[c(1, 3)])/n,                     dy=diff(st_bbox(delta2)[c(2, 4)])/n, values = NA_real_))%>%
                st_warp(crs=out_crs))
   return(preds)
-  # Then bind all dates together into 1 raster
+  # Then bind all Anomalies together into 1 raster
   out <- exec(c, !!!preds, along=list(Anomaly=unique(data$Anomaly)))
   return(out)
 }
 
+```
 
+Rasterize (use function above)
+```{r}
 # Create full rasterization of all predictions for interactive visualizations
-rastered_preds<-Rasterize_all(newdatag21abin, Prediction)
+rastered_preds21a<-Rasterize_all(newdatag21a, Prediction)
+rastered_preds21abin<-Rasterize_all(newdatag21abin, Prediction)
 
 # Same for SE
-rastered_SE<-Rasterize_all(newdatag21abin, SE)
+rastered_SE21a<-Rasterize_all(newdatag21a, Prediction)
+rastered_SE21abin<-Rasterize_all(newdatag21abin, SE)
 ```
 
 
-Plot
+Plot raster
+- What is [,,,Anomaly] and what are the matrices produced?
+
 ```{r}
-raster_plot2<-function(data, Anomaly, labels="All"){
+raster_plot2<-function(data, Anomaly=2, labels="All"){
   data = data[,,,Anomaly]
- data = st_crop(data, deltabuff)
+  data = st_crop(data, deltabuff)
   ggplot()+
     geom_stars(data=data)+
    # facet_wrap(~Date)+
@@ -429,7 +461,25 @@ raster_plot2<-function(data, Anomaly, labels="All"){
     theme_bw() + theme(legend.position = "top")
 }
 
-raster_plot2(rastered_preds, 3) + ggtitle("nDays > 21")
+raster_plot2(rastered_preds21a) + ggtitle("propDays > 21")
+raster_plot2(rastered_preds21abin, 3) + ggtitle("propDays > 21")
 ```
 
+```{r}
+rasterEx <- rastered_preds21abin[[3]] %>%
+  st_crop(deltabuff)
+
+ ggplot()+
+    geom_stars(data=rasterEx)+
+   # facet_wrap(~Date)+
+    scale_fill_viridis_c(name="PropDays", na.value="white", breaks=seq(0,.5,by=.1), limits = c(0,.5),
+                        # labels= function(x) ifelse((x/2)==as.integer(x/2), as.character(x), ""),
+                         guide = guide_colorbar(direction="horizontal", title.position = "top", barwidth = 10, ticks.linewidth = 2,
+                                                barheight=1, title.hjust=0.5, label.position="bottom", label.theme=element_text(size=12), 
+                                                title.theme=element_text(size=13)))+
+    coord_sf()+
+    ylab("Latitude")+
+    xlab("Longitude")+
+    theme_bw() + theme(legend.position = "top")
+```
 
