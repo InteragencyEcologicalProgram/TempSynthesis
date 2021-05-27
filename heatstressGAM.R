@@ -36,7 +36,7 @@ alb <- CRS("+proj=aea +lat_1=34 +lat_2=40.5 +lat_0=0 +lon_0=-120 +x_0=0 +y_0=-40
 #model - high heat stress, all years
 #maybe use "betar"? Or can I just use a binomial?
 hs5 =  gam(propDays ~  
-            te(Latitude, Longitude, Year), 
+            te(Latitude, Longitude, Year, d = c(2,1), k = c(40, 6)), 
           data =heatHigh, method = "REML", family = "betar")
 plot(hs5)
 #Hmmm... that's worse...
@@ -255,7 +255,6 @@ raster_plot2<-function(data, Year, labels="All"){
 
 
 #percentage heat stress days
-raster_plot(rastered_preds2) + ggtitle("heatstress")
 raster_plot2(rastered_preds, 2009) + ggtitle("heatstress - 2009")
 
 #I need to figure out how to avoid negative heat stress days
