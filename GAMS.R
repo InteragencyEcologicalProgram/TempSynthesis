@@ -145,6 +145,21 @@ acf(resid_gam(g5ave))
 pacf(resid_gam(g5ave))
 acf(resid(g5ave))
 
+############################################################
+#try a different autocorrelation function
+library(forecast)
+library(lme4)
+
+gam_6_ar = gamm(Tempave  ~  
+                   te(Latitude, Longitude, julian, d = c(2,1), k = c(50, 12), bs = c("cr", "cc")), 
+                 data =tempmean2, method = "fREML",  family = "scat",
+                 discrete = T, nthreads = 3)
+
+arma_res <- auto.arima(resid(gam_6_ar0$lme, type = "normalized"),
+                       stationary = TRUE, seasonal = FALSE)
+
+arma_res$coef
+
 
 ##############################################################################
 #basic model of minimum temp based on day and location
