@@ -287,6 +287,55 @@ Do I need to standardize julian day or Hour?
 
 ```{r}
 # Detecting anomaly
+RelTempDiff_RRI <- RelTempDiff_RRI %>%
+  group_by(julian, Hour) %>%
+  mutate(meanTemp = mean(Surface),
+         tempAnomaly = Surface-meanTemp) %>%
+  ungroup()
+
+# Tell it what the starting event is
+RelTempDiff_RRI = start_event(as.data.frame(RelTempDiff_RRI), column="Datetime", event=c("Station"), label.event="Event")
+
+# Model
+gamRRI_0 <- bam(RelTempDiff~ te(julian, Hour, tempAnomaly, k = c(12,6,16), bs = c("cc", "cc", "tp")), 
+                data = RelTempDiff_RRI, 
+                family = scat, 
+                method = "fREML", 
+                nthreads = 3, 
+                discrete = TRUE)
+
+
+
+rAn = acf(resid(gamRRI_0),  plot=FALSE)$acf[2]
+par(mfrow=c(2,2))
+gam.check(gamRRI_0)
+
+gamRRI <- bam(RelTempDiff~ te(julian, Hour, tempAnomaly, k = c(12,6,16), bs = c("cc", "cc", "tp")), data = RelTempDiff_RRI, 
+            family = scat, 
+            method = "fREML", 
+            rho = rAn, 
+            AR.start = RelTempDiff_RRI$start.event, 
+            nthreads = 3, 
+            discrete = TRUE)
+
+par(mfrow = c(2,2))
+gam.check(gamRRI)
+
+par(mfrow = c(1,1))
+plot(gamRRI, all.terms = TRUE, pages = 1)
+summary(gamRRI)
+vis.gam(x = gamRRI,
+        view = c("julian", "tempAnomaly"),
+        color = "heat", plot.type = "contour")
+
+save(gamRRI, file = "gamRRI.RData")
+
+
+
+
+
+
+
 
 # Predict Surface Temperature
 gAnRRIa <- bam(Surface~ s(julian, k = 20, bs = "cc") + s(Hour, k = 10, bs = "cc"), 
