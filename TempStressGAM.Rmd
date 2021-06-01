@@ -394,7 +394,7 @@ Longitude_s=(Longitude-mean(highStress21$Longitude, na.rm=T))/sd(highStress21$Lo
            Anomaly_s = (Anomaly-mean(highStress21$Anomaly, na.rm=T))/sd(highStress21$Anomaly, na.rm=T)) %>%
     st_as_sf(coords=c("Longitude", "Latitude"), crs=4326, remove=FALSE)%>% # Turn into sf object
     st_transform(crs=st_crs(deltabuff))%>% # transform to crs of Delta shapefile
-    st_join(Delta_subregions, join = st_intersects)
+    st_join(regions, join = st_intersects)
 
 ```
 
@@ -445,23 +445,20 @@ Plot raster
 
 ```{r}
 raster_plot2<-function(data, Anomaly=2, labels="All"){
-  data = data[,,,Anomaly]
+  data = data[[Anomaly]]
   data = st_crop(data, deltabuff)
+  lims = c(min(data$Prediction, na.rm = T), max(data$Prediction, na.rm = T))
   ggplot()+
     geom_stars(data=data)+
    # facet_wrap(~Date)+
-    scale_fill_viridis_c(name="PropDays", na.value="white", breaks=seq(0,1,by=.1), limits = c(0,1),
-                        # labels= function(x) ifelse((x/2)==as.integer(x/2), as.character(x), ""),
-                         guide = guide_colorbar(direction="horizontal", title.position = "top", barwidth = 10, ticks.linewidth = 2,
-                                                barheight=1, title.hjust=0.5, label.position="bottom", label.theme=element_text(size=12), 
-                                                title.theme=element_text(size=13)))+
+    scale_fill_viridis_c( na.value="white",limits = lims)+
     coord_sf()+
     ylab("Latitude")+
     xlab("Longitude")+
     theme_bw() + theme(legend.position = "top")
 }
 
-raster_plot2(rastered_preds21a) + ggtitle("propDays > 21")
+raster_plot2(rastered_preds21a) + ggtitle("Numer of Days > 21")
 raster_plot2(rastered_preds21abin, 3) + ggtitle("propDays > 21")
 ```
 
@@ -470,10 +467,12 @@ Bring raster code out of function - works!
 rasterEx <- rastered_preds21abin[[3]] %>%
   st_crop(deltabuff)
 
+lims = c(min(rasterEx$Prediction, na.rm = T), max(rasterEx$Prediction, na.rm = T))
+
  ggplot()+
     geom_stars(data=rasterEx)+
    # facet_wrap(~Date)+
-    scale_fill_viridis_c(name="PropDays", na.value="white", breaks=seq(0,.5,by=.1), limits = c(0,.5),
+    scale_fill_viridis_c(name="PropDays", na.value="white", limits = lims,
                         # labels= function(x) ifelse((x/2)==as.integer(x/2), as.character(x), ""),
                          guide = guide_colorbar(direction="horizontal", title.position = "top", barwidth = 10, ticks.linewidth = 2,
                                                 barheight=1, title.hjust=0.5, label.position="bottom", label.theme=element_text(size=12), 
