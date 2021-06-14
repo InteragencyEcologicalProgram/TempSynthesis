@@ -30,8 +30,6 @@ theme_wtemp <- theme_classic() +
         legend.title = element_text(size = 15))
 ```
 
-
-
 ## Read in 
 ```{r}
 setwd("C:/Users/cpien/OneDrive - California Department of Water Resources/Work/ClimateChange/R_code/TempSynthesis/")
