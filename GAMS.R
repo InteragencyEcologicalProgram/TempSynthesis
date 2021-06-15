@@ -151,15 +151,33 @@ library(forecast)
 library(lme4)
 
 gam_6_ar = gamm(Tempave  ~  
-                   te(Latitude, Longitude, julian, d = c(2,1), k = c(50, 12), bs = c("cr", "cc")), 
-                 data =tempmean2, method = "fREML",  family = "scat",
-                 discrete = T, nthreads = 3)
+                   te(Latitude, Longitude, julian, d = c(2,1), k = c(25, 5), bs = c("cr", "cc")), 
+                 data =tempmean2, method = "fREML",  family = "scat")
 
-arma_res <- auto.arima(resid(gam_6_ar0$lme, type = "normalized"),
+arma_res <- auto.arima(resid(gam_6_ar$lme, type = "normalized"),
                        stationary = TRUE, seasonal = FALSE)
 
 arma_res$coef
 
+
+gam_6_ar1 = gamm(Tempave  ~  
+                  te(Latitude, Longitude, julian, d = c(2,1), k = c(25, 5), bs = c("cr", "cc")), 
+                data =tempmean2, method = "fREML",  family = "scat", 
+                correlation = corARMA(form = ~ 1|julian, p = 4, q = 3))
+
+
+#test it with a smaller data set
+test = filter(tempmean2, Year == 2015)
+gam_6_test = gamm(Tempave  ~  
+                   te(Latitude, Longitude, julian, d = c(2,1), k = c(25, 5), bs = c("cr", "cc")), 
+                 data =test, method = "fREML",  family = "scat", 
+                 correlation = corARMA(form = ~ 1|julian, p = 4, q = 3))
+summary(gam_6_test)
+plot(gam_6_test$gam)
+gam.check(gam_6_test$gam)
+acf(resid_gam(gam_6_test))
+
+#OK, this isn't working.
 
 ##############################################################################
 #basic model of minimum temp based on day and location
@@ -178,6 +196,10 @@ g5min =  bam(TempMin  ~
              rho=r5min, AR.start=tempmean2$start.event)
 
 
+summary(g5min)
+plot(g5min)
+gam.check(g5min)
+acf(resid_gam(g5min))
 
 
 
