@@ -8,7 +8,6 @@ editor_options:
 ---
 1. Calculate temperature anomaly
 
-
 Load packages
 ```{r}
 library(tidyverse)
@@ -76,26 +75,26 @@ Filter to high stress/no recovery only
 ```{r}
 highStress25 <- heatDays25 %>%
   filter(Stress == "High") %>%
-  mutate(nDaysAdj = propDays*365) %>%
+  mutate(nDaysAdj = round((propDays*365),0)) %>%
   left_join(latlon)
 
 highStress21 <- heatDays21 %>%
   filter(Stress == "High")%>%
-  mutate(nDaysAdj = propDays*365) %>%
+ mutate(nDaysAdj = round((propDays*365),0)) %>%
   left_join(latlon)
 
 noRecov25 <- noRecov250 %>%
   left_join(Anomaly) %>%
   dplyr::select(-X1) %>%
   filter(StressAllDay == "Y")%>%
-  mutate(nDaysAdj = propDays*365) %>%
+  mutate(nDaysAdj = round((propDays*365),0)) %>%
   left_join(latlon)
 
 noRecov21 <- noRecov210 %>%
   left_join(Anomaly) %>%
   dplyr::select(-X1)%>%
   filter(StressAllDay == "Y")%>%
-  mutate(nDaysAdj = propDays*365) %>%
+  mutate(nDaysAdj = round((propDays*365),0)) %>%
   left_join(latlon)
 ```
 
@@ -106,7 +105,7 @@ Models for heat stress days at 21C
 - beta family
 
 ```{r}
-g21a <- gam(nDaysAdj~ te(Latitude, Longitude, Anomaly, d = c(2,1), bs = c("tp", "tp"), k = c(12,5)) ,  data = highStress21, method= "REML")
+g21a <- gam(nDaysAdj~ te(Latitude, Longitude, Anomaly, d = c(2,1), bs = c("tp", "tp"), k = c(12,5)) , data = highStress21, method= "REML")
 
 par(mfrow = c(2,2))
 gam.check(g21a)
@@ -121,16 +120,18 @@ vis.gam(g21a,
         se = -1)
 
 
-g21abinProp <- gam(propDays~ te(Latitude, Longitude, Anomaly, d = c(2,1), bs = c("tp", "tp"), k = c(12,6)) , weights = totalDays, data = highStress21, method= "REML", family = binomial)
-par(mfrow = c)
-
 g21abin <- gam(cbind(nDays, totalDays)~ te(Latitude, Longitude, Anomaly, d = c(2,1), bs = c("tp", "tp"), k = c(12,6)) ,  data = highStress21, method= "REML", family = binomial)
 summary(g21abin)
 
 par(mfrow = c(2,2))
 gam.check(g21abin)
 par(mfrow = c(1,1))
-plot(g21abin)
+plot.gam(g21abin)
+par(mfrow=c(1,2))
+pvisgam(g21abin, view = c("Latitude", "Longitude"))
+fvisgam(g21abin, view = c("Latitude", "Longitude"))
+
+
 par(mfrow = c(1,1))
 vis.gam(g21abin,
         view = c("Longitude", "Latitude"),
@@ -140,34 +141,39 @@ vis.gam(g21abin,
         se = -1)
 # Showing weird numbers (proportion = 1.1, 1.5)
 
-g21abetar <- gam(propDays~ te(Latitude, Longitude, Anomaly, d = c(2,1), bs = c("tp", "tp"), k = c(12,6)) ,  data = highStress21, method= "REML", family = betar)
+g21abin1 <- gam(propDays~ te(Latitude, Longitude, Anomaly, d = c(2,1), bs = c("tp", "tp"), k = c(12,6)) ,  data = highStress21, method= "REML", weights = totalDays, family = binomial)
+summary(g21abin1)
+gam.check(g21abin1)
+plot(g21abin1)
 
-par(mfrow = c(2,2))
-gam.check(g21abetar)
-par(mfrow = c(1,1))
-plot(g21abetar)
-par(mfrow = c(1,1))
+
+g21abin2 <- gam(cbind(nDays, totalDays)~ te(Latitude, Longitude, bs = "tp", k = 12) + s(Anomaly, bs = "tp", k = 6),data = highStress21, method= "REML", family = binomial)
+summary(g21abin2)
+gam.check(g21abin2)
+plot(g21abin2)
+
+g21abin3 <- gam(cbind(nDays, totalDays)~ te(Latitude, Longitude, by = Anomaly, bs = "tp", k = c(6,6)) + Anomaly, data = highStress21, method= "REML", family = binomial)
+
+summary(g21abin3)
+gam.check(g21abin3)
+plot(g21abin3)
+
+
+# g21abetar <- gam(cbind(nDays, totalDays)~ te(Latitude, Longitude, Anomaly, d = c(2,1), bs = c("tp", "tp"), k = c(12,6)) ,  data = highStress21, method= "REML", family = betar)
+# 
+# par(mfrow = c(2,2))
+# gam.check(g21abetar)
+# par(mfrow = c(1,1))
+# plot(g21abetar)
+# 
+# AIC(g21abin, g21abin1, g21abin2, g21abin3, g21abetar)
+
 ```
 
-Standardized anomaly
+21 Standardized anomaly
 ```{r}
 # Standardized anomaly
-g21b <- gam(nDaysAdj~ te(Latitude, Longitude, AnomalyStd, d = c(2,1), bs = c("tp", "tp"), k = c(12,5)) , data = highStress21, method= "REML")
-par(mfrow = c(2,2))
-gam.check(g21b)
-
-par(mfrow = c(1,1))
-plot(g21b)
-par(mfrow = c(1,1))
-vis.gam(g21b,
-        view = c("Longitude", "Latitude"),
-        color = "heat", 
-        plot.type = "contour",
-        too.far = 0.1,
-        se = -1)
-
-
-g21bbin <- gam(cbind(nDays, totalDays)~ te(Latitude, Longitude, AnomalyStd, d = c(2,1), bs = c("tp", "tp"), k = c(12,6)) ,  data = highStress21, method= "REML", family = binomial)
+g21bbin <- gam(cbind(nDays, totalDays)~ te(Latitude, Longitude, AnomalyStd, d = c(2,1), bs = c("tp", "tp"), k = c(12,6)) ,data = highStress21, method= "REML", family = binomial)
 summary(g21bbin)
 
 par(mfrow = c(2,2))
@@ -183,46 +189,88 @@ vis.gam(g21bbin,
         se = -1)
 ```
 
-
 Models for no recovery at 21a
 ```{r}
-g21NRa <- gam(nDaysAdj~ te(Latitude, Longitude, Anomaly, d = c(2,1), bs = c("tp", "tp"), k = c(15,5)) , data = noRecov21, method= "REML")
+g21NRabin <- gam(cbind(nDays, totalDays)~ te(Latitude, Longitude, Anomaly, d = c(2,1), bs = c("tp", "tp"), k = c(12,6)) ,  data = noRecov21, method= "REML", family = binomial)
+summary(g21NRabin)
 
 par(mfrow = c(2,2))
-gam.check(g21NRa)
-
+gam.check(g21NRabin)
 par(mfrow = c(1,1))
-plot(g21NRa)
-par(mfrow = c(1,1))
-vis.gam(g21NRa,
-        view = c("Longitude", "Latitude"),
-        color = "heat", 
-        plot.type = "contour",
-        too.far = 0.1,
-        se = -1)
-
-
+plot.gam(g21NRabin)
+par(mfrow=c(1,2))
+pvisgam(g21NRabin, view = c("Latitude", "Longitude"))
+fvisgam(g21NRabin, view = c("Latitude", "Longitude"))
 
 ```
 
 No recovery 21b
 ```{r}
-g21NRb <- gam(nDaysAdj~ te(Latitude, Longitude, AnomalyStd, d = c(2,1), bs = c("tp", "tp"), k = c(12,5)) , data = noRecov21, method= "REML")
+g21NRbbin <- gam(cbind(nDays, totalDays)~ te(Latitude, Longitude, AnomalyStd, d = c(2,1), bs = c("tp", "tp"), k = c(12,6)),  data = noRecov21, method= "REML", family = binomial)
 par(mfrow = c(2,2))
-gam.check(g21NRb)
+summary(g21NRbbin)
+gam.check(g21NRbbin)
 
 par(mfrow = c(1,1))
-plot(g21NRb)
-par(mfrow = c(1,1))
-vis.gam(g21NRb,
-        view = c("Longitude", "Latitude"),
-        color = "heat", 
-        plot.type = "contour",
-        too.far = 0.1,
-        se = -1)
+plot(g21NRbbin)
+
 ```
 
-Mapping
+High stress 25
+```{r}
+g25abin <- gam(cbind(nDays, totalDays)~ te(Latitude, Longitude, Anomaly, d = c(2,1), bs = c("tp", "tp"), k = c(12,6)) ,  data = highStress25, method= "REML", family = binomial)
+summary(g25abin)
+
+par(mfrow = c(2,2))
+gam.check(g25abin)
+par(mfrow = c(1,1))
+plot.gam(g25abin)
+par(mfrow=c(1,2))
+pvisgam(g25abin, view = c("Latitude", "Longitude"))
+fvisgam(g25abin, view = c("Latitude", "Longitude"))
+```
+
+High stress 25 - Standardized Anomaly
+```{r}
+g25bbin <- gam(cbind(nDays, totalDays)~ te(Latitude, Longitude, AnomalyStd, d = c(2,1), bs = c("tp", "tp"), k = c(12,6)) ,  data = highStress25, method= "REML", family = binomial)
+summary(g25bbin)
+
+par(mfrow = c(2,2))
+gam.check(g25bbin)
+par(mfrow = c(1,1))
+plot.gam(g25bbin)
+par(mfrow=c(1,2))
+pvisgam(g25bbin, view = c("Latitude", "Longitude"))
+fvisgam(g25bbin, view = c("Latitude", "Longitude"))
+```
+
+Models for no recovery at 25a
+```{r}
+g25NRabin <- gam(cbind(nDays, totalDays)~ te(Latitude, Longitude, Anomaly, d = c(2,1), bs = c("tp", "tp"), k = c(12,6)) ,  data = noRecov25, method= "REML", family = binomial)
+summary(g25NRabin)
+
+par(mfrow = c(2,2))
+gam.check(g25NRabin)
+par(mfrow = c(1,1))
+plot.gam(g25NRabin)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## Mapping
+
 Read regions shapefile (shapefile of regions created for water temp)
 Read delta shapefile in (shapefile of the Delta)
 Read station latlons in, convert to sf
@@ -234,7 +282,9 @@ regions = st_transform(regions, crs = 4326)
 
 delta = read_sf("DeltaShapefile/hydro_delta_marsh.shp")
 delta = st_transform(delta,crs=4326)
-delta2 = sf::as_Spatial(dplyr::filter(delta, HNAME != "SAN FRANCISCO BAY", HNAME != "SAN PABLO BAY"))
+delta2 = dplyr::filter(delta,HNAME != "SAN FRANCISCO BAY", HNAME != "SAN PABLO BAY") 
+
+#delta2 = sf::as_Spatial(dplyr::filter(delta, )
 
 stas = read.csv("Data/StationsMetadata.csv") %>%
   filter(Station != "DV7", Station != "RIP", Station != "RPN", Station != "RCS")%>%
@@ -260,11 +310,18 @@ hullp = sf_polygon(
 st_crs(hullp) = 4326
 
 chbuff = st_as_sf(hullp) %>%
-  st_buffer(dist = 0.02)
+  st_buffer(dist = 0.1)
 
 # subset delta shapefile to area close to our stations
-deltabuff = st_buffer(delta, dist = 0.005) %>%
+st_crs(delta) = 4326
+
+deltabuff = st_buffer(delta, 500) %>%
   st_intersection(chbuff) # some warning messages
+
+ggplot() + 
+  geom_sf(data = deltabuff, fill = "blue", alpha = 0.5)
+
+save(deltabuff, file="deltabuffthick.Rdata")
 ```
 
 Change station into sf
@@ -322,38 +379,72 @@ HD_pred<-function(Full_data=Data,
 
 ```
 
+Use this function for AnomalyStd
+```{r}
+HD_pred2<-function(Full_data=Data,
+                  Delta_subregions = regions,
+                  Delta_water=delta,
+                  Stations = stas,
+                  n=300, # 300 points x, 300  points y
+                  AnomalyStdRange = -1:1
+){
+  
+  # Create point locations on a grid for predictions
+  Points<-st_make_grid(Delta_subregions, n=n)%>%
+    st_as_sf(crs=st_crs(Delta_subregions))%>%
+    st_join(Delta_water)%>% 
+    
+    # Joining a map of delta waterways (from my spacetools package) to ensure all these points are over water.
+    st_coordinates()%>%
+    as_tibble()%>%
+    mutate(Location=1:nrow(.))%>%
+    dplyr::select(Longitude=X, Latitude=Y, Location)
+  
+  # Create full dataset for predictions
+  newdata<-expand.grid(Location=1:nrow(Points),
+                       AnomalyStd = AnomalyStdRange)%>% # Create all combinations of predictor variables
+    left_join(Points, by="Location")%>% #Add Lat/Longs to each location
+    mutate(Latitude_s=(Latitude-mean(Full_data$Latitude, na.rm=T))/sd(Full_data$Latitude, na.rm=T), # Standardize each variable based on full dataset for model
+           Longitude_s=(Longitude-mean(Full_data$Longitude, na.rm=T))/sd(Full_data$Longitude, na.rm=T),
+           AnomalyStd_s = (AnomalyStd-mean(Full_data$AnomalyStd, na.rm=T))/sd(Full_data$AnomalyStd, na.rm=T)) %>%
+    st_as_sf(coords=c("Longitude", "Latitude"), crs=4326, remove=FALSE)%>% # Turn into sf object
+    
+    st_transform(crs=st_crs(Delta_subregions))%>% # transform to crs of Delta shapefile
+    
+   # st_join(Delta_subregions, join = st_intersects)
+  
+  return(newdata)
+}
+```
+
+
+
+
 #### Create data
 Is the n specific to lat/lon? Creating 300 lats and lons based on your specifications? How to pick?
 
-If you don't specify the numbers, it will use integers. 
+If you don't specify the numbers, it will use all available integers. 
 ```{r}
 # * normal ----
 newdata_21a <- HD_pred(Full_data=highStress21, n=300,
-                       Anomaly = c(-2,0,2)) # does the warning message matter?
+                       Anomaly = c(-2,0,2)) 
+newdata_21b <- HD_pred2(Full_data=highStress21, n=300,
+                       AnomalyStd = c(-0.5,0,0.5))
 
-newdata_25a <- HD_pred(Full_data=highStress25, n=300)
+newdata_25a <- HD_pred(Full_data=highStress25, n=300,
+                       Anomaly = c(-2,0,2))
 
 # * no recovery ----
-newdata_21NRa<- HD_pred(Full_data=noRecov21, n=300)
-newdata_25NRa <- HD_pred(Full_data = noRecov25, n = 300)
+newdata_21NRa<- HD_pred(Full_data=noRecov21, n=300,
+                       Anomaly = c(-2,0,2))
+newdata_25NRa <- HD_pred(Full_data = noRecov25, n = 300,
+                       Anomaly = c(-2,0,2))
 
 ```
 
 #### Predictions with new data - use function above 
 ```{r}
-# * normal ----
-
 # 21a
-modelg21a_predictions<-predict(g21a, newdata=newdata_21a, type="response", se.fit=TRUE, discrete=T) # Create predictions
-# Edit data frame
-newdatag21a<-newdata_21a%>%
-  mutate(Prediction=modelg21a_predictions$fit)%>%
-  mutate(SE=modelg21a_predictions$se.fit,
-         L95=Prediction-SE*1.96,
-         U95=Prediction+SE*1.96)
-
-# * binomial models ----
-# g21abin
 modelg21abin_predictions<-predict(g21abin, newdata=newdata_21a, type="response", se.fit=TRUE, discrete=T) # Create predictions
 # Edit data frame
 newdatag21abin<-newdata_21a%>%
@@ -363,11 +454,47 @@ newdatag21abin<-newdata_21a%>%
          U95=Prediction+SE*1.96)
 summary(newdatag21abin$Prediction)
 
-# g25abin
+# 21b
+modelg21bbin_predictions<-predict(g21bbin, newdata=newdata_21b, type="response", se.fit=TRUE, discrete=T) # Create predictions
+# Edit data frame
+newdatag21bbin<-newdata_21b%>%
+  mutate(Prediction=modelg21bbin_predictions$fit)%>%
+  mutate(SE=modelg21bbin_predictions$se.fit,
+         L95=Prediction-SE*1.96,
+         U95=Prediction+SE*1.96)
 
+
+# 25a
+modelg25abin_predictions<-predict(g25abin, newdata=newdata_25a, type="response", se.fit=TRUE, discrete=T) # Create predictions
+# Edit data frame
+newdatag25abin<-newdata_25a%>%
+  mutate(Prediction=modelg25abin_predictions$fit)%>%
+  mutate(SE=modelg25abin_predictions$se.fit,
+         L95=Prediction-SE*1.96,
+         U95=Prediction+SE*1.96)
 
 # * no recovery ----
 
+# NR21a
+modelg21NRabin_predictions<-predict(g21NRabin, newdata=newdata_21NRa, type="response", se.fit=TRUE, discrete=T) # Create predictions
+# Edit data frame
+newdatag21NRabin<-newdata_21NRa%>%
+  mutate(Prediction=modelg21NRabin_predictions$fit)%>%
+  mutate(SE=modelg21NRabin_predictions$se.fit,
+         L95=Prediction-SE*1.96,
+         U95=Prediction+SE*1.96)
+summary(newdatag21NRabin$Prediction)
+
+
+# NR25a
+modelg25NRabin_predictions<-predict(g25NRabin, newdata=newdata_25NRa, type="response", se.fit=TRUE, discrete=T) # Create predictions
+# Edit data frame
+newdatag25NRabin<-newdata_25NRa%>%
+  mutate(Prediction=modelg25NRabin_predictions$fit)%>%
+  mutate(SE=modelg25NRabin_predictions$se.fit,
+         L95=Prediction-SE*1.96,
+         U95=Prediction+SE*1.96)
+summary(newdatag25NRabin$Prediction)
 
 ```
 
@@ -410,7 +537,7 @@ for every unique Anomaly, we will rasterize data, where Anomaly = x (-2,0,2), se
 
 bang bang unquotes, bang bang bang (big bang) operator: unquotes several operators at once
 ```{r}
-Rasterize_all <- function(data, var, out_crs=4326, n=100){
+Rasterize_all <- function(data, var, out_crs=4326, n=300){
   var<-rlang::enquo(var)
   rlang::as_name(var)
   preds<-map(unique(data$Anomaly), 
@@ -428,43 +555,151 @@ Rasterize_all <- function(data, var, out_crs=4326, n=100){
 
 ```
 
+
+Use this function for AnomalyStd
+
+```{r}
+Rasterize_all2 <- function(data, var, out_crs=4326, n=300){
+  var<-rlang::enquo(var)
+  rlang::as_name(var)
+  preds<-map(unique(data$AnomalyStd), 
+             function(x) st_rasterize(data%>%
+                                      filter(AnomalyStd==x)%>%
+                                      dplyr::select(!!var),                 
+                                      template=st_as_stars(st_bbox(delta2),
+              dx=diff(st_bbox(delta2)[c(1, 3)])/n,                     dy=diff(st_bbox(delta2)[c(2, 4)])/n, values = NA_real_))%>%
+               st_warp(crs=out_crs))
+  return(preds)
+  # Then bind all Anomalies together into 1 raster
+  out <- exec(c, !!!preds, along=list(AnomalyStd=unique(data$AnomalyStd)))
+  return(out)
+}
+
+
+```
+
 Rasterize (use function above)
 ```{r}
 # Create full rasterization of all predictions for interactive visualizations
-rastered_preds21a<-Rasterize_all(newdatag21a, Prediction)
+
 rastered_preds21abin<-Rasterize_all(newdatag21abin, Prediction)
+rastered_preds21bbin<-Rasterize_all2(newdatag21bbin, Prediction)
+rastered_preds25abin<-Rasterize_all(newdatag25abin, Prediction)
+#rastered_preds25bbin<-Rasterize_all(newdatag25abin, Prediction)
+
+rastered_preds21NRabin <- Rasterize_all(newdatag21NRabin, Prediction)
+rastered_preds25NRabin <- Rasterize_all(newdatag25NRabin, Prediction)
+
+
+
 
 # Same for SE
-rastered_SE21a<-Rasterize_all(newdatag21a, Prediction)
+
 rastered_SE21abin<-Rasterize_all(newdatag21abin, SE)
+
+```
+
+
+```{r}
+save(rastered_preds21abin, rastered_preds21bbin, rastered_preds25abin, rastered_preds21NRabin, rastered_preds25NRabin, file = "RasteredPreds_20210616.RData")
+load("deltabuffThick.RData")
+load("RasteredPreds_20210616.RData")
+```
+
+Change coordinate reference system for data and deltabuff
+
+```{r}
+plot(rastered_preds21abin[[1]])
+
+rastered_preds21abin[[1]] <- st_warp(rastered_preds21abin[[1]], crs = 32610)
+rastered_preds21abin[[2]] <- st_warp(rastered_preds21abin[[2]], crs = 32610)
+rastered_preds21abin[[3]] <- st_warp(rastered_preds21abin[[3]], crs = 32610)
+rastered_preds25abin[[1]] <- st_warp(rastered_preds25abin[[1]], crs = 32610)
+rastered_preds25abin[[2]] <- st_warp(rastered_preds25abin[[2]], crs = 32610)
+rastered_preds25abin[[3]] <- st_warp(rastered_preds25abin[[3]], crs = 32610)
+rastered_preds21bbin[[1]] <- st_warp(rastered_preds21bbin[[1]], crs = 32610)
+rastered_preds21bbin[[2]] <- st_warp(rastered_preds21bbin[[2]], crs = 32610)
+rastered_preds21bbin[[3]] <- st_warp(rastered_preds21bbin[[3]], crs = 32610)
+rastered_preds21NRabin[[1]] <- st_warp(rastered_preds21NRabin[[1]], crs = 32610)
+rastered_preds21NRabin[[2]] <- st_warp(rastered_preds21NRabin[[2]], crs = 32610)
+rastered_preds21NRabin[[3]] <- st_warp(rastered_preds21NRabin[[3]], crs = 32610)
+rastered_preds25NRabin[[1]] <- st_warp(rastered_preds25NRabin[[1]], crs = 32610)
+rastered_preds25NRabin[[2]] <- st_warp(rastered_preds25NRabin[[2]], crs = 32610)
+rastered_preds25NRabin[[3]] <- st_warp(rastered_preds25NRabin[[3]], crs = 32610)
+deltabuff <- st_transform(deltabuff, crs = 32610)
 ```
 
 
 Plot raster
-- What is [,,,Anomaly] and what are the matrices produced?
+- Why is st_crop not working?
 
 ```{r}
-raster_plot2<-function(data, Anomaly=2, labels="All"){
+raster_plot<-function(data, Anomaly=2, labels="All"){
   data = data[[Anomaly]]
-  data = st_crop(data, deltabuff)
+ data = st_crop(data, deltabuff)
   lims = c(min(data$Prediction, na.rm = T), max(data$Prediction, na.rm = T))
   ggplot()+
     geom_stars(data=data)+
    # facet_wrap(~Date)+
-    scale_fill_viridis_c( na.value="white",limits = lims)+
+    scale_fill_viridis_c(na.value="white",limits = lims)+
     coord_sf()+
     ylab("Latitude")+
     xlab("Longitude")+
     theme_bw() + theme(legend.position = "top")
 }
 
-raster_plot2(rastered_preds21a) + ggtitle("Numer of Days > 21")
-raster_plot2(rastered_preds21abin, 3) + ggtitle("propDays > 21")
+raster_plot2<-function(data, AnomalyStd=2, labels="All"){
+  data = data[[AnomalyStd]]
+ data = st_crop(data, deltabuff)
+  lims = c(min(data$Prediction, na.rm = T), max(data$Prediction, na.rm = T))
+  ggplot()+
+    geom_stars(data=data)+
+   # facet_wrap(~Date)+
+    scale_fill_viridis_c(na.value="white",limits = lims)+
+    coord_sf()+
+    ylab("Latitude")+
+    xlab("Longitude")+
+    theme_bw() + theme(legend.position = "top")
+}
+
+```
+
+```{r}
+raster_plot(rastered_preds21abin, 3) + ggtitle("propDays > 21 Anomaly = 2")
+raster_plot(rastered_preds21abin, 2) + ggtitle("propDays > 21 Anomaly = 0")
+raster_plot(rastered_preds21abin, 1) + ggtitle("propDays > 21 Anomaly = -2")
+
+raster_plot(rastered_preds25abin, 3) + ggtitle("propDays > 25 Anomaly = 2")
+raster_plot(rastered_preds25abin, 2) + ggtitle("propDays > 25 Anomaly = 0")
+raster_plot(rastered_preds25abin, 1) + ggtitle("propDays > 25 Anomaly = -2")
+
+raster_plot2(rastered_preds21bbin, 3) + ggtitle("propDays Std > 21 AnomalyStd = 1")
+raster_plot2(rastered_preds21bbin, 2) + ggtitle("propDays Std > 21 AnomalyStd = 0")
+raster_plot2(rastered_preds21bbin, 1) + ggtitle("propDays Std > 21 AnomalyStd = -1")
+
+raster_plot(rastered_preds21NRabin, 3) + ggtitle("propDaysNoRecov > 21 Anomaly = 2")
+raster_plot(rastered_preds21NRabin, 2) + ggtitle("propDaysNoRecov > 21 Anomaly = 0")
+raster_plot(rastered_preds21NRabin, 1) + ggtitle("propDaysNoRecov > 21 Anomaly = -2")
+
+raster_plot(rastered_preds25NRabin, 3) + ggtitle("propDaysNoRecov > 25 Anomaly = 2")
+raster_plot(rastered_preds25NRabin, 2) + ggtitle("propDaysNoRecov > 25 Anomaly = 0")
+raster_plot(rastered_preds25NRabin, 1) + ggtitle("propDaysNoRecov > 25 Anomaly = -2")
+```
+
+```{r}
+ggplot() +
+  geom_stars(data = rastered_preds21NRabin[[2]])  +
+  scale_fill_viridis_c() +
+  geom_sf(data = deltabuff, alpha = 0)
 ```
 
 Bring raster code out of function - works!
 ```{r}
-rasterEx <- rastered_preds21abin[[3]] %>%
+a <- st_crop(rastered_preds21abin[[2]], deltabuff)
+a
+plot(a)
+
+rasterEx <- rastered_preds21abin[[2]] %>%
   st_crop(deltabuff)
 
 lims = c(min(rasterEx$Prediction, na.rm = T), max(rasterEx$Prediction, na.rm = T))
@@ -482,4 +717,6 @@ lims = c(min(rasterEx$Prediction, na.rm = T), max(rasterEx$Prediction, na.rm = T
     xlab("Longitude")+
     theme_bw() + theme(legend.position = "top")
 ```
+
+
 
