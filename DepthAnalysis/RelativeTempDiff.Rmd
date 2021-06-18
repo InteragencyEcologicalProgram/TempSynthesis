@@ -296,6 +296,8 @@ RelTempDiff_RRI <- RelTempDiff_RRI %>%
 # Tell it what the starting event is
 RelTempDiff_RRI = start_event(as.data.frame(RelTempDiff_RRI), column="Datetime", event=c("Station"), label.event="Event")
 
+
+
 # Model
 gamRRI_0 <- bam(RelTempDiff~ te(julian, Hour, tempAnomaly, k = c(12,6,16), bs = c("cc", "cc", "tp")), 
                 data = RelTempDiff_RRI, 
@@ -408,13 +410,18 @@ gRRI1a <- bam(RelTempDiff~ te(julian, Hour, k = c(20, 10), bs = c("cc", "cc")), 
             family = scat, method = "fREML", nthreads = 3, discrete = TRUE)
 
 r1 = acf(resid(gRRI1a),  plot=FALSE)$acf[2]
+acf(resid(gRRI1a))
+
 par(mfrow = c(2,2))
 gam.check(gRRI1a)
 
 gRRI1 <- bam(RelTempDiff~ te(julian, Hour, k = c(20, 10), bs = c("cc", "cc")), data = RelTempDiff_RRI, 
             family = scat, method = "fREML", rho = r1, AR.start = RelTempDiff_RRI$start.event, nthreads = 3, discrete = TRUE)
+
 par(mfrow = c(2,2))
 gam.check(gRRI1)
+acf(resid(gRRI1))
+
 par(mfrow = c(1,1))
 plot(gRRI1, all.terms = TRUE, pages = 1)
 summary(gRRI1)
