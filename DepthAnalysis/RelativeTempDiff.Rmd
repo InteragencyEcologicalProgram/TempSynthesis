@@ -53,8 +53,8 @@ info <- relativetempdiff %>%
   summarize(n =  n())
 
 ## filter the relativetempdiff for each station so I can bring in the models or try the models first
-RelTempDiff_MRZ <- relativetempdiff %>% filter(Station == "MRZ")
-RelTempDiff_RRI <- relativetempdiff %>% filter(Station == "RRI")
+RelTempDiff_MRZ <- relativetempdiff %>% filter(Station == "MRZ") %>% ungroup()
+RelTempDiff_RRI <- relativetempdiff %>% filter(Station == "RRI") %>% ungroup()
 RelTempDiff_MAL <- relativetempdiff %>% filter(Station == "MAL")
 RelTempDiff_ANH <- relativetempdiff %>% filter(Station == "ANH")
 
@@ -155,7 +155,9 @@ with(summary(modelMRZ2), 1 - deviance/null.deviance)
 
 
 
-RRI
+# RRI
+
+What is the relative temperature difference at RRI? 
 ```{r}
 
 ##adjusting model
@@ -190,7 +192,7 @@ with(summary(modelRRI4), 1 - deviance/null.deviance)
 
 GAMs - Model RRI and MRZ only 
 ```{r}
-library(mgcv)
+
 
 # https://noamross.github.io/gams-in-r-course/
   
@@ -200,15 +202,9 @@ library(mgcv)
   # arma, AR1
   # look up random effect notation in nlme
   # gamm model predictions - gratia
-
-str(RelTempDiff_RRI)
-
-# RRI Model
-# What is the relative temperature difference at RRI? 
-
 # RelTempDiff ~ interaction(julian, Hour) + re(fWY) + autocorrelation 
 
-
+str(RelTempDiff_RRI)
 
 # Use normal smooth and separate variables
 gamRRI1 <- bam(RelTempDiff ~ s(julian, bs = "cc", k = 25) + s(Hour, bs = "cc", k = 15) + fWY, data = RelTempDiff_RRI, method = "REML")
@@ -258,12 +254,7 @@ vis.gam(x = gamRRI5,
         view = c("julian", "Hour"),
         color = "heat", plot.type = "contour")
 
-
-
-
 # center and standardize TempDiffLag, easier for predictions
-gamMRZ1 <-  gam(RelTempDiff ~ te(julian, Hour, bs = "cc") + TempDiffLag + fWY, family = scat)
-
 bam(Temperature_difference ~ te(Julian_day_s, Hour, by = fWaterYear) + fWaterYear, bs=c("cc","cc"))
 
 # bam and gam random effects
@@ -281,38 +272,298 @@ bam(Temperature_difference ~ te(Julian_day_s, Hour, by = fWaterYear) + fWaterYea
 
 ```
 
-Temperature Anomaly
+Create anomaly using model of surface data. Add anomaly to data. 
+Use lowest k possible - don't want it to be too fitted.
+```{r}
+gamAnomaly <- bam(Surface~te(julian,Hour, k = c(5,5), bs = c("cc", "cc")), 
+                         data = RelTempDiff_RRI,
+                         family = scat, method = "fREML",
+                         nthreads = 3,
+                         discrete = TRUE)
+par(mfrow = c(2,2))
+gam.check(gamAnomaly)
+acf(resid(gamAnomaly))
+par(mfrow = c(1,1))
+plot(gamAnomaly, all.terms = TRUE, pages = 1)
+
+# data-fitted values is type = response
+# Use residuals from surface temperature as Anomaly 
+
+RelTempDiff_RRI <- RelTempDiff_RRI%>%
+  mutate(Anomaly = resid(gamAnomaly, type = "response"))
+
+range(RelTempDiff_RRI$Anomaly)
+```
+
+Original anomaly
+```{r}
+RelTempDiff_RRI <- RelTempDiff_RRI %>%
+  group_by(julian, Hour) %>%
+  mutate(meanTemp = mean(Surface),
+         Anomaly2 = Surface-meanTemp) %>%
+  ungroup()
+
+str(RelTempDiff_RRI)
+hist(RelTempDiff_RRI$RelTempDiff)
+```
+
+Simple separated model - what do each of the parameters show?
+```{r}
+gamSimp <- bam(RelTempDiff~ s(julian, k = 15, bs = "cc") + s(Hour, k = 6, bs = "cc") + s(Anomaly, k = 6, bs = "tp"), data = RelTempDiff_RRI, family = scat, method = "fREML", nthreads = 3, discrete = TRUE)
+
+gam.check(gamSimp)
+r1 = acf(resid(gRRI1a),  plot=FALSE)$acf[2]
+acf(resid(gamSimp))
+pacf(resid(gamSimp))
+par(mfrow = c(1,1))
+plot(gamSimp, all.terms = TRUE, pages = 1)
+
+```
+
+
+Model with anomaly
+```{r}
+gamRRI1 <- bam(RelTempDiff~ te(julian, Hour, Anomaly,  k = c(12,6,5), bs = c("cc", "cc", "tp")), data = RelTempDiff_RRI,family = scat,method = "fREML", nthreads = 3, discrete = TRUE)
+
+par(mfrow=c(2,2))
+gam.check(gamRRI1)
+par(mfrow=c(1,1))
+vis.gam(x = gamRRI1,
+        view = c("julian", "Hour"),
+        color = "heat", plot.type = "contour", type = "response")
+
+```
+
+Predictions
+```{r}
+newdataRRI <- expand.grid(#Create all combinations of predictor variables
+                       julian = with(RelTempDiff_RRI, min(julian):max(julian)),
+                       Anomaly = c(-3, -1.5, 0, 1.5, 3),
+                       Hour = 1:24) %>%
+                       # Standardize each variable based on full dataset for model
+          mutate(julian_s=(julian-mean(RelTempDiff_RRI$julian, na.rm=T))/sd(RelTempDiff_RRI$julian, na.rm=T),
+                 Hour_s=(Hour-mean(RelTempDiff_RRI$Hour, na.rm=T))/sd(RelTempDiff_RRI$Hour, na.rm=T),
+                 Anomaly_s=(Anomaly-mean(RelTempDiff_RRI$Anomaly, na.rm=T))/sd(RelTempDiff_RRI$Anomaly, na.rm=T))
+
+gamRRI1_pred<-predict(gamRRI1, newdata=newdataRRI, type="terms", se.fit=TRUE, discrete=T)
+```
+
+Plot predictions
+```{r}
+library(viridis)
+library(grid)
+library(gridExtra)
+library(metR)
+
+predictions <- data.frame(gamRRI1_pred$fit, gamRRI1_pred$se.fit)
+colnames(predictions) <- c("fit", "se.fit")
+range(gamRRI1_pred$fit)
+RRIPlot <- cbind(newdataRRI, predictions) %>%
+  mutate(fit = round(fit,2),
+         se.fit = round(se.fit,2))
+
+
+# How does Anomaly compare with original Anomaly? Pretty close to linear.
+ggplot(RelTempDiff_RRI, aes(Anomaly, Anomaly2)) + geom_point() + geom_smooth(method = "lm")
+# Are there only certain years that reached anomaly of -1.5? Two primary cool years - 2017, 2019
+ggplot(RelTempDiff_RRI, aes(x = fWY, y = Anomaly, color = fWY)) + geom_boxplot() 
+ggplot(subset(RelTempDiff_RRI, Anomaly > -3 & Anomaly < 3), aes(x = Anomaly, y = RelTempDiff, color = fWY), alpha = 0.3) + geom_jitter() + scale_color_viridis(discrete = TRUE)
+
+
+# Is reltempdiff lower during lower anomalies? Yes but specifically around -1.5.
+v1 <- ggplot(subset(RelTempDiff_RRI, Anomaly > -3 & Anomaly < 3), aes(x = Anomaly, y = RelTempDiff, color = julian)) + geom_jitter() + scale_color_viridis()
+v2 <- ggplot(RRIPlot, aes(x = Anomaly, y = fit, color = julian)) + geom_jitter() + scale_color_viridis()
+grid.arrange(v1,v2, nrow = 1)
+
+breaks = seq(-3,1, by = 0.2)
+
+# Plotting function
+AnomalyPlot <- function(df = RRIPlot, Anomaly = 0) {
+  Anomaly = enquo(Anomaly)
+  
+  dplyr::filter(df, Anomaly == UQ(Anomaly)) %>%
+    ggplot(mapping = aes(x = julian, y = Hour, z = fit)) +
+    geom_raster(mapping = aes(fill = fit)) + scale_fill_viridis() +
+    geom_contour(colour = "white") +
+    geom_text_contour(stroke = 0.2, breaks = breaks, check_overlap = TRUE) +
+    theme_classic() +
+    theme(axis.text = element_text(size = 14))+
+    labs(title = Anomaly)
+}
+
+# Make Plots
+pvcool <-AnomalyPlot(RRIPlot, -3)
+pcool <- AnomalyPlot(Anomaly = -1.5)
+pavg <- AnomalyPlot(RRIPlot, Anomaly = 0)
+pwarm <- AnomalyPlot(RRIPlot, Anomaly = 1.5)
+pvwarm <- AnomalyPlot(RRIPlot, Anomaly = 3)
+
+# Plots combined
+grid.arrange(pvcool, pcool, pavg, pwarm, pvwarm, nrow = 2)
+```
+
+
+# MRZ
+
+Create anomaly using model of surface data. Add anomaly to data. 
+Use lowest k possible - don't want it to be too fitted.
+```{r}
+gamAnomaly2 <- bam(Surface~te(julian,Hour, k = c(5,5), bs = c("cc", "cc")), 
+                         data = RelTempDiff_MRZ,
+                         family = scat, method = "fREML",
+                         nthreads = 3,
+                         discrete = TRUE)
+par(mfrow = c(2,2))
+gam.check(gamAnomaly2)
+par(mfrow = c(1,1))
+plot(gamAnomaly2, all.terms = TRUE, pages = 1)
+
+# data-fitted values is type = response
+# Use residuals from surface temperature as Anomaly 
+
+RelTempDiff_MRZ <- RelTempDiff_MRZ%>%
+  mutate(Anomaly = resid(gamAnomaly2, type = "response"))
+
+range(RelTempDiff_MRZ$Anomaly)
+```
+
+Original anomaly
+```{r}
+RelTempDiff_MRZ <- RelTempDiff_MRZ %>%
+  group_by(julian, Hour) %>%
+  mutate(meanTemp = mean(Surface),
+         Anomaly2 = Surface-meanTemp) %>%
+  ungroup()
+
+str(RelTempDiff_MRZ)
+hist(RelTempDiff_MRZ$RelTempDiff)
+```
+
+
+Model with anomaly
+```{r}
+gamMRZ1 <- bam(RelTempDiff~ te(julian, Hour, Anomaly,  k = c(12,6,5), bs = c("cc", "cc", "tp")), data = RelTempDiff_MRZ,family = scat,method = "fREML", nthreads = 3, discrete = TRUE)
+
+par(mfrow=c(2,2))
+gam.check(gamMRZ1)
+par(mfrow=c(1,1))
+vis.gam(x = gamMRZ1,
+        view = c("julian", "Hour"),
+        color = "heat", plot.type = "contour", type = "response")
+
+```
+
+Predictions
+```{r}
+newdataMRZ <- expand.grid(#Create all combinations of predictor variables
+                       julian = with(RelTempDiff_MRZ, min(julian):max(julian)),
+                       Anomaly = c(-3, -1.5, 0, 1.5, 3),
+                       Hour = 1:24) %>%
+                       # Standardize each variable based on full dataset for model
+          mutate(julian_s=(julian-mean(RelTempDiff_MRZ$julian, na.rm=T))/sd(RelTempDiff_MRZ$julian, na.rm=T),
+                 Hour_s=(Hour-mean(RelTempDiff_MRZ$Hour, na.rm=T))/sd(RelTempDiff_MRZ$Hour, na.rm=T),
+                 Anomaly_s=(Anomaly-mean(RelTempDiff_MRZ$Anomaly, na.rm=T))/sd(RelTempDiff_MRZ$Anomaly, na.rm=T))
+
+gamMRZ1_pred<-predict(gamMRZ1, newdata=newdataMRZ, type="terms", se.fit=TRUE, discrete=T)
+```
+
+Plot predictions
+```{r}
+library(viridis)
+library(grid)
+library(gridExtra)
+library(metR)
+
+predictions2 <- data.frame(gamMRZ1_pred$fit, gamMRZ1_pred$se.fit)
+colnames(predictions2) <- c("fit", "se.fit")
+range(gamMRZ1_pred$fit)
+MRZPlot <- cbind(newdataMRZ, predictions2) %>%
+  mutate(fit = round(fit,2),
+         se.fit = round(se.fit,2))
+
+
+# How does Anomaly compare with original Anomaly? Pretty close to linear.
+ggplot(RelTempDiff_MRZ, aes(Anomaly, Anomaly2)) + geom_point() + geom_smooth(method = "lm")
+# Are there only certain years that reached anomaly of -1.5? 
+ggplot(RelTempDiff_MRZ, aes(x = fWY, y = Anomaly, color = fWY)) + geom_boxplot() 
+ggplot(subset(RelTempDiff_MRZ, Anomaly > -3 & Anomaly < 3), aes(x = Anomaly, y = RelTempDiff, color = fWY), alpha = 0.3) + geom_jitter() + scale_color_viridis(discrete = TRUE)
+
+
+# Is reltempdiff lower during lower anomalies? No. much lower during high anomalies.
+vis1 <- ggplot(subset(RelTempDiff_MRZ, Anomaly > -3 & Anomaly < 3), aes(x = Anomaly, y = RelTempDiff, color = julian)) + geom_jitter() + scale_color_viridis()
+vis2 <- ggplot(MRZPlot, aes(x = Anomaly, y = fit, color = julian)) + geom_jitter() + scale_color_viridis()
+grid.arrange(vis1,vis2, nrow = 1)
+
+breaks = seq(-3,1, by = 0.2)
+
+# Plotting function
+AnomalyPlot <- function(df = RRIPlot, Anomaly = 0) {
+  Anomaly = enquo(Anomaly)
+  
+  dplyr::filter(df, Anomaly == UQ(Anomaly)) %>%
+    ggplot(mapping = aes(x = julian, y = Hour, z = fit)) +
+    geom_raster(mapping = aes(fill = fit)) + scale_fill_viridis() +
+    geom_contour(colour = "white") +
+    geom_text_contour(stroke = 0.2, breaks = breaks, check_overlap = TRUE) +
+    theme_classic() +
+    theme(axis.text = element_text(size = 14))+
+    labs(title = Anomaly)
+}
+
+# Make Plots
+pvcool2 <-AnomalyPlot(MRZPlot, -3)
+pcool2 <- AnomalyPlot(MRZPlot, Anomaly = -1.5)
+pavg2 <- AnomalyPlot(MRZPlot, Anomaly = 0)
+pwarm2 <- AnomalyPlot(MRZPlot, Anomaly = 1.5)
+pvwarm2 <- AnomalyPlot(MRZPlot, Anomaly = 3)
+
+# Plots combined
+grid.arrange(pvcool2, pcool2, pavg2, pwarm2, pvwarm2, nrow = 2)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 Do I need to standardize julian day or Hour?
 
 ```{r}
-# Detecting anomaly
-RelTempDiff_RRI <- RelTempDiff_RRI %>%
-  group_by(julian, Hour) %>%
-  mutate(meanTemp = mean(Surface),
-         tempAnomaly = Surface-meanTemp) %>%
-  ungroup()
-
 # Tell it what the starting event is
 RelTempDiff_RRI = start_event(as.data.frame(RelTempDiff_RRI), column="Datetime", event=c("Station"), label.event="Event")
 
-
-
-# Model
-gamRRI_0 <- bam(RelTempDiff~ te(julian, Hour, tempAnomaly, k = c(12,6,16), bs = c("cc", "cc", "tp")), 
-                data = RelTempDiff_RRI, 
+# Keep anomaly k value low in model
+# Model without autocorrelation
+gamRRI_0 <- bam(RelTempDiff~ te(julian, Hour, Anomaly,  k = c(12,6,6), bs = c("cc", "cc", "tp")), data = RelTempDiff_RRI, 
                 family = scat, 
                 method = "fREML", 
                 nthreads = 3, 
                 discrete = TRUE)
+# Plot results for anomalies -1.5, 0, and 1.5
 
 
 
+# Calculate rho
 rAn = acf(resid(gamRRI_0),  plot=FALSE)$acf[2]
+
+# Check model
+par(mfrow = c(1,2))
+acf(resid(gamRRI_0))
+pacf(resid(gamRRI_0))
 par(mfrow=c(2,2))
 gam.check(gamRRI_0)
 
-gamRRI <- bam(RelTempDiff~ te(julian, Hour, tempAnomaly, k = c(12,6,16), bs = c("cc", "cc", "tp")), data = RelTempDiff_RRI, 
+
+# Model using rho from above
+gamRRI <- bam(RelTempDiff~ te(julian, Hour, Anomaly, k = c(12,6,16), bs = c("cc", "cc", "tp")), data = RelTempDiff_RRI, 
             family = scat, 
             method = "fREML", 
             rho = rAn, 
@@ -320,71 +571,93 @@ gamRRI <- bam(RelTempDiff~ te(julian, Hour, tempAnomaly, k = c(12,6,16), bs = c(
             nthreads = 3, 
             discrete = TRUE)
 
+# Check model
+par(mfrow = c(1,2))
+acf(resid(gamRRI))
+pacf(resid(gamRRI))
 par(mfrow = c(2,2))
 gam.check(gamRRI)
-
+summary(gamRRI)
 par(mfrow = c(1,1))
 plot(gamRRI, all.terms = TRUE, pages = 1)
-summary(gamRRI)
 vis.gam(x = gamRRI,
-        view = c("julian", "tempAnomaly"),
-        color = "heat", plot.type = "contour")
-
-save(gamRRI, file = "gamRRI.RData")
-
-
-
-
-
-
-
-
-# Predict Surface Temperature
-gAnRRIa <- bam(Surface~ s(julian, k = 20, bs = "cc") + s(Hour, k = 10, bs = "cc"), 
-               data = RelTempDiff_RRI,
-               method = "fREML", 
-               nthreads = 3, 
-               discrete = TRUE)
-
-hist(RelTempDiff_RRI$Surface)
-hist(RelTempDiff_MAL$Surface)
-
-ggplot(RelTempDiff_RRI, aes(x = factor(Month), y = Surface)) + geom_boxplot()
-
-rAn = acf(resid(gAnRRIa),  plot=FALSE)$acf[2]
-
-acf(resid(gAnRRIa))
-
-# Do I need autocorrelation in this model? 
-gAnRRI <- bam(Surface~ s(julian, k = 20, bs = "cc") + s(Hour, k = 10, bs = "cc"),
-              data = RelTempDiff_RRI, 
-              method = "fREML", 
-              rho = rAn, 
-              AR.start = RelTempDiff_RRI$start.event, 
-              nthreads = 3, 
-              discrete = TRUE)
-
-acf(resid_gam(gAnRRI))
-
-par(mfrow = c(2,2))
-gam.check(gAnRRI)
-plot(gAnRRI)
-# Doesn't look very good. Can we still use this? 
-
-vis.gam(x = gAnRRI,
         view = c("julian", "Hour"),
-        color = "heat", plot.type = "contour")
+        color = "heat", plot.type = "contour", type = "response")
 
-# Look at predicted (fitted) values - is this the right thing to look at? 
-predRRI <- as.data.frame(fitted.values(gAnRRI))
-colnames(predRRI) <- "Fitted"
-RRI_pred <- cbind(RelTempDiff_RRI, predRRI) 
+save(gamRRI_0, gamRRI, file = "gamRRIAnomaly.RData")
+load("gamRRIAnomaly.RData")
+```
 
-# Calculate Anomaly by subtracting predicted (based on hour and julian day) from the actual temperature
-RRI_pred <- RRI_pred %>%
-  mutate(Anomaly = Temp-Fitted)
+julian by TOD
+```{r}
+gamRRI <- bam(RelTempDiff~ te(julian, Hour, Anomaly, k = c(12,6,16), bs = c("cc", "cc", "tp")), data = RelTempDiff_RRI, 
+            family = scat, 
+            method = "fREML", 
+            rho = rAn, 
+            AR.start = RelTempDiff_RRI$start.event, 
+            nthreads = 3, 
+            discrete = TRUE)
+```
 
-# Look at the anomaly values. 2015 should have higher ones, 2017 should have lower ones. 
+julian by Anomaly 
+```{r}
+mRRI1 <- bam(RelTempDiff~ te(julian, Anomaly, by = TOD, k = c(12,6), bs = c("cc""tp")) + s(TOD), data = RelTempDiff_RRI, 
+            family = scat, 
+            method = "fREML", 
+            rho = rAn, 
+            AR.start = RelTempDiff_RRI$start.event, 
+            nthreads = 3, 
+            discrete = TRUE)
+```
+
+
+
+
+
+
+
+
+
+
+
+Differencing the data - this doesn't work
+```{r}
+df <- RelTempDiff_RRI %>%
+  arrange(Datetime) %>%
+  mutate(diff1 = c(NA,diff(RelTempDiff)))
+
+gamRRI_diff0 <- bam(RelTempDiff~ te(julian, Hour, Anomaly,  k = c(12,6,16), bs = c("cc", "cc", "tp")), data = df, 
+                family = scat, 
+                method = "fREML", 
+                nthreads = 3, 
+                discrete = TRUE,
+                na.action = na.omit)
+
+# Calculate rho
+par(mfrow = c(1,2))
+acf(resid(gamRRI_diff0))
+pacf(resid(gamRRI_diff0))
+rAn = acf(resid(gamRRI_diff0),  plot=FALSE)$acf[2]
+par(mfrow=c(2,2))
+gam.check(gamRRI_diff0)
+```
+
+
+corARMA
+```{r}
+library(nlme)
+gammRRI <- gamm(RelTempDiff~ te(julian, Hour, Anomaly, k = c(12,6,16), bs = c("cc", "cc", "tp")), data = RelTempDiff_RRI, 
+            family = scat, 
+            method = "fREML", 
+            correlation = corARMA())
+
+
+```
+
+
+
+Look at the anomaly values. 2015 should have higher ones, 2017 should have lower ones.
+```{r}
 ggplot(RRI_pred, aes(x = factor(Month), y = Anomaly)) + geom_boxplot() + facet_wrap(~fWY)
 
 ggplot(RRI_pred, aes(x = factor(fWY), y = Anomaly)) + geom_boxplot() 
@@ -395,22 +668,40 @@ RelTempDiff_RRI <- left_join(RelTempDiff_RRI, RRI_pred)
 ```
 
 
+Playing with time series
+```{r}
+
+library(timetk)
+library(feasts)
+library(forecast)
+dataset <- as_tsibble(RelTempDiff_RRI, index = Datetime) %>%
+  filter(Year >15)
+dataset %>% autoplot(RelTempDiff)
+dataImpute <- ts_impute_vec(dataset$RelTempDiff)
+dataset %>% timetk::plot_seasonal_diagnostics(.date_var = Datetime, .value = RelTempDiff)
+dataset %>% plot_stl_diagnostics(.date_var = Datetime, .value = RelTempDiff)
+tsdata <- ts(dataset$RelTempDiff, frequency = 8760, start = c(2015, 1) )
+autoarima1 <- auto.arima(tsdata)
+```
+
+
+
+
+Alternate models
 
 ```{r}
 library(itsadug)
 
 ##adjusting model
 # RelTempDiff_RRI = filter(RelTempDiff_RRI, !is.na(TempDiffLag), !is.na(RelTempDiff), !is.na(TempDiffLag2))
-
-# Tell it what the starting event is
-RelTempDiff_RRI = start_event(as.data.frame(RelTempDiff_RRI), column="Datetime", event=c("Station"), label.event="Event")
   
 # Determine rho by first running the model without the AR term
-gRRI1a <- bam(RelTempDiff~ te(julian, Hour, k = c(20, 10), bs = c("cc", "cc")), data = RelTempDiff_RRI, 
+gRRI1a <- bam(RelTempDiff~ te(julian, Hour, k = c(6, 12), bs = c("cc", "cc")), data = RelTempDiff_RRI, 
             family = scat, method = "fREML", nthreads = 3, discrete = TRUE)
 
 r1 = acf(resid(gRRI1a),  plot=FALSE)$acf[2]
 acf(resid(gRRI1a))
+pacf(resid(gRRI1a))
 
 par(mfrow = c(2,2))
 gam.check(gRRI1a)
@@ -420,7 +711,7 @@ gRRI1 <- bam(RelTempDiff~ te(julian, Hour, k = c(20, 10), bs = c("cc", "cc")), d
 
 par(mfrow = c(2,2))
 gam.check(gRRI1)
-acf(resid(gRRI1))
+acf(resid(gRRI1)) # This looks the same
 
 par(mfrow = c(1,1))
 plot(gRRI1, all.terms = TRUE, pages = 1)
@@ -429,23 +720,8 @@ vis.gam(x = gRRI1,
         view = c("julian", "Hour"),
         color = "heat", plot.type = "contour")
 
-# Incorporate anomaly
-gRRIAn <- bam(RelTempDiff~ te(julian, Hour, k = c(20, 12), bs = c("cc", "cc")) + s(Residuals, k = 20, bs = "re"), data = RelTempDiff_RRI, 
-            family = scat, method = "fREML", rho = 0.83, AR.start = RelTempDiff_RRI$start.event, nthreads = 3, discrete = TRUE)
 
-gam.check(gRRIAn)
 
-gRRIAn2 <- bam(RelTempDiff~ te(julian, Hour, Anomaly, k = c(20, 12, 20), bs = c("cc", "cc", "tp")), 
-               data = RelTempDiff_RRI, 
-               family = scat, 
-               method = "fREML", 
-               rho = 0.83, 
-               AR.start = RelTempDiff_RRI$start.event, 
-               nthreads = 3, 
-               discrete = TRUE)
-gam.check(gRRIAn2)
-
-#https://mfasiolo.github.io/mgcViz/articles/mgcviz.html
 
 # Add year in as a linear term
 gRRI2a <- bam(RelTempDiff~ te(julian, Hour, k = c(20, 20), bs = c("cc", "cc")) + fWY, data = RelTempDiff_RRI, 
@@ -467,19 +743,30 @@ vis.gam(x = gRRI2,
 
 
 # Add year in as an interaction
-gRRI3a <- bam(RelTempDiff ~ te(julian, Hour, by = fWY, k = c(20,10), bs = c("cc", "cc")) + fWY, data = RelTempDiff_RRI,
+gRRI3a <- bam(RelTempDiff ~ te(julian, Hour, by = fWY, k = c(20,12), bs = c("cc", "cc")) + fWY, data = RelTempDiff_RRI,
              family = scat, method = "fREML", nthreads = 3, discrete = TRUE)
 r3 = acf(resid(gRRI3a),  plot=FALSE)$acf[2]
+
+
 par(mfrow = c(2,2))
 gam.check(gRRI3a)
 
 
-gRRI3 <- bam(RelTempDiff ~ te(julian, Hour, by = fWY, k = c(20,10), bs = c("cc", "cc")) + fWY, data = RelTempDiff_RRI,
+gRRI3 <- bam(RelTempDiff ~ te(julian, Hour, by = fWY, k = c(20,12), bs = c("cc", "cc")) + fWY, data = RelTempDiff_RRI,
              family = scat, method = "fREML", rho = r3, AR.start = RelTempDiff_RRI$start.event, nthreads = 3, discrete = TRUE)
 par(mfrow = c(2,2))
 gam.check(gRRI3)
+par(mfrow = c(2,2))
+acf(resid(gRRI3a))
+pacf(resid(gRRI3a))
+
+summary(gRRI3)
 par(mfrow = c(1,1))
 plot(gRRI3, all.terms = TRUE, pages = 1)
+par(mfrow = c(2,2))
+acf(resid(gRRI3))
+pacf(resid(gRRI3))
+
 summary(gRRI3)
 par(mfrow = c(1,1))
 vis.gam(x = gRRI3,
@@ -489,9 +776,10 @@ vis.gam(x = gRRI3,
 
 
 
+
 # Add year in as a random effect
 
-gRRI4a <- bam(RelTempDiff~ te(julian, Hour, k = c(20, 20), bs = c("cc", "cc")) + s(fWY, bs = "re"), data = RelTempDiff_RRI, 
+gRRI4a <- bam(RelTempDiff~ te(julian, Hour, k = c(20, 10), bs = c("cc", "cc")) + s(fWY, bs = "re"), data = RelTempDiff_RRI, 
             family = scat, method = "fREML", nthreads = 3, discrete = TRUE)
 r4 = acf(resid(gRRI4a),  plot=FALSE)$acf[2]
 par(mfrow = c(2,2))
@@ -508,14 +796,24 @@ vis.gam(x = gRRI4,
         view = c("julian", "Hour"),
         color = "heat", plot.type = "contour")
 
-# Can't check the autocorrelation?
-acf(gRRI4)
+acf(resid(gRRI4))
 
 
-
+save(gRRI3a, gRRI3, file = "gamRRIWY.RData")
 
 
 ```
+
+
+
+Plot models
+#https://mfasiolo.github.io/mgcViz/articles/mgcviz.html
+```{r}
+
+```
+
+
+
 
 
 
