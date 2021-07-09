@@ -3,6 +3,8 @@ title: "TempSynthesisMap"
 author: "Catarina Pien"
 date: "4/12/2021"
 output: html_document
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
@@ -66,24 +68,27 @@ map_obj <- get_stamenmap(
 ```{r}
 map_final <- ggmap(map_obj) + 
   geom_sf(data = WW_Delta, fill = "steelblue", alpha = 0.5, inherit.aes = FALSE) + 
-  geom_sf(data = stations_sf, size = 3, shape = 21, 
+  geom_sf(data = stations_sf, size = 4, shape = 21, 
           aes(fill = Region), inherit.aes = FALSE)+
   annotation_north_arrow(location = "tr", which_north = "true", 
-        pad_x = unit(.1, "in"), pad_y = unit(0.2, "in"),
-        style = north_arrow_fancy_orienteering) +
-  annotation_scale(location = "bl", bar_cols = c("black", "white", "black", "white")) +
-  annotate(geom = "text", x = -122.4, y = 37.85, label = "San Francisco Bay", fontface = "italic", color = "grey22", size = 3.5 ) +
+        pad_x = unit(.2, "in"), pad_y = unit(0.2, "in"),
+        style = north_arrow_fancy_orienteering,
+        height = unit(2, "cm"),
+  width = unit(2, "cm"),) +
+  annotation_scale(location = "bl", bar_cols = c("black", "white", "black", "white"), text_cex = 1.5) +
+  annotate(geom = "text", x = -122.4, y = 37.85, label = "San Francisco Bay", fontface = "italic", color = "grey22", size = 5) +
   scale_fill_brewer(palette = "Dark2") +
  # scale_fill_viridis(discrete = TRUE) +
   theme_bw()+
   theme(axis.title = element_blank(),
-        axis.text = element_text(size = 14),
-        legend.text = element_text(size = 12),
+        axis.text = element_text(size = 16),
+        legend.text = element_text(size = 14),
         legend.title = element_blank(),
         legend.position = c(0.15, .87),
         legend.margin = margin(0, 0.1, 0.1, 0.1, "cm") )
 map_final
 ```
+
 ```{r}
 map_final
 ggsave("StationMap.jpeg", width = 8, height = 8, device = 'png', dpi = 300, bg = "transparent")
