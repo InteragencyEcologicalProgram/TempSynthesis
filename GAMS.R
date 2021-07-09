@@ -151,15 +151,33 @@ library(forecast)
 library(lme4)
 
 gam_6_ar = gamm(Tempave  ~  
-                   te(Latitude, Longitude, julian, d = c(2,1), k = c(50, 12), bs = c("cr", "cc")), 
-                 data =tempmean2, method = "fREML",  family = "scat",
-                 discrete = T, nthreads = 3)
+                   te(Latitude, Longitude, julian, d = c(2,1), k = c(25, 5), bs = c("cr", "cc")), 
+                 data =tempmean2, method = "fREML",  family = "scat")
 
-arma_res <- auto.arima(resid(gam_6_ar0$lme, type = "normalized"),
+arma_res <- auto.arima(resid(gam_6_ar$lme, type = "normalized"),
                        stationary = TRUE, seasonal = FALSE)
 
 arma_res$coef
 
+
+gam_6_ar1 = gamm(Tempave  ~  
+                  te(Latitude, Longitude, julian, d = c(2,1), k = c(25, 5), bs = c("cr", "cc")), 
+                data =tempmean2, method = "fREML",  family = "scat", 
+                correlation = corARMA(form = ~ 1|julian, p = 4, q = 3))
+
+
+#test it with a smaller data set
+test = filter(tempmean2, Year == 2015)
+gam_6_test = gamm(Tempave  ~  
+                   te(Latitude, Longitude, julian, d = c(2,1), k = c(25, 5), bs = c("cr", "cc")), 
+                 data =test, method = "fREML",  family = "scat", 
+                 correlation = corARMA(form = ~ 1|julian, p = 4, q = 3))
+summary(gam_6_test)
+plot(gam_6_test$gam)
+gam.check(gam_6_test$gam)
+acf(resid_gam(gam_6_test))
+
+#OK, this isn't working.
 
 ##############################################################################
 #basic model of minimum temp based on day and location
@@ -178,34 +196,10 @@ g5min =  bam(TempMin  ~
              rho=r5min, AR.start=tempmean2$start.event)
 
 
-
-
-
-#temperature range
-
-
-#basic model of temperature range based on day and location
-#The range data is being really weird. It's sorta Poisson looking? Maybe it needs a negative binomial distribution?
-
-ggplot(tempmean2, aes(x = Temprange)) + geom_histogram(bins = 50)
-
-g5range =  bam((Temprange+0.01)   ~  
-                 te(Latitude, Longitude, julian,  d = c(2,1), k = c(50, 12), bs = c("cr", "cc")),
-               data =tempmean2, method = "fREML", Gamma(link = "inverse"), discrete = TRUE, nthreads = 3)
-
-r5range = acf(resid(g5range), plot=FALSE)$acf[2]
-
-
-g5range =  bam((Temprange+0.01) ~  
-                 te(Latitude, Longitude, julian,  d = c(2,1), k = c(50, 12), bs = c("cr", "cc")),
-               data =tempmean2, method = "fREML",Gamma(link = "inverse"),   discrete = TRUE, nthreads = 3,
-rho=r5range, AR.start=tempmean2$start.event)
-
-plot(g5range)
-summary(g5range)
-gam.check(g5range)
-acf(resid_gam(g5range))
-#Well, that's not aweful.
+summary(g5min)
+plot(g5min)
+gam.check(g5min)
+acf(resid_gam(g5min))
 
 
 load("spatialdata.RData")
@@ -311,15 +305,10 @@ newdata_yearx = bind_rows(newdata_year, newdata_year2)
 modellc4_predictions<-predict(g5.1, newdata=newdata_year, type="response", se.fit=TRUE, discrete=T) # Create predictions
 modellave_predictions<-predict(g5ave, newdata=newdata_year, type="response", se.fit=TRUE, discrete=T) # Create predictions
 modellminpredictions<-predict(g5min, newdata=newdata_year, type="response", se.fit=TRUE, discrete=T)
-modellrange_predictions<-predict(g5range, newdata=newdata_year, type="response", se.fit=TRUE, discrete=T)
-
 
 modellc4_predictions2<-predict(g5.1, newdata=newdata_year2, type="response", se.fit=TRUE, discrete=T) # Create predictions
 modellave_predictions2<-predict(g5ave, newdata=newdata_year2, type="response", se.fit=TRUE, discrete=T) # Create predictions
 modellminpredictions2<-predict(g5min, newdata=newdata_year2, type="response", se.fit=TRUE, discrete=T)
-modellrange_predictions2<-predict(g5range, newdata=newdata_year2, type="response", se.fit=TRUE, discrete=T)
-
-
 
 #mean temp model
 newdataave<-newdata_year%>%
@@ -343,14 +332,6 @@ newdatamin<-newdata_year%>%
   mutate(SE=modellminpredictions2$se.fit,
          L95=Prediction-SE*1.96,
          U95=Prediction+SE*1.96)
-
-#range temp model
-newdatarange<-newdata_year%>%
-  mutate(Prediction=modellrange_predictions$fit)%>%
-  mutate(SE=modellrange_predictions$se.fit,
-         L95=Prediction-SE*1.96,
-         U95=Prediction+SE*1.96) %>%
-  filter(Prediction <= 16, Prediction >= 0)
 
 
 save(g5.1, g5ave, g5min, g5range, newdata, newdata_year, newdataave,
@@ -376,60 +357,25 @@ Rasterize_all <- function(data, var, out_crs=4326, n=100){
  rastered_preds<-Rasterize_all(newdata, Prediction)
  rastered_predsave = Rasterize_all(newdataave, Prediction)
  rastered_predsmin = Rasterize_all(newdatamin, Prediction)
-rastered_predsrange = Rasterize_all(newdatarange, Prediction)
-
-save(rastered_preds, rastered_predsave, rastered_predsmin, rastered_predsrange, file = "RasteredPreds5MAY2021.RData")
-
-# Same for SE
-rastered_SE<-Rasterize_all(newdata, SE)
-rastered_SEave<-Rasterize_all(newdataave, SE)
-rastered_SEmin<-Rasterize_all(newdatamin, SE)
-rastered_SErange<-Rasterize_all(newdatarange, SE)
-# Bind SE and predictions together
-rastered_predsSE<-c(rastered_preds, rastered_SE)
+rastered_predsrange = rastered_preds - rastered_predsmin
+  
+save(rastered_preds, rastered_predsave, rastered_predsmin, 
+     rastered_predsrange, file = "RasteredPreds5MAY2021.RData")
 
 
 
-#basic model of temperature range based on day and location
-#The range data is being really weird. It's sorta Poisson looking? Maybe it needs a negative binomial distribution?
-
-ggplot(tempmean2, aes(x = Temprange)) + geom_histogram(bins = 50)
-
-g5range2 =  bam((Temprange+0.01)   ~  
-                 te(Latitude, Longitude, julian,  d = c(2,1), k = c(50, 12), bs = c("cr", "cc")),
-               data =tempmean2, method = "fREML", family = "scat", discrete = TRUE, nthreads = 3)
-
-r5range2 = acf(resid(g5range2), plot=FALSE)$acf[2]
-
-
-g5range2 =  bam((Temprange+0.01) ~  
-                 te(Latitude, Longitude, julian,  d = c(2,1), k = c(50, 12), bs = c("cr", "cc")),
-               data =tempmean2, method = "fREML",  family = "scat",  discrete = TRUE, nthreads = 3,
-               rho=r5range2, AR.start=tempmean2$start.event)
-
-plot(g5range2)
-summary(g5range2)
-gam.check(g5range2)
-acf(resid_gam(g5range2))
-#Well, that's not aweful.
-modellrange_predictions2b<-predict(g5range2, newdata=newdata_year, type="response", se.fit=TRUE, discrete=T)
-
-
-#range temp model
-newdatarange2b<-newdata_year%>%
-  mutate(Prediction=modellrange_predictions2b$fit)%>%
-  mutate(SE=modellrange_predictions2b$se.fit,
-         L95=Prediction-SE*1.96,
-         U95=Prediction+SE*1.96) 
-rastered_predsrange = Rasterize_all(newdatarange2b, Prediction)
 
 
 
-##########Wait! I can just subtract max and min to get rang!!!!
-#range temp model
 
 
-rastered_predsrange$Prediction = rastered_preds$Prediction - rastered_predsmin$Prediction 
+
+
+
+
+
+############################################################################3
+#analysis for TUCP
 
 #######
 #just the summer
