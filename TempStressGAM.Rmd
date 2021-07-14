@@ -37,31 +37,40 @@ heatDays210 <- read_csv("Data/heatDaysHighLow21.csv")
 noRecov250 <- read_csv("Data/noRecovery25.csv")
 noRecov210 <- read_csv("Data/noRecovery21.csv")
 tempDaily0 <- readRDS("Data/tempDaily.rds") %>%
-  filter(WY>2008 & WY<2020)
+  filter(WY>2009 & WY<2020)
 # tempMon <- readRDS("Data/tempMonthly.rds") # if we want to look at seasonal differences
 ```
 
 ## Data Manipulation
 
-Calculate temperature anomaly: Calculate average temp over dataset. For each station, subtract annual mean temperature - 11-yr mean temperature
+Calculate temperature anomaly: Calculate average temp over dataset. Subtract annual mean temperature - 11-yr mean temperature
 ```{r}
 mean11Years <- tempDaily0 %>%
-  group_by(Station) %>%
-  summarize(mean11 = round(mean(meanDaily),1))
-
-tempAnnual0 <- tempDaily0 %>%
-  group_by(Station, WY) %>%
+#  filter(month(Date) > 4 & month(Date) < 10) %>%
+  mutate(mean11 = round(mean(meanDaily),1)) %>%
+  group_by(WY, mean11) %>%
   summarize(meanAnnual = round(mean(meanDaily),1),
-            sdAnnual = round(sd(meanDaily),1))
-  
-tempAnnual <- tempAnnual0 %>% 
-  left_join(mean11Years) %>%
-  mutate(Anomaly = meanAnnual-mean11,
-         AnomalyStd = Anomaly/sdAnnual)
+            sdAnnual = round(sd(meanDaily),1),
+            Anomaly = meanAnnual-mean11,
+            AnomalyStd = Anomaly/sdAnnual) %>%
+  ungroup() %>%
+  unique()
 
+# tempAnnual0 <- tempDaily0 %>%
+#   filter(month(Date) > 4 & month(Date) < 10) %>%
+#   group_by(WY) %>%
+#   summarize(meanAnnual = round(mean(meanDaily),1),
+#             sdAnnual = round(sd(meanDaily),1)) 
+  
+# tempAnnual <- tempAnnual0 %>%
+#   left_join(mean11Years) %>%
+#   mutate(Anomaly = meanAnnual-mean11,
+#          AnomalyStd = Anomaly/sdAnnual)
+
+tempAnnual <- mean11Years
 # Divide anomaly by standard deviation?
 Anomaly <- tempAnnual %>%
-  dplyr::select(c(WY, Station, Anomaly, AnomalyStd))
+  dplyr::select(c(WY, Anomaly, AnomalyStd))
 ```
 
 Bring anomaly into datasets
@@ -80,26 +89,41 @@ Filter to high stress/no recovery only
 highStress25 <- heatDays25 %>%
   filter(Stress == "High") %>%
   mutate(nDaysAdj = round((propDays*365),0)) %>%
-  left_join(latlon)
+  left_join(latlon)%>%
+  filter(WY>2009 & WY<2020,
+         Station != "OH1")
 
 highStress21 <- heatDays21 %>%
   filter(Stress == "High")%>%
  mutate(nDaysAdj = round((propDays*365),0)) %>%
-  left_join(latlon)
+  left_join(latlon)%>%
+  filter(WY>2009 & WY<2020,
+         Station != "OH1")
 
 noRecov25 <- noRecov250 %>%
   left_join(Anomaly) %>%
   dplyr::select(-X1) %>%
   filter(StressAllDay == "Y")%>%
   mutate(nDaysAdj = round((propDays*365),0)) %>%
-  left_join(latlon)
+  left_join(latlon)%>%
+  filter(WY>2009 & WY<2020,
+         Station != "OH1")
 
 noRecov21 <- noRecov210 %>%
   left_join(Anomaly) %>%
   dplyr::select(-X1)%>%
   filter(StressAllDay == "Y")%>%
   mutate(nDaysAdj = round((propDays*365),0)) %>%
-  left_join(latlon)
+  left_join(latlon)%>%
+  filter(WY>2009 & WY<2020,
+         Station != "OH1")
+```
+
+```{r}
+tile <- ggplot(highStress21) + geom_tile(aes(x = fWY, y = Station, fill = propDays))
+tile <- ggplot(highStress21) + geom_tile(aes(x = fWY, y = Station, fill = Anomaly))
+ggplot(tempDaily) + geom_tile(aes(x = WY, y = Station))
+plotly::ggplotly(tile)
 ```
 
 
@@ -177,6 +201,7 @@ overdisp_fun(g21abin)
 # quasibinomial 
 g21abinQ <- gam(cbind(nDays, totalDays)~ te(Latitude, Longitude, Anomaly, d = c(2,1), bs = c("tp", "tp"), k = c(12,6)) ,  data = highStress21, method= "REML", family = quasibinomial)
 summary(g21abinQ)
+overdisp_fun(g21abinQ)
 
 par(mfrow = c(2,2))
 gam.check(g21abinQ)
@@ -187,7 +212,6 @@ vis.gam(g21abinQ,
         plot.type = "contour",
         too.far = 0.1,
         se = -1, type = "response")
-
 
 g21abin1 <- gam(propDays~ te(Latitude, Longitude, Anomaly, d = c(2,1), bs = c("tp", "tp"), k = c(12,6)) ,  data = highStress21, method= "REML", weights = totalDays, family = binomial)
 summary(g21abin1)
@@ -283,6 +307,9 @@ vis.gam(g25abinQ,
 
 plot data
 ```{r}
+
+
+ggplot(highStress21) + geom_boxplot(aes(x = Station, y = Anomaly, fill = Region)) + geom_hline(yintercept = 1, color = "orange") + theme_bw()
 ggplot(highStress25)+ geom_tile(aes(x = Anomaly, y = Station, color = propDays))
 
 ggplot(highStress25)+ geom_col(aes(x = Station, y = propDays, fill = Anomaly), position = position_dodge()) + scale_fill_viridis() + facet_wrap(~Region)
@@ -392,7 +419,8 @@ deltabuff = st_buffer(delta, 400) %>%
 ggplot() + 
   geom_sf(data = deltabuff, fill = "blue", alpha = 0.5)
 
-save(deltabuff, file="deltabuffthick.Rdata")
+# save(deltabuff, file="deltabuffthick.Rdata")
+load("deltabuffthick.Rdata")
 ```
 
 Change station into sf
@@ -417,7 +445,7 @@ HD_pred<-function(Full_data=Data,
                   Delta_water=delta,
                   Stations = stas,
                   n=500, # 300 points x, 300  points y
-                  AnomalyRange = -2:2
+                  AnomalyRange = -1:1
 ){
   
   # Create point locations on a grid for predictions
@@ -458,16 +486,16 @@ If you don't specify the numbers, it will use all available integers.
 ```{r}
 # * normal ----
 newdata_21a <- HD_pred(Full_data=highStress21, n=500,
-                       Anomaly = c(0,1,2)) 
+                       Anomaly = c(0,1)) 
 
 newdata_25a <- HD_pred(Full_data=highStress25, n=300,
-                       Anomaly = c(0,1,2))
+                       Anomaly = c(0,1))
 
 # * no recovery ----
 newdata_21NRa<- HD_pred(Full_data=noRecov21, n=500,
-                       Anomaly = c(0,1,2))
+                       Anomaly = c(0,1))
 newdata_25NRa <- HD_pred(Full_data = noRecov25, n = 500,
-                       Anomaly = c(0,1,2))
+                       Anomaly = c(0,1))
 
 ```
 
@@ -521,7 +549,7 @@ summary(newdatag25NRabin$Prediction)
 
 Save files
 ```{r}
-save(newdatag21abin, newdatag25abin, newdatag25NRabin,  newdatag25NRabin, file = "newdataPreds_20210629.RData")
+save(newdatag21abin, newdatag25abin, newdatag25NRabin,  newdatag25NRabin, file = "newdataPreds_annualanomaly_20210713.RData")
 ```
 
 Out of function
@@ -601,7 +629,7 @@ rastered_SE21abin<-Rasterize_all(newdatag21abin, SE)
 
 Save raster files
 ```{r}
-save(rastered_preds21abin, rastered_preds25abin, rastered_preds21NRabin, rastered_preds25NRabin, file = "RasteredPreds_20210629.RData")
+save(rastered_preds21abin, rastered_preds25abin, rastered_preds21NRabin, rastered_preds25NRabin, file = "RasteredPreds_20210713.RData")
 ```
 
 ### Start here if just want to plot
@@ -636,20 +664,27 @@ deltabuff <- st_transform(deltabuff, crs = 32610)
 - Why is st_crop not working?
 
 ```{r}
-raster_plot<-function(data, Anomaly=2, labels="All"){
+raster_plot<-function(data, Anomaly, labels="All"){
   data = data[[Anomaly]]
  data = st_crop(data, deltabuff)
-  lims = c(min(data$Prediction, na.rm = T), max(data$Prediction, na.rm = T))
-  ggplot()+
+ # lims = c(min(data$Prediction, na.rm = T), max(data$Prediction, na.rm = T))
+   ggplot()+
     geom_stars(data=data)+
+   scale_x_continuous(breaks = seq(from = 550000, to = 670000, by = 40000))+
    # facet_wrap(~Date)+
-    scale_fill_viridis_c(na.value="white",limits = lims)+
+    scale_fill_viridis_c(breaks = seq(from = 0, to = 0.35, by = 0.1), na.value="white",limits = c(0, 0.35))+
     coord_sf()+
     ylab("Latitude")+
     xlab("Longitude")+
-    theme_bw() + theme(legend.position = "top",
-                       legend.spacing.x = unit(1, 'cm')) +
-    guides(fill = guide_colorbar(barwidth = 10))
+    theme_bw() + 
+    theme(axis.text = element_text(size = 12),
+          axis.title = element_text(size = 13),
+          legend.title = element_text(size = 13),
+          legend.position = "right",
+         # legend.spacing.x = unit(2, 'cm'),
+          legend.text = element_text(size = 12))
+          # plot.margin = margin(0,0,0,0, "cm"))
+    #guides(fill = guide_colorbar(barwidth = 2))
 }
 
 ```
@@ -657,32 +692,44 @@ raster_plot<-function(data, Anomaly=2, labels="All"){
 Plot raster results
 ```{r}
 
-plot21_anom <- raster_plot(rastered_preds21abin, 3) + ggtitle("propDays > 21 Anomaly = 2")
-plot21_avg <- raster_plot(rastered_preds21abin, 2) + ggtitle("propDays > 21 Anomaly = 0")
+plot21_avg <- raster_plot(rastered_preds21abin, 1) + ggtitle("Anomaly = 0")
+plot21_anom <- raster_plot(rastered_preds21abin, 2) + ggtitle("Anomaly = 1")
 #raster_plot(rastered_preds21abin, 1) + ggtitle("propDays > 21 Anomaly = -2")
 
-plot25_anom <- raster_plot(rastered_preds25abin, 3) + ggtitle("propDays > 25 Anomaly = 2")
-plot25_avg <- raster_plot(rastered_preds25abin, 2) + ggtitle("propDays > 25 Anomaly = 0")
+plot25_avg <- raster_plot(rastered_preds25abin, 1) + ggtitle("")
+plot25_anom <- raster_plot(rastered_preds25abin, 2) + ggtitle("")
 #raster_plot(rastered_preds25abin, 1) + ggtitle("propDays > 25 Anomaly = -2")
 
-pdf(file = "Figures/21NR_anom.pdf",   # The directory you want to save the file in
-    width = 5, # The width of the plot in inches
-    height = 6) # The height of the plot in inches
-plot21NR_anom <- raster_plot(rastered_preds21NRabin, 3) + ggtitle("propDaysNoRecov > 21 Anomaly = 2")
-plot21NR_anom
-dev.off()
-plot21NR_avg <- raster_plot(rastered_preds21NRabin, 2) + ggtitle("propDaysNoRecov > 21 Anomaly = 0")
+rastered_preds21NRabin[[2]]
+range(rastered_preds21NRabin[[1]]$Prediction)
+
+plot21NR_avg <- raster_plot(rastered_preds21NRabin, 1) + ggtitle("Anomaly = 0")
+plot21NR_anom <- raster_plot(rastered_preds21NRabin, 2) + ggtitle("Anomaly = 1")
 #raster_plot(rastered_preds21NRabin, 1) + ggtitle("propDaysNoRecov > 21 Anomaly = -2")
 
-plot25NR_anom <- raster_plot(rastered_preds25NRabin, 3) + ggtitle("propDaysNoRecov > 25 Anomaly = 2")
-plot25NR_avg <- raster_plot(rastered_preds25NRabin, 2) + ggtitle("propDaysNoRecov > 25 Anomaly = 0")
+plot25NR_avg <- raster_plot(rastered_preds25NRabin, 1) + ggtitle("")
+plot25NR_anom <- raster_plot(rastered_preds25NRabin, 2) + ggtitle("")
 #raster_plot(rastered_preds25NRabin, 1) + ggtitle("propDaysNoRecov > 25 Anomaly = -2")
+
+plot25NR_anom
+
+
 ```
 
 ```{r}
-save(plot21_anom, plot21_avg, plot25_anom, plot25_avg, plot21NR_anom, plot21NR_avg, plot25NR_anom, plot25NR_avg, file = "finalplots_20210629.RData")
+save( plot21NR_anom, plot21NR_avg, plot25NR_anom, plot25NR_avg, file = "finalplots_20210712.RData")
+
+save(plot21_anom, plot21_avg, plot25_anom, plot25_avg, file = "finalplotsPart1_20210708.RData")
 ```
 
+```{r}
+library(gridExtra)
+library(grid)
+grid.arrange(plot21_avg, plot21_anom,
+             plot25_avg, plot25_anom, nrow = 2)
+grid.arrange(plot21NR_avg, plot21NR_anom,
+             plot25NR_avg, plot25NR_anom, nrow = 2)
+```
 
 
 ```{r}
