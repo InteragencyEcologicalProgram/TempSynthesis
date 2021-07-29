@@ -46,7 +46,7 @@ tempDaily0 <- readRDS("Data/tempDaily.rds") %>%
 Calculate temperature anomaly: Calculate average temp over dataset. Subtract annual mean temperature - 11-yr mean temperature
 ```{r}
 mean11Years <- tempDaily0 %>%
-#  filter(month(Date) > 4 & month(Date) < 10) %>%
+  #filter(month(Date) > 4 & month(Date) < 10) %>%
   mutate(mean11 = round(mean(meanDaily),1)) %>%
   group_by(WY, mean11) %>%
   summarize(meanAnnual = round(mean(meanDaily),1),
@@ -549,7 +549,9 @@ summary(newdatag25NRabin$Prediction)
 
 Save files
 ```{r}
-save(newdatag21abin, newdatag25abin, newdatag25NRabin,  newdatag25NRabin, file = "newdataPreds_annualanomaly_20210713.RData")
+save(newdatag21abin, newdatag25abin, newdatag21NRabin,  newdatag25NRabin, file = "newdataPreds_annualanomaly_20210721.RData")
+
+load("newdataPreds_annualanomaly_20210721.RData")
 ```
 
 Out of function
@@ -577,6 +579,30 @@ Longitude_s=(Longitude-mean(highStress21$Longitude, na.rm=T))/sd(highStress21$Lo
     st_join(regions, join = st_intersects)
 
 ```
+
+Calculate proportion for Anomaly = 0 and Anomaly = 1
+```{r}
+regions$Region <- c("Suisun Marsh", "Suisun Bay","Sac River", "North Delta", "Far North", "San Joaquin" , "South") 
+mapview::mapView(regions, zcol = "Region")
+rownames(regions) <- regions$Region
+
+intersections <- st_intersection(newdatag21abin, regions)
+Prediction21 <- newdatag21abin %>%
+  group_by(Anomaly)%>%
+  summarize(mean(Prediction))
+
+Prediction21NR <- newdatag21NRa%>%
+  group_by(Anomaly)%>%
+  summarize(mean(Prediction))
+
+
+
+
+```
+
+
+
+
 
 
 ### Rasterize data
@@ -629,7 +655,7 @@ rastered_SE21abin<-Rasterize_all(newdatag21abin, SE)
 
 Save raster files
 ```{r}
-save(rastered_preds21abin, rastered_preds25abin, rastered_preds21NRabin, rastered_preds25NRabin, file = "RasteredPreds_20210713.RData")
+save(rastered_preds21abin, rastered_preds25abin, rastered_preds21NRabin, rastered_preds25NRabin, file = "RasteredPreds_20210714.RData")
 ```
 
 ### Start here if just want to plot
@@ -645,17 +671,17 @@ plot(rastered_preds21abin[[1]])
 
 rastered_preds21abin[[1]] <- st_warp(rastered_preds21abin[[1]], crs = 32610)
 rastered_preds21abin[[2]] <- st_warp(rastered_preds21abin[[2]], crs = 32610)
-rastered_preds21abin[[3]] <- st_warp(rastered_preds21abin[[3]], crs = 32610)
+#rastered_preds21abin[[3]] <- st_warp(rastered_preds21abin[[3]], crs = 32610)
 rastered_preds25abin[[1]] <- st_warp(rastered_preds25abin[[1]], crs = 32610)
 rastered_preds25abin[[2]] <- st_warp(rastered_preds25abin[[2]], crs = 32610)
 rastered_preds25abin[[3]] <- st_warp(rastered_preds25abin[[3]], crs = 32610)
 
 rastered_preds21NRabin[[1]] <- st_warp(rastered_preds21NRabin[[1]], crs = 32610)
 rastered_preds21NRabin[[2]] <- st_warp(rastered_preds21NRabin[[2]], crs = 32610)
-rastered_preds21NRabin[[3]] <- st_warp(rastered_preds21NRabin[[3]], crs = 32610)
+#rastered_preds21NRabin[[3]] <- st_warp(rastered_preds21NRabin[[3]], crs = 32610)
 rastered_preds25NRabin[[1]] <- st_warp(rastered_preds25NRabin[[1]], crs = 32610)
 rastered_preds25NRabin[[2]] <- st_warp(rastered_preds25NRabin[[2]], crs = 32610)
-rastered_preds25NRabin[[3]] <- st_warp(rastered_preds25NRabin[[3]], crs = 32610)
+#rastered_preds25NRabin[[3]] <- st_warp(rastered_preds25NRabin[[3]], crs = 32610)
 deltabuff <- st_transform(deltabuff, crs = 32610)
 ```
 
@@ -679,12 +705,15 @@ raster_plot<-function(data, Anomaly, labels="All"){
     theme_bw() + 
     theme(axis.text = element_text(size = 12),
           axis.title = element_text(size = 13),
+          plot.title = element_text(hjust = 0.5),
           legend.title = element_text(size = 13),
           legend.position = "right",
          # legend.spacing.x = unit(2, 'cm'),
-          legend.text = element_text(size = 12))
+          legend.text = element_text(size = 12)) +
+      
           # plot.margin = margin(0,0,0,0, "cm"))
     #guides(fill = guide_colorbar(barwidth = 2))
+        guides(fill=guide_colorbar(title="ProportionDays"))
 }
 
 ```
@@ -692,8 +721,8 @@ raster_plot<-function(data, Anomaly, labels="All"){
 Plot raster results
 ```{r}
 
-plot21_avg <- raster_plot(rastered_preds21abin, 1) + ggtitle("Anomaly = 0")
-plot21_anom <- raster_plot(rastered_preds21abin, 2) + ggtitle("Anomaly = 1")
+plot21_avg <- raster_plot(rastered_preds21abin, 1) + ggtitle("Average year")
+plot21_anom <- raster_plot(rastered_preds21abin, 2) + ggtitle("Warm  year (+1C)")
 #raster_plot(rastered_preds21abin, 1) + ggtitle("propDays > 21 Anomaly = -2")
 
 plot25_avg <- raster_plot(rastered_preds25abin, 1) + ggtitle("")
@@ -717,9 +746,9 @@ plot25NR_anom
 ```
 
 ```{r}
-save( plot21NR_anom, plot21NR_avg, plot25NR_anom, plot25NR_avg, file = "finalplots_20210712.RData")
+save( plot21_anom, plot21_avg, plot25_anom, plot25_avg,plot21NR_anom, plot21NR_avg, plot25NR_anom, plot25NR_avg, file = "finalplots_20210714.RData")
 
-save(plot21_anom, plot21_avg, plot25_anom, plot25_avg, file = "finalplotsPart1_20210708.RData")
+save(plot21_anom, plot21_avg, plot25_anom, plot25_avg, file = "finalplotsPart1_20210714.RData")
 ```
 
 ```{r}
