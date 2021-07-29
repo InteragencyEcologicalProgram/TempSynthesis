@@ -366,7 +366,16 @@ RRIPlot <- cbind(newdataRRI, predictions) %>%
 # How does Anomaly compare with original Anomaly? Pretty close to linear.
 ggplot(RelTempDiff_RRI, aes(Anomaly, Anomaly2)) + geom_point() + geom_smooth(method = "lm")
 # Are there only certain years that reached anomaly of -1.5? Two primary cool years - 2017, 2019
-ggplot(RelTempDiff_RRI, aes(x = fWY, y = Anomaly, color = fWY)) + geom_boxplot() 
+ggplot(RelTempDiff_RRI, aes(x = fWY, y = Anomaly, fill = fWY)) + geom_boxplot() +scale_fill_viridis(discrete = TRUE)
+ggplot(RelTempDiff_RRI, aes(x = fWY, y = RelTempDiff, color = Anomaly)) + geom_jitter()+scale_color_viridis()
+
+Anom0 <- ggplot(subset(RelTempDiff_RRI, Anomaly > -0.5 & Anomaly < 0.5), aes(x = fWY, y = RelTempDiff, color = Anomaly)) + geom_jitter()+scale_color_viridis() +
+  labs(title = "Anomaly -0.5 to 0.5")
+AnomNeg15 <- ggplot(subset(RelTempDiff_RRI, Anomaly > -2 & Anomaly < -1), aes(x = fWY, y = RelTempDiff, color = Anomaly, text = paste('Date: ', Date,
+                                 '<br>Anomaly: ', Anomaly))) + geom_jitter()+scale_color_viridis() +  labs(title = "Anomaly -2 to -1")
+grid.arrange(Anom0, AnomNeg15)
+ggplotly(AnomNeg15, tooltip = c("y", "text"))
+
 ggplot(subset(RelTempDiff_RRI, Anomaly > -3 & Anomaly < 3), aes(x = Anomaly, y = RelTempDiff, color = fWY), alpha = 0.3) + geom_jitter() + scale_color_viridis(discrete = TRUE)
 
 
@@ -388,12 +397,13 @@ AnomalyPlot <- function(df = RRIPlot, Anomaly = 0) {
     geom_text_contour(stroke = 0.2, breaks = breaks, check_overlap = TRUE) +
     theme_classic() +
     theme(axis.text = element_text(size = 14))+
-    labs(title = Anomaly)
+    labs(title = Anomaly) +
+    guides(fill=guide_colorbar(title="RelDiff"))
 }
 
 # Make Plots
 pvcool <-AnomalyPlot(RRIPlot, -3)
-pcool <- AnomalyPlot(Anomaly = -1.5)
+pcool <- AnomalyPlot(RRIPlot, Anomaly = -1.5)
 pavg <- AnomalyPlot(RRIPlot, Anomaly = 0)
 pwarm <- AnomalyPlot(RRIPlot, Anomaly = 1.5)
 pvwarm <- AnomalyPlot(RRIPlot, Anomaly = 3)
@@ -507,7 +517,8 @@ AnomalyPlot <- function(df = RRIPlot, Anomaly = 0) {
     geom_text_contour(stroke = 0.2, breaks = breaks, check_overlap = TRUE) +
     theme_classic() +
     theme(axis.text = element_text(size = 14))+
-    labs(title = Anomaly)
+    labs(title = Anomaly)+
+    guides(fill=guide_colorbar(title="RelDiff"))
 }
 
 # Make Plots
