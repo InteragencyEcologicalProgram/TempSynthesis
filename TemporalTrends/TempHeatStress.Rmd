@@ -108,8 +108,7 @@ Number of days at each stress level
 # Calculate number of samples in a year or water year
 heatDaysSamp <- tempHeatM %>%
   group_by(Region, Station, WY, fWY) %>%
-  summarize(totalDays = n()) %>%
-  filter(totalDays > 250)
+  summarize(totalDays = n()) 
 
 # Calculate number of days and proportion of days at each stress level
 heatDays1 <- tempHeatM %>%
@@ -138,6 +137,11 @@ heatDays2 <- tempHeatM %>%
 #write.csv(heatDays2, "Data/noRecovery25.csv")
 ```
 
+```{r}
+tempHeatM%>%
+  ggplot() + 
+  geom_boxplot(aes(x = fMonth, y = maxDaily, fill = Stress))+ facet_wrap(~Region) + scale_fill_viridis(discrete = TRUE)
+```
 
 
 
