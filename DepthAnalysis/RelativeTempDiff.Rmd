@@ -361,7 +361,12 @@ geom_smooth(aes(color = TOD), method = "loess", se = F, fullrange = T) +
 plotTODlines
 
 ## just the trend lines
-plotlinesonly <- ggplot(relativetempdiff, aes(x= julian, y = RelTempDiff))+ geom_smooth(aes(color = TOD), 
+relativetempdiffclean <- filter(relativetempdiff, !is.na(TOD))
+levels(relativetempdiffclean$TOD) <- c("Late:16-23", "Early:0-7", "Mid:8-15")
+relativetempdiffclean$TOD <- factor(relativetempdiffclean$TOD, levels = c("Early:0-7", "Mid:8-15", "Late:16-23"))
+levels(relativetempdiffclean$TOD)
+
+plotlinesonly <- ggplot(relativetempdiffclean, aes(x= julian, y = RelTempDiff))+ geom_smooth(aes(color = TOD), 
   method = "loess", se = T, fullrange = T) +
   facet_wrap(~Station) + 
   theme_bw() + theme(strip.text = element_text(size = 14),
@@ -369,13 +374,13 @@ plotlinesonly <- ggplot(relativetempdiff, aes(x= julian, y = RelTempDiff))+ geom
                      axis.title = element_text(size =14),
                      legend.text = element_text(size = 14),
                      legend.title = element_text(size = 14)) +
-  scale_color_viridis(discrete = TRUE) + guides(colour = guide_legend(override.aes = list(size=4)))+
   labs(y = "Relative Temperature Difference (C)",
        x = "Julian Day") +
   scale_color_viridis(discrete = TRUE) + guides(colour = guide_legend(title = "Time of Day", override.aes = list(size=4)))
 
 plotlinesonly
 ```
+
 
 ```{r}
 plotTODLine <- ggplot(relativetempdiff, aes(x= julian, y = RelTempDiff))+ geom_smooth(aes(color = TOD), method = "loess", se = TRUE) + facet_wrap(~Station) + 

@@ -61,7 +61,77 @@ RelTempDiff_ANH <- relativetempdiff %>% filter(Station == "ANH")
 
 ```
 
-Create anomaly using model of surface data. Add anomaly to data. 
+Plots of smooths
+```{r}
+RelTempDiff_RRI <- filter(RelTempDiff_RRI, !is.na(TOD))
+RelTempDiff_MRZ <- filter(RelTempDiff_MRZ, !is.na(TOD))
+
+RRIlines <- ggplot(RelTempDiff_RRI, aes(x= julian, y = RelTempDiff))+ geom_smooth(aes(color = TOD), 
+  method = "loess", se = T, fullrange = T) +
+  facet_wrap(~fWY) + 
+  theme_bw() + theme(strip.text = element_text(size = 14),
+                     axis.text = element_text(size = 14),
+                     axis.text.x = element_text(angle = 90),
+                     axis.title = element_text(size =14),
+                     legend.text = element_text(size = 14),
+                     legend.title = element_text(size = 14)) +
+  scale_color_viridis(discrete = TRUE) + guides(colour = guide_legend(override.aes = list(size=4)))+
+  labs(y = "Relative Temperature Difference (C)",
+       x = "Julian Day") +
+  scale_color_viridis(discrete = TRUE) + guides(colour = guide_legend(title = "Time of Day", override.aes = list(size=4)))
+
+RRIlines
+
+MRZlines <- ggplot(RelTempDiff_MRZ, aes(x= julian, y = RelTempDiff))+ geom_smooth(aes(color = TOD), 
+  method = "loess", se = T, fullrange = T) +
+  facet_wrap(~fWY) + 
+  theme_bw() + theme(strip.text = element_text(size = 14),
+                     axis.text = element_text(size = 14),
+                     axis.title = element_text(size =14),
+                     axis.text.x = element_text(angle = 90),
+                     legend.text = element_text(size = 14),
+                     legend.title = element_text(size = 14)) +
+  scale_color_viridis(discrete = TRUE) + guides(colour = guide_legend(override.aes = list(size=4)))+
+  labs(y = "Relative Temperature Difference (C)",
+       x = "Julian Day") +
+  scale_color_viridis(discrete = TRUE) + guides(colour = guide_legend(title = "Time of Day", override.aes = list(size=4)))
+
+MRZlines
+
+```
+
+## RRI
+
+
+```{r}
+gamRRISimp <- bam(RelTempDiff~ fWY + s(julian, by = fWY , k=14, bs = "cc"), data = RelTempDiff_RRI,family = scat,method = "fREML", nthreads = 3, discrete = TRUE)
+summary(gamRRISimp)
+par(mfrow=c(2,2))
+gam.check(gamRRISimp)
+plot(gamRRISimp, pages = 1, all.terms = TRUE)
+par(mfrow=c(1,1))
+vis.gam(x = gamRRISimp,
+        view = c("julian", "Hour"),
+        color = "heat", plot.type = "contour", type = "response")
+```
+
+
+```{r}
+gamHour <- bam(RelTempDiff~te(Hour, by = fWY, k = 14, bs = "cc"),                          data = RelTempDiff_RRI,
+                         family = scat, method = "fREML",
+                         nthreads = 3,
+                         discrete = TRUE)
+par(mfrow=c(2,2))
+gam.check(gamHour)
+plot(gamHour, pages = 1, all.terms = TRUE)
+par(mfrow=c(1,1))
+vis.gam(x = gamRRISimp,
+        view = c("julian", "Hour"),
+        color = "heat", plot.type = "contour", type = "response")
+```
+
+
+Create anomaly (same as Brian's) using model of surface data. Add anomaly to data. 
 Use lowest k possible - don't want it to be too fitted.
 ```{r}
 gamAnomaly <- bam(Surface~te(julian,Hour, k = c(5,5), bs = c("cc", "cc")), 
@@ -82,8 +152,6 @@ plot(gamAnomaly, all.terms = TRUE, pages = 1)
 ```
 
 
-## RRI
-
 Original anomaly
 ```{r}
 # Add residuals in
@@ -102,6 +170,7 @@ str(RelTempDiff_RRI)
 hist(RelTempDiff_RRI$RelTempDiff)
 ```
 
+### Model 1
 Original anomaly
 ```{r}
 RelTempDiff_RRI <- RelTempDiff_RRI %>%
@@ -118,8 +187,8 @@ hist(RelTempDiff_RRI$RelTempDiff)
 
 Model with anomaly
 ```{r}
-gamRRI1 <- bam(RelTempDiff~ te(julian, Hour, Anomaly,  k = c(12,6,5), bs = c("cc", "cc", "tp")), data = RelTempDiff_RRI,family = scat,method = "fREML", nthreads = 3, discrete = TRUE)
-
+gamRRI1 <- bam(RelTempDiff~ te(julian, Hour, Anomaly,  k = c(14,7,6), bs = c("cc", "cc", "tp")), data = RelTempDiff_RRI,family = scat,method = "fREML", nthreads = 3, discrete = TRUE)
+summary(gamRRI1)
 par(mfrow=c(2,2))
 gam.check(gamRRI1)
 par(mfrow=c(1,1))
@@ -131,11 +200,13 @@ vis.gam(x = gamRRI1,
 
 Model with year
 ```{r}
-gamRRI2 <- bam(RelTempDiff~ te(julian, Hour, fWY,  d = c(2,1), k = c(15,7), bs = c("cc", "tp")), data = RelTempDiff_RRI, family = scat, method = "fREML", nthreads = 3, discrete = TRUE)
+gamRRI2 <- bam(RelTempDiff~ fWY + te(julian, Hour, by = fWY,  k = 15, bs = "cc"), data = RelTempDiff_RRI, family = scat, method = "fREML", nthreads = 3, discrete = TRUE)
+summary(gamRRI2)
 
 par(mfrow=c(2,2))
 gam.check(gamRRI2)
 par(mfrow=c(1,1))
+plot(gamRRI2, pages = 1, all.terms = TRUE)
 vis.gam(x = gamRRI2,
         view = c("julian", "Hour"),
         color = "heat", plot.type = "contour", type = "response")
@@ -153,11 +224,44 @@ vis.gam(x = gamRRI3,
         color = "heat", plot.type = "contour", type = "response")
 ```
 
-
-
-
-Predictions Model 1
+TOD
 ```{r}
+RelTempDiff_RRI <- filter(RelTempDiff_RRI,!is.na(TOD))
+RelTempDiff_RRI$TOD <- as.factor(RelTempDiff_RRI$TOD)
+
+gamRRI4 <- bam(RelTempDiff~ TOD + s(julian, Anomaly, by=TOD, k = c(12,6), bs = c("cc", "cc")), data = RelTempDiff_RRI, family = scat, method = "fREML", nthreads = 3, discrete = TRUE)
+
+summary(gamRRI4)
+par(mfrow=c(2,2))
+gam.check(gamRRI4)
+plot(gamRRI4, pages = 1, all.terms = TRUE)
+vis.gam(x = gamRRI4,
+        #view = c("julian", "TOD"),
+        color = "heat", plot.type = "contour", type = "response")
+```
+
+
+```{r}
+RelTempDiff_RRI <- filter(RelTempDiff_RRI,!is.na(TOD))
+RelTempDiff_RRI$TOD <- as.factor(RelTempDiff_RRI$TOD)
+
+gamRRI5 <- bam(RelTempDiff~ TOD + s(julian, by=TOD, k = 10, bs = "cc") + fWY + s(julian, by = fWY, k = 12, bs = "cc"), data = RelTempDiff_RRI, family = scat, method = "fREML", nthreads = 3, discrete = TRUE)
+
+gamMRZ5 <- bam(RelTempDiff~ TOD + s(julian, by=TOD, k = 10, bs = "cc") + fWY + s(julian, by = fWY, k = 12, bs = "cc"), data = RelTempDiff_MRZ, family = scat, method = "fREML", nthreads = 3, discrete = TRUE)
+
+summary(gamRRI5)
+par(mfrow=c(2,2))
+gam.check(gamRRI5)
+plot(gamRRI5, pages = 1, all.terms = TRUE)
+vis.gam(x = gamRRI3,
+        #view = c("julian", "TOD"),
+        color = "heat", plot.type = "contour", type = "response")
+```
+
+
+### Predictions for GAMs
+```{r}
+### GAM 1
 newdataRRI1 <- expand.grid(#Create all combinations of predictor variables
                        julian = with(RelTempDiff_RRI, min(julian):max(julian)),
                        Anomaly = c(-3, -1.5, 0, 1.5, 3),
@@ -167,6 +271,10 @@ newdataRRI1 <- expand.grid(#Create all combinations of predictor variables
                  Hour_s=(Hour-mean(RelTempDiff_RRI$Hour, na.rm=T))/sd(RelTempDiff_RRI$Hour, na.rm=T),
                  Anomaly_s=(Anomaly-mean(RelTempDiff_RRI$Anomaly, na.rm=T))/sd(RelTempDiff_RRI$Anomaly, na.rm=T))
 
+
+gamRRI1_pred<-predict(gamRRI1, newdata=newdataRRI1, type="terms", se.fit=TRUE, discrete=T)
+
+### GAM 3
 newdataRRI3 <- expand.grid(#Create all combinations of predictor variables
                        julian = with(RelTempDiff_RRI, min(julian):max(julian)),
                        Anomaly2 = c(-3, -1.5, 0, 1.5, 3),
@@ -176,14 +284,11 @@ newdataRRI3 <- expand.grid(#Create all combinations of predictor variables
                  Hour_s=(Hour-mean(RelTempDiff_RRI$Hour, na.rm=T))/sd(RelTempDiff_RRI$Hour, na.rm=T),
                  Anomaly2_s=(Anomaly2-mean(RelTempDiff_RRI$Anomaly2, na.rm=T))/sd(RelTempDiff_RRI$Anomaly2, na.rm=T))
 
-
-
-
-gamRRI1_pred<-predict(gamRRI1, newdata=newdataRRI1, type="terms", se.fit=TRUE, discrete=T)
 gamRRI3_pred<-predict(gamRRI3, newdata=newdataRRI3, type="terms", se.fit=TRUE, discrete=T)
 
 ```
 
+### Plots
 Plot predictions model 1
 ```{r}
 library(viridis)
@@ -206,7 +311,8 @@ AnomalyPlot <- function(df, Anomaly = 0) {
   
   dplyr::filter(df, Anomaly == UQ(Anomaly)) %>%
     ggplot(mapping = aes(x = julian, y = Hour, z = fit)) +
-    geom_raster(mapping = aes(fill = fit)) + scale_fill_viridis() +
+    geom_raster(mapping = aes(fill = fit)) + 
+   scale_fill_viridis_c(breaks = seq(from = -2.5, to = 1.0, by = 0.5), na.value="white",limits = c(-2.5,1))+
     geom_contour(colour = "white") +
     geom_text_contour(stroke = 0.2, breaks = breaks, check_overlap = TRUE) +
     theme_classic() +
@@ -219,11 +325,13 @@ AnomalyPlot <- function(df, Anomaly = 0) {
 pvcool <-AnomalyPlot(RRIPlot1, -3)
 pcool <- AnomalyPlot(RRIPlot1, Anomaly = -1.5)
 pavg <- AnomalyPlot(RRIPlot1, Anomaly = 0)
-pwarm <- AnomalyPlot(RRIPlot1, Anomaly = 1.5)
-pvwarm <- AnomalyPlot(RRIPlot1, Anomaly = 3)
+pwarm <- AnomalyPlot(RRIPlot1, Anomaly = +1.5)
+pvwarm <- AnomalyPlot(RRIPlot1, Anomaly = +3)
 
 # Plots combined
 grid.arrange(pvcool, pcool, pavg, pwarm, pvwarm, nrow = 2)
+
+
 ```
 
 Exploring Anomaly values
@@ -246,7 +354,7 @@ ggplot(subset(RelTempDiff_RRI, Anomaly > -3 & Anomaly < 3), aes(x = Anomaly, y =
 
 # Is reltempdiff lower during lower anomalies? Yes but specifically around -1.5.
 v1 <- ggplot(subset(RelTempDiff_RRI, Anomaly > -3 & Anomaly < 3), aes(x = Anomaly, y = RelTempDiff, color = julian)) + geom_jitter() + scale_color_viridis()
-v2 <- ggplot(RRIPlot, aes(x = Anomaly, y = fit, color = julian)) + geom_jitter() + scale_color_viridis()
+v2 <- ggplot(RRIPlot1, aes(x = Anomaly, y = fit, color = julian)) + geom_jitter() + scale_color_viridis()
 grid.arrange(v1,v2, nrow = 1)
 
 
@@ -266,7 +374,7 @@ plotB <- ggplot(meanMonthly, aes(Month, meanBottom, color = fWY)) + geom_point()
 
 grid.arrange(plotS, plotB)
 
-ggplotly(ggplot(meanMonthly, aes(color = fWY)) +
+(ggplot(meanMonthly, aes(color = fWY)) +
   geom_line(aes(Month, meanSurface)) +
   geom_line(aes(Month, meanDiff)) + theme_bw())
 ```
@@ -291,7 +399,8 @@ Anomaly2Plot <- function(df, Anomaly2 = 0) {
   
   dplyr::filter(df, Anomaly2 == UQ(Anomaly2)) %>%
     ggplot(mapping = aes(x = julian, y = Hour, z = fit)) +
-    geom_raster(mapping = aes(fill = fit)) + scale_fill_viridis() +
+    geom_raster(mapping = aes(fill = fit)) + 
+    scale_fill_viridis_c(breaks = seq(from = -3, to = 1.0, by = 0.5), na.value="white",limits = c(-3,1))+
     geom_contour(colour = "white") +
     geom_text_contour(stroke = 0.2, breaks = breaks, check_overlap = TRUE) +
     theme_classic() +
@@ -366,8 +475,9 @@ hist(RelTempDiff_MRZ$RelTempDiff)
 
 Model with anomaly
 ```{r}
-gamMRZ1 <- bam(RelTempDiff~ te(julian, Hour, Anomaly,  k = c(12,6,5), bs = c("cc", "cc", "tp")), data = RelTempDiff_MRZ,family = scat,method = "fREML", nthreads = 3, discrete = TRUE)
+gamMRZ1 <- bam(RelTempDiff~ te(julian, Hour, Anomaly,  k = c(14,8,6), bs = c("cc", "cc", "tp")), data = RelTempDiff_MRZ,family = scat,method = "fREML", nthreads = 3, discrete = TRUE)
 
+summary(gamMRZ1)
 par(mfrow=c(2,2))
 gam.check(gamMRZ1)
 par(mfrow=c(1,1))
@@ -376,6 +486,59 @@ vis.gam(x = gamMRZ1,
         color = "heat", plot.type = "contour", type = "response")
 
 ```
+
+
+```{r}
+gamMRZ2 <- bam(RelTempDiff~ te(julian, Hour, fWY, d = c(2,1), k = c(15,7), bs = c("cc", "tp")), data = RelTempDiff_MRZ, family = scat, method = "fREML", nthreads = 3, discrete = TRUE)
+```
+
+TOD
+```{r}
+RelTempDiff_MRZ <- filter(RelTempDiff_MRZ,!is.na(TOD))
+RelTempDiff_MRZ$TOD <- as.factor(RelTempDiff_MRZ$TOD)
+
+gamMRZ3 <- bam(RelTempDiff~ TOD + s(julian, by=TOD, k = 16, bs = "cc"), data = RelTempDiff_MRZ, family = scat, method = "fREML", nthreads = 3, discrete = TRUE)
+summary(gamMRZ3)
+par(mfrow=c(2,2))
+gam.check(gamMRZ3)
+plot(gamMRZ3, pages = 1, all.terms = TRUE)
+vis.gam(x = gamMRZ3,
+        #view = c("julian", "TOD"),
+        color = "heat", plot.type = "contour", type = "response")
+
+```
+
+```{r}
+RelTempDiff_MRZ <- filter(RelTempDiff_MRZ,!is.na(TOD))
+RelTempDiff_MRZ$TOD <- as.factor(RelTempDiff_MRZ$TOD)
+
+gamMRZ4 <- bam(RelTempDiff~ TOD + s(julian, by=TOD, k = 18, bs = "cc") +  te(julian, Anomaly, k = c(14,6), bs = c("cc", "tp")), data = RelTempDiff_MRZ, family = scat, method = "fREML", nthreads = 3, discrete = TRUE)
+
+summary(gamMRZ4)
+par(mfrow=c(2,2))
+gam.check(gamMRZ4)
+plot(gamMRZ4, pages = 1, all.terms = TRUE)
+vis.gam(x = gamMRZ3,
+        #view = c("julian", "TOD"),
+        color = "heat", plot.type = "contour", type = "response")
+```
+
+
+```{r}
+RelTempDiff_MRZ <- filter(RelTempDiff_MRZ,!is.na(TOD))
+RelTempDiff_MRZ$TOD <- as.factor(RelTempDiff_MRZ$TOD)
+
+gamMRZ5 <- bam(RelTempDiff~ TOD + s(julian, by=TOD, k = 10, bs = "cc") + fWY + s(julian, by = fWY, k = 12, bs = "cc"), data = RelTempDiff_MRZ, family = scat, method = "fREML", nthreads = 3, discrete = TRUE)
+
+summary(gamMRZ5)
+par(mfrow=c(2,2))
+gam.check(gamMRZ5)
+plot(gamMRZ5, pages = 1, all.terms = TRUE)
+vis.gam(x = gamMRZ3,
+        #view = c("julian", "TOD"),
+        color = "heat", plot.type = "contour", type = "response")
+```
+
 
 Predictions
 ```{r}
@@ -421,12 +584,13 @@ grid.arrange(vis1,vis2, nrow = 1)
 breaks = seq(-3,1, by = 0.2)
 
 # Plotting function
-AnomalyPlot <- function(df = RRIPlot, Anomaly = 0) {
+AnomalyPlot <- function(df = MRZPlot, Anomaly = 0) {
   Anomaly = enquo(Anomaly)
   
   dplyr::filter(df, Anomaly == UQ(Anomaly)) %>%
     ggplot(mapping = aes(x = julian, y = Hour, z = fit)) +
-    geom_raster(mapping = aes(fill = fit)) + scale_fill_viridis() +
+    geom_raster(mapping = aes(fill = fit)) + 
+    scale_fill_viridis_c(breaks = seq(from = -2.5, to = 1.0, by = 0.5), na.value="white",limits = c(-2.5,1))+
     geom_contour(colour = "white") +
     geom_text_contour(stroke = 0.2, breaks = breaks, check_overlap = TRUE) +
     theme_classic() +
@@ -439,14 +603,20 @@ AnomalyPlot <- function(df = RRIPlot, Anomaly = 0) {
 pvcool2 <-AnomalyPlot(MRZPlot, -3)
 pcool2 <- AnomalyPlot(MRZPlot, Anomaly = -1.5)
 pavg2 <- AnomalyPlot(MRZPlot, Anomaly = 0)
-pwarm2 <- AnomalyPlot(MRZPlot, Anomaly = 1.5)
-pvwarm2 <- AnomalyPlot(MRZPlot, Anomaly = 3)
+pwarm2 <- AnomalyPlot(MRZPlot, Anomaly = +1.5)
+pvwarm2 <- AnomalyPlot(MRZPlot, Anomaly = +3)
 
 # Plots combined
 grid.arrange(pvcool2, pcool2, pavg2, pwarm2, pvwarm2, nrow = 2)
 ```
 
+## Combined plot
+900*600
+```{r}
+grid.arrange(pcool, pavg, pwarm,
+             pcool2, pavg2, pwarm2, nrow = 2)
 
+```
 
 
 
