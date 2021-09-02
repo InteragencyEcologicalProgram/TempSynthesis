@@ -46,7 +46,6 @@ relativetempdiff <- filter(relativetempdiff, WY < 2020 & WY > 2012)
 relativetempdiff$minute <- minute(relativetempdiff$Datetime)
 relativetempdiff <- filter(relativetempdiff, minute == "0")
 
-#no NAs
 relativetempdiff <- filter(relativetempdiff, !is.na(RelTempDiff))
 
 info <- relativetempdiff %>%
@@ -60,6 +59,26 @@ RelTempDiff_MAL <- relativetempdiff %>% filter(Station == "MAL")
 RelTempDiff_ANH <- relativetempdiff %>% filter(Station == "ANH")
 
 ```
+
+Plots of years
+```{r}
+RRIST <- ggplot(RelTempDiff_RRI, aes(x= julian, y = Surface))+ geom_smooth(aes(color = TOD), 
+  method = "loess", se = T, fullrange = T) +
+  facet_wrap(~fWY) + 
+  theme_bw() + theme(strip.text = element_text(size = 14),
+                     axis.text = element_text(size = 14),
+                     axis.text.x = element_text(angle = 90),
+                     axis.title = element_text(size =14),
+                     legend.text = element_text(size = 14),
+                     legend.title = element_text(size = 14)) +
+  #scale_color_viridis(discrete = TRUE) + guides(colour = guide_legend(override.aes = list(size=4)))+
+  labs(y = "Surface Temp (C)",
+       x = "Julian Day") +
+  scale_color_viridis(discrete = TRUE) + guides(colour = guide_legend(title = "Time of Day", override.aes = list(size=4)))
+
+RRIST
+```
+
 
 Plots of smooths
 ```{r}
@@ -75,7 +94,7 @@ RRIlines <- ggplot(RelTempDiff_RRI, aes(x= julian, y = RelTempDiff))+ geom_smoot
                      axis.title = element_text(size =14),
                      legend.text = element_text(size = 14),
                      legend.title = element_text(size = 14)) +
-  scale_color_viridis(discrete = TRUE) + guides(colour = guide_legend(override.aes = list(size=4)))+
+  #scale_color_viridis(discrete = TRUE) + guides(colour = guide_legend(override.aes = list(size=4)))+
   labs(y = "Relative Temperature Difference (C)",
        x = "Julian Day") +
   scale_color_viridis(discrete = TRUE) + guides(colour = guide_legend(title = "Time of Day", override.aes = list(size=4)))
@@ -312,20 +331,21 @@ AnomalyPlot <- function(df, Anomaly = 0) {
   dplyr::filter(df, Anomaly == UQ(Anomaly)) %>%
     ggplot(mapping = aes(x = julian, y = Hour, z = fit)) +
     geom_raster(mapping = aes(fill = fit)) + 
-   scale_fill_viridis_c(breaks = seq(from = -2.5, to = 1.0, by = 0.5), na.value="white",limits = c(-2.5,1))+
+    scale_fill_viridis_c(breaks = seq(from = -2.5, to = 1.0, by = 0.5), na.value="white",limits = c(-2.5,1))+
     geom_contour(colour = "white") +
     geom_text_contour(stroke = 0.2, breaks = breaks, check_overlap = TRUE) +
     theme_classic() +
-    theme(axis.text = element_text(size = 14))+
+    theme(axis.text = element_text(size = 13),
+          plot.title = element_text(hjust = 0.5))+
     labs(title = Anomaly) +
     guides(fill=guide_colorbar(title="RelDiff"))
 }
 
 # Make Plots
 pvcool <-AnomalyPlot(RRIPlot1, -3)
-pcool <- AnomalyPlot(RRIPlot1, Anomaly = -1.5)
-pavg <- AnomalyPlot(RRIPlot1, Anomaly = 0)
-pwarm <- AnomalyPlot(RRIPlot1, Anomaly = +1.5)
+pcool <- AnomalyPlot(RRIPlot1, Anomaly = -1.5) + theme(legend.position = "none")
+pavg <- AnomalyPlot(RRIPlot1, Anomaly = 0)  + theme(legend.position = "none")
+pwarm <- AnomalyPlot(RRIPlot1, Anomaly = +1.5)  + theme(legend.position = "none")
 pvwarm <- AnomalyPlot(RRIPlot1, Anomaly = +3)
 
 # Plots combined
@@ -333,6 +353,7 @@ grid.arrange(pvcool, pcool, pavg, pwarm, pvwarm, nrow = 2)
 
 
 ```
+
 
 Exploring Anomaly values
 ```{r}
@@ -594,31 +615,137 @@ AnomalyPlot <- function(df = MRZPlot, Anomaly = 0) {
     geom_contour(colour = "white") +
     geom_text_contour(stroke = 0.2, breaks = breaks, check_overlap = TRUE) +
     theme_classic() +
-    theme(axis.text = element_text(size = 14))+
-    labs(title = Anomaly)+
-    guides(fill=guide_colorbar(title="RelDiff"))
+    theme(axis.text = element_text(size = 13),
+          plot.title = element_text(hjust = 0.5),
+          legend.position = "bottom")+
+    #labs(title = Anomaly)+
+    guides(fill=guide_colorbar(title="RelDiff", barwidth = 10))
 }
 
 # Make Plots
-pvcool2 <-AnomalyPlot(MRZPlot, -3)
-pcool2 <- AnomalyPlot(MRZPlot, Anomaly = -1.5)
-pavg2 <- AnomalyPlot(MRZPlot, Anomaly = 0)
-pwarm2 <- AnomalyPlot(MRZPlot, Anomaly = +1.5)
+(pvcool2 <-AnomalyPlot(MRZPlot, -3))
+(pcool2 <- AnomalyPlot(MRZPlot, Anomaly = -1.5) +theme(legend.position = "none"))
+pavg2 <- AnomalyPlot(MRZPlot, Anomaly = 0) +theme(legend.position = "none")
+pwarm2 <- AnomalyPlot(MRZPlot, Anomaly = +1.5)+theme(legend.position = "none")
 pvwarm2 <- AnomalyPlot(MRZPlot, Anomaly = +3)
 
-# Plots combined
-grid.arrange(pvcool2, pcool2, pavg2, pwarm2, pvwarm2, nrow = 2)
+
+
 ```
 
 ## Combined plot
-900*600
+
+
+Facet
+```{r}
+# faceted
+
+RRIPlot1sub <- subset(RRIPlot1, Anomaly %in% c(-1.5, 0, 1.5)) %>%
+  mutate(fAnomaly <- as.factor(Anomaly))
+levels(RRIPlot1sub$fAnomaly) <- c("-1.5", "0", "+1.5")
+
+RRIfacet <- ggplot(RRIPlot1sub, aes(x = julian, y = Hour, z = fit)) +
+    facet_wrap(~fAnomaly) +
+  geom_raster(mapping = aes(fill = fit)) + 
+scale_fill_gradientn(colours = c("blue4", "blue", "slateblue1", "skyblue2", "skyblue1", "grey50", "sienna1", "sienna3"),
+                      breaks = seq(from = -2.5, to = 1.0, by = 0.5), na.value="white",limits = c(-2.5,1))+
+    geom_contour(colour = "white") +
+    geom_text_contour(stroke = 0.2, breaks = breaks, check_overlap = TRUE) +
+    theme_classic() +
+    theme(axis.text = element_text(size = 13),
+          plot.title = element_text(hjust = 0.5),
+          axis.title.x = element_blank(),
+          strip.text = element_text(size = 13, colour = "white", face = "bold"),
+          strip.background = element_rect(fill = "black"),
+          legend.position = "none")+
+  scale_x_continuous(expand = c(0, 0)) +
+    scale_y_continuous(expand = c(0,0))+
+    #labs(title = Anomaly)+
+    guides(fill=guide_colorbar(title="RelDiff", barwidth = 10))
+
+MRZfacet <- ggplot(subset(MRZPlot, Anomaly %in% c(-1.5, 0, 1.5)), aes(x = julian, y = Hour, z = fit)) +
+    facet_wrap(~Anomaly) +
+  geom_raster(mapping = aes(fill = fit)) + 
+  #scale_fill_viridis_c(breaks = seq(from = -2.5, to = 1.0, by = 0.5), na.value="white",limits = c(-2.5,1))+
+  scale_fill_gradientn(colours = c("blue4", "blue", "slateblue1", "skyblue2", "skyblue1", "grey50", "sienna1", "sienna3"),
+                      breaks = seq(from = -2.5, to = 1.0, by = 0.5), na.value="white",limits = c(-2.5,1))+
+    geom_contour(colour = "white") +
+    geom_text_contour(stroke = 0.2, breaks = breaks, check_overlap = TRUE) +
+    theme_classic() +
+    theme(axis.text = element_text(size = 13),
+          plot.title = element_text(hjust = 0.5),
+          legend.position = "bottom",
+          legend.text = element_text(size = 12),
+          strip.text.x = element_blank(),
+          strip.background = element_blank())+
+    scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0,0))+
+    #labs(title = Anomaly)+
+    guides(fill=guide_colorbar(title="Relative Temperature Difference", barwidth = 12))
+
+```
+
+
+Combined plot
+700x500
+```{r}
+
+# save legend separately for final figure
+get_legend<-function(myggplot){
+  tmp <- ggplot_gtable(ggplot_build(myggplot))
+  leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
+  legend <- tmp$grobs[[leg]]
+  return(legend)
+}
+
+legendF <- get_legend(MRZfacet)
+
+
+
+MRZfacet <- MRZfacet + theme(legend.position = "none") +labs(x = "Julian Day")
+MRZfacet2 <- annotate_figure(MRZfacet,
+                left = text_grob("Martinez (MRZ)", color = "black", rot = 90))
+RRIfacet2 <- annotate_figure(RRIfacet,
+                left = text_grob("Rough and Ready Island (RRI)", color = "black", rot = 90))
+
+DepthPlot <- grid.arrange(legendF, RRIfacet2, MRZfacet2, nrow = 3, 
+            layout_matrix = rbind(1, 2, 3),
+             widths = c(2), heights = c(0.5,2,2))
+
+DepthPlot
+ggsave("Figures/RelDiffPlot.pdf", width = 9, height = 6)
+png("Figures/RelDiffPlot2.png", width = 900, height =600)
+pdf("Figures/RelDiffPlot2.pdf", width = 9, height = 6)
+
+```
+
+unfaceted combination
 ```{r}
 grid.arrange(pcool, pavg, pwarm,
              pcool2, pavg2, pwarm2, nrow = 2)
 
+legend <- get_legend(pvcool)
+
+# Remove titles that we don't need
+(pcool <- pcool + theme(axis.title.x = element_blank()))
+pavg <- pavg + theme(axis.title.x = element_blank(),
+                     axis.title.y = element_blank())
+pwarm <- pwarm + theme(axis.title.x = element_blank(),
+                       axis.title.y = element_blank())
+
+pcool2 <- pcool2 + labs(x = "Julian Day")
+pavg2 <- pavg2 + theme(axis.title.y = element_blank()) +labs(x = "Julian Day")
+pwarm2 <- pwarm2 + theme(axis.title.y = element_blank()) +labs(x = "Julian Day")
+
+grid.arrange(legend, 
+             pcool,pavg,pwarm,
+             pcool2, pavg2, pwarm2, 
+             nrow = 3,
+             layout_matrix = rbind(c(1,1,1),c(2,3,4), c(5,6,7)),
+             widths = c(2,1.8,1.8), heights = c(0.5,2,2))
+
+
 ```
-
-
 
 
 
