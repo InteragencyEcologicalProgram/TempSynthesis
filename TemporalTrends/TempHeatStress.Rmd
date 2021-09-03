@@ -37,8 +37,8 @@ setwd("C:/Users/cpien/OneDrive - California Department of Water Resources/Work/C
 #tempFilt <- readRDS("Data/tempFilt.rds") 
 #tempToUse <- readRDS("Data/temp10years_20200922.rds")
 #tempAn <- readRDS("Data/tempAnnual.rds")
-tempMon <- readRDS("Data/tempMonthly.rds")
-tempDaily <- readRDS("Data/tempDaily.rds")
+#tempMon <- readRDS("Data/tempMonthly.rds")
+tempDaily <- readRDS("Data/tempDaily_20210811.rds")
 ```
 
 ## 1. Calculating High Stress 
@@ -65,14 +65,6 @@ heat <- tempDaily %>%
 # saveRDS(heat, "Data/heatstressDaily.rds")
 ```
 
-Code to make sure every month has data
-```{r nMon}
-# Filter to only data that has temps from every month so as not to skew the data that only has part of the year represented.
-nMon <- tempMon %>% group_by(Station, WY) %>%
-  summarize(nMon = n())
-
-nMon$WY <- as.numeric(nMon$WY)
-```
 
  Temp variables
 ```{r Models Daily Max}
@@ -83,22 +75,20 @@ tempHeat$fYear = factor(tempHeat$Year)
 tempHeat$fWY = factor(tempHeat$WY)
 tempHeat$Month = month(tempHeat$Date)
 tempHeat$fMonth = ordered(tempHeat$Month)
-tempHeatM <- left_join(tempHeat, nMon) %>%
-  filter(nMon == 12)
 tempHeat$Station = factor(tempHeat$Station)
 tempHeat$WYType2_Sac = as.factor(tempHeat$WYType2_Sac)
 tempToUse$Hour <- hour(tempToUse$Datetime)
 
 #try a sine-transformation on "month" so we can include it in linear models
-tempHeatM$syday = sin(pi*tempHeatM$yday/365)
+tempHeat$syday = sin(pi*tempHeat$yday/365)
 
 # Add season
-tempHeatM <- tempHeatM %>%
+tempHeat <- tempHeat %>%
   mutate(Season = ifelse(Month %in% c(12, 1, 2), "Winter", 
                          ifelse(Month %in% c(3,4,5), "Spring", 
                                 ifelse(Month %in% c(6,7,8), "Summer",
                                        "Fall"))))
-tempHeatM$Season <- factor(tempHeatM$Season, levels = c("Spring", "Summer", "Fall", "Winter"))
+tempHeat$Season <- factor(tempHeat$Season, levels = c("Spring", "Summer", "Fall", "Winter"))
 ```
 
 **Scientific Questions**  
@@ -106,12 +96,12 @@ tempHeatM$Season <- factor(tempHeatM$Season, levels = c("Spring", "Summer", "Fal
 Number of days at each stress level
 ```{r}
 # Calculate number of samples in a year or water year
-heatDaysSamp <- tempHeatM %>%
+heatDaysSamp <- tempHeat %>%
   group_by(Region, Station, WY, fWY) %>%
   summarize(totalDays = n()) 
 
 # Calculate number of days and proportion of days at each stress level
-heatDays1 <- tempHeatM %>%
+heatDays1 <- tempHeat %>%
   group_by(Region, Station, WY, fWY, Stress) %>%
   summarize(nDays = n()) %>%
     ungroup() %>%
@@ -121,7 +111,7 @@ heatDays1 <- tempHeatM %>%
   ungroup()
 
 # Look at days where there is no recovery
-heatDays2 <- tempHeatM %>%
+heatDays2 <- tempHeat %>%
   select(-Stress) %>%
   group_by(Region, Station, WY,fWY, StressAllDay) %>%
   summarize(nDays = n()) %>%  
@@ -133,12 +123,12 @@ heatDays2 <- tempHeatM %>%
   arrange(Region, Station, WY, fWY) 
 
 
-#write.csv(heatDays1, "Data/heatDaysHighMedLow25.csv")
-#write.csv(heatDays2, "Data/noRecovery25.csv")
+#write.csv(heatDays1, "Data/heatDaysHighMedLow25_20210811.csv")
+#write.csv(heatDays2, "Data/noRecovery25_20210811.csv")
 ```
 
 ```{r}
-tempHeatM%>%
+tempHeat%>%
   ggplot() + 
   geom_boxplot(aes(x = fMonth, y = maxDaily, fill = Stress))+ facet_wrap(~Region) + scale_fill_viridis(discrete = TRUE)
 ```
@@ -158,8 +148,9 @@ StationCol = highHeat %>%
   mutate(colors = ifelse(Region == "San Joaquin", "maroon4",
                                     ifelse(Region == "South", "orangered",
                                            ifelse(Region == "Suisun Bay", "blue",
-                                                  ifelse(Region == "Suisun Marsh", "turquoise", ifelse(Region == "North Delta", "chartreuse4",
-                                                                                                        ifelse(Region == "Sac River", "ivory4", "darkslategrey"))))))) %>%
+                                                  ifelse(Region == "Suisun Marsh", "turquoise",
+                                                         ifelse(Region == "Far North", "yellow", ifelse(Region == "North Delta", "chartreuse4",
+                                                                                                        ifelse(Region == "Sac River", "ivory4", "darkslategrey")))))))) %>%
   arrange(as.numeric(Region)) %>%
   select(c(3,9)) %>%
   unique()
@@ -228,41 +219,38 @@ tempHeat2 <- tempDaily %>%
 
 Temp variables
 ```{r Models Daily Max}
-tempHeat2 <- filter(tempHeat2, WY > 2008 & WY < 2020)
 tempHeat2$yday = yday(tempHeat2$Date)
 tempHeat2$Year = year(tempHeat2$Date)
 tempHeat2$fYear = factor(tempHeat2$Year)
 tempHeat2$fWY = factor(tempHeat2$WY)
 tempHeat2$Month = month(tempHeat2$Date)
 tempHeat2$fMonth = factor(tempHeat2$Month)
-tempHeat2M <- left_join(tempHeat2, nMon) %>%
-  filter(nMon == 12)
 tempHeat2$Station = factor(tempHeat2$Station)
 tempHeat2$WYType2_Sac = as.factor(tempHeat2$WYType2_Sac)
 
 #try a sine-transformation on "month" so we can include it in linear models
-tempHeat2M$syday = sin(pi*tempHeat2M$yday/365)
+tempHeat2$syday = sin(pi*tempHeat2$yday/365)
 
 # Add season
-tempHeat2M <- tempHeat2M %>%
+tempHeat2 <- tempHeat2 %>%
   mutate(Season = ifelse(Month %in% c(12, 1, 2), "Winter", 
                          ifelse(Month %in% c(3,4,5), "Spring", 
                                 ifelse(Month %in% c(6,7,8), "Summer",
                                        "Fall"))))
-tempHeat2M$Season <- factor(tempHeat2M$Season, levels = c("Spring", "Summer", "Fall", "Winter"))
+tempHeat2$Season <- factor(tempHeat2$Season, levels = c("Spring", "Summer", "Fall", "Winter"))
 ```
 
 
 Number of days at each stress level
 ```{r}
 # Calculate number of samples in a year or water year
-heatDaysSamp2 <- tempHeat2M %>%
+heatDaysSamp2 <- tempHeat2 %>%
   group_by(Region, Station, WY, fWY) %>%
   summarize(totalDays = n()) %>%
   filter(totalDays > 250)
 
 # Calculate number of days and proportion of days at each stress level
-stressDays1 <- tempHeat2M %>%
+stressDays1 <- tempHeat2 %>%
   group_by(Region, Station, WY, fWY, Stress) %>%
   summarize(nDays = n()) %>%
     ungroup() %>%

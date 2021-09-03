@@ -60,7 +60,7 @@ Merge regions, habitats, wytype
 # subregions <- st_read("Data/EDSM_Subregions/EDSM_Subregions_03302020.shp")
 
 tempFilt1 <- left_join(tempFilt0, Regions, by = "Station") %>%
-  filter(!Station %in% c("CNT", "CPP", "DAR", "DMC", "DYR","ECD", "HBP", "ROR", "DV7"),
+  filter(!Station %in% c("CNT", "CPP", "DAR", "DMC", "DYR","ECD", "HBP", "ROR", "DV7", "FLT"),
          !is.na(Region)) 
 tempFilt2 <- left_join(tempFilt1, staInfo, by = "Station") %>%
   select(-c(StartDateDataset:County))
@@ -74,9 +74,7 @@ tempFilt$HabitatType <- as.factor(tempFilt$HabitatType)
 
 ```
 
-* Number of years of data per station per Region
-* Filter to years with >250 days of data/year
-
+* Informational (don't need to run for filtering but useful info)
 ```{r Filtering down }
 StationYearCombo <- tempFilt %>%
   group_by(Region, Station, WY, Date) %>%
@@ -87,7 +85,7 @@ StationYearCombo <- tempFilt %>%
   ungroup()
 
 StationNyears <- StationYearCombo %>%
-  filter(totalDays>250) %>%
+  filter(totalDays>275) %>%
   group_by(Region, Station) %>%
   summarize(firstYear = first(WY),
             lastYear = last(WY),
@@ -95,13 +93,48 @@ StationNyears <- StationYearCombo %>%
   ungroup()
 ```
 
+New filtering code by days then months then years
+8 years of data
+```{r}
+StationYearCombo <- tempFilt %>%
+  filter(WY>2009) %>%
+  select(c(Region,Station,WY,Month, Date)) %>%
+  unique() %>%
+  group_by(Region, Station, WY) %>%
+  mutate(totalDays = n()) %>%
+  ungroup() 
+  
+StationDayFilter <- StationYearCombo %>%
+  filter(totalDays>275) %>%
+  select(-Date) %>%
+  unique() %>%
+  group_by(Region, Station, WY) %>%
+  mutate(nMonth = n()) %>%
+  ungroup()
 
+StationMonthFilter <- StationDayFilter %>%
+  filter(nMonth >10) %>%
+  select(-Month) %>%
+  unique() %>%
+  group_by(Region, Station) %>%
+  mutate(nYear = n())
+
+StationYearFilter <- StationMonthFilter %>%
+  filter(nYear>7) %>%
+  filter(Station!="FLT")
+
+ListOfSta <- StationYearFilter %>%
+  select(-c(WY, totalDays, nMonth))%>%
+  unique() 
+
+# write.csv(StationYearFilter, "StationYearFilter.csv")
+```
 
 
 
 Some exploratory plots to look at data
 ```{r exploratory plots}
-tilerecord <- ggplot(StationYearCombo, aes(Station, ordered(WY), fill = totalDays)) + geom_tile() + labs(title = "Period of Record - Number of days each water year for each station") +
+tilerecord <- ggplot(StationYearFilter, aes(Station, ordered(WY), fill = totalDays)) + geom_tile() + labs(title = "Period of Record - Number of days each water year for each station") +
   theme_bw() + theme(axis.text.y = element_text(size = 12),
                      axis.text.x = element_text(size = 10, angle = 90, vjust = 0.5),
                      axis.title = element_text(size =14),
@@ -176,14 +209,8 @@ MapYears2 %>%
 Subset data to use to data that has at least 10 years of data, and that extends to 2019, and each year has > 250 days of data
 Took out Far North Region. Should we add LIS somewhere else?
 ```{r subset}
-DataYrSubset <- filter(StationNyears, nYear > 9 & lastYear == 2019) %>%
-  left_join(StationYearCombo) 
-
-tempToUse <- inner_join(tempFilt, DataYrSubset, by = c("Region","Station", "WY")) %>%
-  filter(Region != "Far North") %>%
-  filter(totalDays > 250)
-
-tempToUse$WY = as.numeric(tempToUse$WY)
+tempToUse <- inner_join(tempFilt, StationYearFilter, by = c("Region","Station", "WY")) 
+#tempToUse$WY = as.numeric(tempToUse$WY)
 today = format(today(), "%Y%m%d")
 #saveRDS(tempToUse, paste0("Data/temp10years_", today, ".rds"))
 ```
@@ -247,7 +274,7 @@ tempDaily <- tempToUse %>%
             rangeTemp = maxDaily-minDaily) %>%
   ungroup()
 tempDaily$WY <- as.numeric(tempDaily$WY)
-#saveRDS(tempDaily, "Data/tempDaily.rds")
+saveRDS(tempDaily, "Data/tempDaily_20210811.rds")
 ```
 
 Monthly Temp
@@ -259,7 +286,7 @@ tempMon0 <- tempToUse %>%
             meanTemp = round(mean(Temp),1),
             rangeTemp = maxTemp-minTemp) %>%
   ungroup()
-#saveRDS(tempMon, "Data/tempMonthly.rds")
+#saveRDS(tempMon0, "tempMonthly.rds")
 ```
 
 Annual Temp
@@ -335,8 +362,7 @@ tempDaily <- filter(tempDaily, WY > 2008 & WY < 2020)
 tempDaily$yday = yday(tempDaily$Date)
 tempDaily$Year = ordered(year(tempDaily$Date))
 tempDaily$Month = month(tempDaily$Date)
-tempDailyM <- left_join(tempDaily, nMon) %>%
-  filter(nMon == 12)
+tempDailyM <- tempDaily
 
 tempDaily$WYType2_Sac = as.factor(tempDaily$WYType2_Sac)
 
