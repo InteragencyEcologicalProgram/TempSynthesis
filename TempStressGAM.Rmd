@@ -45,13 +45,13 @@ tempDaily0 <- readRDS("Data/tempDaily.rds") %>%
 
 Calculate temperature anomaly: Calculate average temp over dataset. Subtract annual mean temperature - 11-yr mean temperature
 ```{r}
-mean11Years <- tempDaily0 %>%
+mean10Years <- tempDaily0 %>%
   #filter(month(Date) > 4 & month(Date) < 10) %>%
-  mutate(mean11 = round(mean(meanDaily),1)) %>%
+  mutate(mean10 = round(mean(meanDaily),1)) %>%
   group_by(WY, mean11) %>%
   summarize(meanAnnual = round(mean(meanDaily),1),
             sdAnnual = round(sd(meanDaily),1),
-            Anomaly = meanAnnual-mean11,
+            Anomaly = meanAnnual-mean10,
             AnomalyStd = Anomaly/sdAnnual) %>%
   ungroup() %>%
   unique()
@@ -88,7 +88,8 @@ Filter to high stress/no recovery only
 ```{r}
 highStress25 <- heatDays25 %>%
   filter(Stress == "High") %>%
-  mutate(nDaysAdj = round((propDays*365),0)) %>%
+  mutate(nDaysAdj = round((propDays*365),0),
+         index = 1:nrow(Stress)) %>%
   left_join(latlon)%>%
   filter(WY>2009 & WY<2020,
          Station != "OH1")
@@ -218,6 +219,30 @@ summary(g21abin1)
 gam.check(g21abin1)
 plot(g21abin1)
 
+# With random effect
+g21abinre <- gam(cbind(nDays, totalDays)~ te(Latitude, Longitude, Anomaly, d = c(2,1), bs = c("tp", "tp"), k = c(12,6) +  s(index, bs = 're') +) ,  data = highStress21, method= "REML", family = binomial)
+summary(g21abin)
+
+hist(highStress21$propDays)
+par(mfrow = c(2,2))
+gam.check(g21abin)
+par(mfrow = c(1,1))
+vis.gam(g21abin,
+        view = c("Longitude", "Latitude"),
+        color = "heat", 
+        plot.type = "contour",
+        too.far = 0.1,
+        se = -1, type = "response")
+
+# Plot  residuals vs predicted
+plot(predict(g21abin), residuals(g21abin))
+abline(h=0, lty = 2, col = "grey")
+lines(lowess(predict(g21abin),residuals(g21abin)),col="black",lwd=2)
+
+
+
+
+
 # Alternative models
 g21abin2 <- gam(cbind(nDays, totalDays)~ te(Latitude, Longitude, bs = "tp", k = 12) + s(Anomaly, bs = "tp", k = 6),data = highStress21, method= "REML", family = binomial)
 summary(g21abin2)
@@ -310,7 +335,7 @@ plot data
 
 
 ggplot(highStress21) + geom_boxplot(aes(x = Station, y = Anomaly, fill = Region)) + geom_hline(yintercept = 1, color = "orange") + theme_bw()
-ggplot(highStress25)+ geom_tile(aes(x = Anomaly, y = Station, color = propDays))
+ggplot(highStress25)+ geom_tile(aes(x = Anomaly, y = Station, fill = propDays))
 
 ggplot(highStress25)+ geom_col(aes(x = Station, y = propDays, fill = Anomaly), position = position_dodge()) + scale_fill_viridis() + facet_wrap(~Region)
 
@@ -444,7 +469,7 @@ HD_pred<-function(Full_data=Data,
                   Delta_subregions = regions,
                   Delta_water=delta,
                   Stations = stas,
-                  n=500, # 300 points x, 300  points y
+                  n=500, # 500 points x, 500  points y
                   AnomalyRange = -1:1
 ){
   
@@ -480,7 +505,7 @@ HD_pred<-function(Full_data=Data,
 
 
 #### Create data
-Is the n specific to lat/lon? Creating 300 lats and lons based on your specifications? How to pick?
+Is the n specific to lat/lon? Creating 500 lats and lons based on your specifications? How to pick?
 
 If you don't specify the numbers, it will use all available integers. 
 ```{r}
@@ -661,8 +686,14 @@ save(rastered_preds21abin, rastered_preds25abin, rastered_preds21NRabin, rastere
 ### Start here if just want to plot
 ```{r}
 load("deltabuffThick.RData")
-load("RasteredPreds_20210629.RData")
+load("RasteredPreds_20210714.RData")
 ```
+
+
+
+
+
+
 
 Change coordinate reference system for data and deltabuff to UTM 10
 
@@ -674,7 +705,6 @@ rastered_preds21abin[[2]] <- st_warp(rastered_preds21abin[[2]], crs = 32610)
 #rastered_preds21abin[[3]] <- st_warp(rastered_preds21abin[[3]], crs = 32610)
 rastered_preds25abin[[1]] <- st_warp(rastered_preds25abin[[1]], crs = 32610)
 rastered_preds25abin[[2]] <- st_warp(rastered_preds25abin[[2]], crs = 32610)
-rastered_preds25abin[[3]] <- st_warp(rastered_preds25abin[[3]], crs = 32610)
 
 rastered_preds21NRabin[[1]] <- st_warp(rastered_preds21NRabin[[1]], crs = 32610)
 rastered_preds21NRabin[[2]] <- st_warp(rastered_preds21NRabin[[2]], crs = 32610)
@@ -684,6 +714,74 @@ rastered_preds25NRabin[[2]] <- st_warp(rastered_preds25NRabin[[2]], crs = 32610)
 #rastered_preds25NRabin[[3]] <- st_warp(rastered_preds25NRabin[[3]], crs = 32610)
 deltabuff <- st_transform(deltabuff, crs = 32610)
 ```
+
+Calculating difference
+```{r}
+raster21Anom0 <- rastered_preds21abin[[1]]
+raster21Anom1 <- rastered_preds21abin[[2]]
+raster21Diff <- raster21Anom1-raster21Anom0
+raster21Diff$Prediction2 = raster21Diff$Prediction *365
+
+raster25Anom0 <- rastered_preds25abin[[1]]
+raster25Anom1 <- rastered_preds25abin[[2]]
+raster25Diff <- raster25Anom1-raster25Anom0 
+raster25Diff$Prediction2 = raster25Diff$Prediction *365
+
+raster_plotDayDiff(raster25Diff)
+
+raster25Diff_crop <- st_crop(raster25Diff, deltabuff)
+raster25DiffDays <- raster25Diff_crop[2]
+ggplot()+
+    geom_stars(data=raster25DiffDays)+
+   scale_x_continuous(breaks = seq(from = 550000, to = 670000, by = 40000))+
+  scale_fill_viridis_c(option = "plasma", breaks = seq(from = 0, to = 30, by = 5), na.value="white",limits = c(0, 30))+
+   # facet_wrap(~Date)+
+    coord_sf()+
+    ylab("Latitude")+
+    xlab("Longitude")+
+    theme_bw() + 
+    theme(axis.text = element_text(size = 12),
+          axis.title = element_text(size = 13),
+          plot.title = element_text(hjust = 0.5),
+          legend.title = element_text(size = 13),
+          legend.position = "top",
+         # legend.spacing.x = unit(2, 'cm'),
+          legend.text = element_text(size = 12)) +
+      
+          # plot.margin = margin(0,0,0,0, "cm"))
+    #guides(fill = guide_colorbar(barwidth = 2))
+        guides(fill=guide_colorbar(title="Difference in Days"))
+
+
+
+
+
+
+# Plot diff
+raster21Diff_crop <- st_crop(raster21Diff, deltabuff)
+raster21DiffDays <- raster21Diff_crop[2]
+ggplot()+
+    geom_stars(data=rasterDiffDays)+
+   scale_x_continuous(breaks = seq(from = 550000, to = 670000, by = 40000))+
+  scale_fill_viridis_c(option = "plasma", breaks = seq(from = 0, to = 30, by = 5), na.value="white",limits = c(0, 30))+
+   # facet_wrap(~Date)+
+    coord_sf()+
+    ylab("Latitude")+
+    xlab("Longitude")+
+    theme_bw() + 
+    theme(axis.text = element_text(size = 12),
+          axis.title = element_text(size = 13),
+          plot.title = element_text(hjust = 0.5),
+          legend.title = element_text(size = 13),
+          legend.position = "top",
+         # legend.spacing.x = unit(2, 'cm'),
+          legend.text = element_text(size = 12)) +
+      
+          # plot.margin = margin(0,0,0,0, "cm"))
+    #guides(fill = guide_colorbar(barwidth = 2))
+        guides(fill=guide_colorbar(title="Difference in Days"))
+```
+
 
 
 ### Plot raster
@@ -718,6 +816,36 @@ raster_plot<-function(data, Anomaly, labels="All"){
 
 ```
 
+```{r}
+raster_plotDayDiff<-function(data, labels="All"){
+  data = data[[2]]
+ data = st_crop(data, deltabuff)
+ # lims = c(min(data$Prediction, na.rm = T), max(data$Prediction, na.rm = T))
+   ggplot()+
+    geom_stars(data=data)+
+   scale_x_continuous(breaks = seq(from = 550000, to = 670000, by = 40000))+
+   # facet_wrap(~Date)+
+    scale_fill_viridis_c(option = "plasma", breaks = seq(from = 0, to = 30, by = 5), na.value="white",limits = c(0, 30))+
+    coord_sf()+
+    ylab("Latitude")+
+    xlab("Longitude")+
+    theme_bw() + 
+    theme(axis.text = element_text(size = 12),
+          axis.title = element_text(size = 13),
+          plot.title = element_text(hjust = 0.5),
+          legend.title = element_text(size = 13),
+          legend.position = "right",
+         # legend.spacing.x = unit(2, 'cm'),
+          legend.text = element_text(size = 12)) +
+      
+          # plot.margin = margin(0,0,0,0, "cm"))
+    #guides(fill = guide_colorbar(barwidth = 2))
+     guides(fill=guide_colorbar(title="Difference in Days"))
+}
+
+```
+
+
 Plot raster results
 ```{r}
 
@@ -732,8 +860,8 @@ plot25_anom <- raster_plot(rastered_preds25abin, 2) + ggtitle("")
 rastered_preds21NRabin[[2]]
 range(rastered_preds21NRabin[[1]]$Prediction)
 
-plot21NR_avg <- raster_plot(rastered_preds21NRabin, 1) + ggtitle("Anomaly = 0")
-plot21NR_anom <- raster_plot(rastered_preds21NRabin, 2) + ggtitle("Anomaly = 1")
+plot21NR_avg <- raster_plot(rastered_preds21NRabin, 1) + ggtitle("Average year")
+plot21NR_anom <- raster_plot(rastered_preds21NRabin, 2) + ggtitle("Warm year (+1C)")
 #raster_plot(rastered_preds21NRabin, 1) + ggtitle("propDaysNoRecov > 21 Anomaly = -2")
 
 plot25NR_avg <- raster_plot(rastered_preds25NRabin, 1) + ggtitle("")
@@ -743,12 +871,15 @@ plot25NR_anom <- raster_plot(rastered_preds25NRabin, 2) + ggtitle("")
 plot25NR_anom
 
 
+
+
+
 ```
 
 ```{r}
-save( plot21_anom, plot21_avg, plot25_anom, plot25_avg,plot21NR_anom, plot21NR_avg, plot25NR_anom, plot25NR_avg, file = "finalplots_20210714.RData")
+save(plot21_anom, plot21_avg, plot25_anom, plot25_avg, plot21NR_anom, plot21NR_avg, plot25NR_anom, plot25NR_avg, file = "finalplots_20210809.RData")
 
-save(plot21_anom, plot21_avg, plot25_anom, plot25_avg, file = "finalplotsPart1_20210714.RData")
+save(plot21_anom, plot21_avg, plot25_anom, plot25_avg, file = "finalplotsPart1_20210809.RData")
 ```
 
 ```{r}
