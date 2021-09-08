@@ -1,0 +1,97 @@
+---
+title: "DaysExceedance"
+author: "Catarina Pien"
+date: "9/8/2021"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(lubridate)
+```
+
+- These datasets were created in TempHeatStress.Rmd based off tempDaily.rds
+```{r}
+tempToUse <- readRDS("Data/tempToUse_20210811.rds")
+tempDaily <- readRDS("Data/tempDaily_20210811.rds")
+
+# Combine Far North and North Delta
+tempRegions <- tempToUse %>%
+  mutate(Region = replace(Region, Region == "Far North", "North Delta"))
+
+```
+
+Make a function to calculate days exceedance
+* Calculate total number of days per year/region in the dataset
+* Add up number of days exceeding threshold (maxDaily temperature)
+* Divide number of days exceeding threshold by number of days per year and multiply by 365 to get expected ndays
+* Summarize min, mean, and max number of days for each region (based on region-year combos)
+* Label species and type of threshold
+
+
+```{r}
+regions1 <- c("South", "San Joaquin")
+threshold1 <- 23
+thresholds <- c(22, 23, 28)
+
+funDaysExceed <- function(species, regions, tolerance, optimum) {
+  daysExceedance <- tempDaily %>%
+    group_by(WY, Region) %>%
+    mutate(nDays = n()) %>%
+    ungroup() %>%
+    filter(Region %in% regions) %>%
+    mutate(ExceedTol = ifelse(maxDaily > tolerance, 1L, 0L),
+           ExceedOpt = ifelse(maxDaily > optimum, 1L, 0L)) %>%
+    group_by(WY, Region, nDays) %>%
+    summarize(daysExceedanceTol = sum(ExceedTol),
+              daysExceedanceOpt = sum(ExceedOpt)) %>%
+    #complete(Region, WY, fill = list(daysExceedanceTol=0, daysExceedanceOpt = 0)) %>%
+    mutate(daysPerYearTol = round(daysExceedanceTol/nDays*365,1),
+           daysPerYearOpt = round(daysExceedanceOpt/nDays*365,1)) %>%
+    ungroup() %>%
+    summarize(meanTol = round(mean(daysPerYearTol),1),
+              minTol = min(daysPerYearTol),
+              maxTol = max(daysPerYearTol),
+              meanOpt = round(mean(daysPerYearOpt),1),
+              minOpt = min(daysPerYearOpt),
+              maxOpt = max(daysPerYearOpt)) %>%
+    mutate(Species = species)
+}
+```
+
+Calculate 
+```{r}
+salmonReg <- c("North Delta", "South", "San Joaquin", "Suisun Bay", "Sac River")
+
+Chinook <- funDaysExceed("Chinook",  salmonReg, 25, 21)
+ColemanFR <- funDaysExceed("Chinook FR",  salmonReg, 22, 20)
+LivWR <- funDaysExceed("Chinook WR", salmonReg, 22, 18.5)
+RBT <- funDaysExceed("Rainbow Trout", salmonReg, 22, 20)
+```
+
+```{r}
+allreg <- c("North Delta", "South", "San Joaquin", "Suisun Bay", "Sac River")
+
+SPLTA<- funDaysExceed("Splittail", allreg, 29, 24)
+SPLTYOYL<- funDaysExceed("Splittail YOY Large", allreg, 25, 21)
+SPLTYOYS<- funDaysExceed("Splittail YOY Small", allreg, 26, 22)
+
+
+smelt <- c("North Delta", "San Joaquin", "Suisun Bay", "Suisun Marsh", "Sac River")
+DSMA <- funDaysExceed("Delta Smelt", smelt, 27, 20)
+WAG <- funDaysExceed("Wakasagi", smelt, 29.1, )
+DSMJ
+DSML
+
+
+```
+
+
+```{r}
+SpeciesTable <- rbind(Chinook, ColemanFR, LivWR,
+                      SPLTA, SPLTYOYL, SPLTYOYS, DSMA)
+```
+
