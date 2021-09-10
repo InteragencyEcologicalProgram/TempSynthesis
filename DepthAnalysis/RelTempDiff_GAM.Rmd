@@ -60,7 +60,59 @@ RelTempDiff_ANH <- relativetempdiff %>% filter(Station == "ANH")
 
 ```
 
-Plots of years
+# Plot of all 4 stations
+```{r}
+relativetempdiff <- filter(relativetempdiff, !is.na(TOD))
+relativetempdiff$TOD <- recode_factor(relativetempdiff$TOD,
+                                      `Early:0-7` = "Early:0-7",
+                                      `Mid:7-15` = "Mid:8-15")
+levels(relativetempdiff$TOD)
+
+
+ggplot(relativetempdiff, aes(x= julian, y = RelTempDiff))+ 
+  geom_smooth(aes(color = TOD), method = "loess", se = T, fullrange = T) +
+  facet_wrap(~Station) + 
+  theme_bw() + theme(
+    strip.text = element_text(size = 13, colour = "white", face = "bold"),
+    strip.background = element_rect(fill = "black"),
+    axis.text = element_text(size = 13),
+          plot.title = element_text(hjust = 0.5),
+          axis.title.x = element_text(size = 13),
+          legend.text = element_text(size = 13),
+          legend.title = element_text(size = 13)) +
+    scale_x_continuous(expand = c(0,0)) +
+    scale_y_continuous(expand = c(0,0))+
+  #scale_color_viridis(discrete = TRUE) + guides(colour = guide_legend(override.aes = list(size=4)))+
+  labs(y = expression("Temperature difference from surface " ( degree~C)),
+       x = "Day of year") +
+  scale_color_viridis(discrete = TRUE) + guides(colour = guide_legend(title = "Time of Day", override.aes = list(size=4)))
+```
+
+# Plot Surface temps 4 stations
+```{r}
+relativetempdiff <- filter(relativetempdiff, !is.na(TOD))
+
+ggplot(relativetempdiff, aes(x= julian, y = Surface))+ 
+  geom_smooth(aes(color = TOD), method = "loess", se = T, fullrange = T) +
+  facet_wrap(~Station) + 
+  theme_bw() + theme(
+    strip.text = element_text(size = 13, colour = "white", face = "bold"),
+    strip.background = element_rect(fill = "black"),
+    axis.text = element_text(size = 13),
+          plot.title = element_text(hjust = 0.5),
+          axis.title.x = element_text(size = 13),
+          legend.text = element_text(size = 13),
+          legend.title = element_text(size = 13)) +
+    scale_x_continuous(expand = c(0,0)) +
+    scale_y_continuous(expand = c(0,0))+
+  #scale_color_viridis(discrete = TRUE) + guides(colour = guide_legend(override.aes = list(size=4)))+
+  labs(y = expression("Temperature difference from surface " ( degree~C)),
+       x = "Day of year") +
+  scale_color_viridis(discrete = TRUE) + guides(colour = guide_legend(title = "Time of Day", override.aes = list(size=4)))
+```
+
+
+# Surface temp RRI
 ```{r}
 RRIST <- ggplot(RelTempDiff_RRI, aes(x= julian, y = Surface))+ geom_smooth(aes(color = TOD), 
   method = "loess", se = T, fullrange = T) +
@@ -79,8 +131,41 @@ RRIST <- ggplot(RelTempDiff_RRI, aes(x= julian, y = Surface))+ geom_smooth(aes(c
 RRIST
 ```
 
+Surface temperature differences
+```{r}
+ggplot(RelTempDiff_RRI, aes(x= julian, y = Surface))+ geom_smooth(aes(color = TOD), 
+  method = "loess", se = T, fullrange = T) +
+  facet_wrap(~fWY) + 
+  theme_bw() + theme(strip.text = element_text(size = 14),
+                     axis.text = element_text(size = 14),
+                     axis.text.x = element_text(angle = 90),
+                     axis.title = element_text(size =14),
+                     legend.text = element_text(size = 14),
+                     legend.title = element_text(size = 14)) +
+  #scale_color_viridis(discrete = TRUE) + guides(colour = guide_legend(override.aes = list(size=4)))+
+  labs(y = "Surface Temperature (C)",
+       x = "Julian Day") +
+  scale_color_viridis(discrete = TRUE) + guides(colour = guide_legend(title = "Time of Day", override.aes = list(size=4)))
 
-Plots of smooths
+
+ggplot(RelTempDiff_MRZ, aes(x= julian, y = Surface))+ geom_smooth(aes(color = TOD), 
+  method = "loess", se = T, fullrange = T) +
+  facet_wrap(~fWY) + 
+  theme_bw() + theme(strip.text = element_text(size = 14),
+                     axis.text = element_text(size = 14),
+                     axis.title = element_text(size =14),
+                     axis.text.x = element_text(angle = 90),
+                     legend.text = element_text(size = 14),
+                     legend.title = element_text(size = 14)) +
+  scale_color_viridis(discrete = TRUE) + guides(colour = guide_legend(override.aes = list(size=4)))+
+  labs(y = "Surface Temperature (C)",
+       x = "Julian Day") +
+  scale_color_viridis(discrete = TRUE) + guides(colour = guide_legend(title = "Time of Day", override.aes = list(size=4)))
+
+
+```
+
+# Rel temp diff RRI and MRZ
 ```{r}
 RelTempDiff_RRI <- filter(RelTempDiff_RRI, !is.na(TOD))
 RelTempDiff_MRZ <- filter(RelTempDiff_MRZ, !is.na(TOD))
@@ -171,7 +256,7 @@ plot(gamAnomaly, all.terms = TRUE, pages = 1)
 ```
 
 
-Original anomaly
+Original anomaly (use this)
 ```{r}
 # Add residuals in
 RelTempDiff_RRI <- RelTempDiff_RRI%>%
@@ -639,6 +724,7 @@ pvwarm2 <- AnomalyPlot(MRZPlot, Anomaly = +3)
 Facet
 ```{r}
 # faceted
+breaks = seq(-3,1, by = 0.2)
 
 RRIPlot1sub <- subset(RRIPlot1, Anomaly %in% c(-1.5, 0, 1.5)) %>%
   mutate(fAnomaly <- as.factor(Anomaly))
@@ -668,7 +754,9 @@ MRZfacet <- ggplot(subset(MRZPlot, Anomaly %in% c(-1.5, 0, 1.5)), aes(x = julian
   geom_raster(mapping = aes(fill = fit)) + 
   #scale_fill_viridis_c(breaks = seq(from = -2.5, to = 1.0, by = 0.5), na.value="white",limits = c(-2.5,1))+
   scale_fill_gradientn(colours = c("blue4", "blue", "slateblue1", "skyblue2", "skyblue1", "grey50", "sienna1", "sienna3"),
-                      breaks = seq(from = -2.5, to = 1.0, by = 0.5), na.value="white",limits = c(-2.5,1))+
+                       breaks = seq(from = -2.5, to = 1.0, by = 0.5),
+                       na.value="white", 
+                       limits = c(-2.5,1))+
     geom_contour(colour = "white") +
     geom_text_contour(stroke = 0.2, breaks = breaks, check_overlap = TRUE) +
     theme_classic() +
@@ -681,7 +769,7 @@ MRZfacet <- ggplot(subset(MRZPlot, Anomaly %in% c(-1.5, 0, 1.5)), aes(x = julian
     scale_x_continuous(expand = c(0, 0)) +
   scale_y_continuous(expand = c(0,0))+
     #labs(title = Anomaly)+
-    guides(fill=guide_colorbar(title="Relative Temperature Difference", barwidth = 12))
+    guides(fill=guide_colorbar(title="Surface-Bottom Temperature Difference", barwidth = 12))
 
 ```
 
@@ -698,11 +786,12 @@ get_legend<-function(myggplot){
   return(legend)
 }
 
+
 legendF <- get_legend(MRZfacet)
 
 
 
-MRZfacet <- MRZfacet + theme(legend.position = "none") +labs(x = "Julian Day")
+MRZfacet <- MRZfacet + theme(legend.position = "none") +labs(x = "Day of year")
 MRZfacet2 <- annotate_figure(MRZfacet,
                 left = text_grob("Martinez (MRZ)", color = "black", rot = 90))
 RRIfacet2 <- annotate_figure(RRIfacet,
@@ -712,10 +801,10 @@ DepthPlot <- grid.arrange(legendF, RRIfacet2, MRZfacet2, nrow = 3,
             layout_matrix = rbind(1, 2, 3),
              widths = c(2), heights = c(0.5,2,2))
 
-DepthPlot
-ggsave("Figures/RelDiffPlot.pdf", width = 9, height = 6)
-png("Figures/RelDiffPlot2.png", width = 900, height =600)
-pdf("Figures/RelDiffPlot2.pdf", width = 9, height = 6)
+#DepthPlot
+# ggsave("Figures/RelDiffPlot.pdf", width = 9, height = 6)
+# png("Figures/RelDiffPlot2.png", width = 900, height =600)
+# pdf("Figures/RelDiffPlot2.pdf", width = 9, height = 6)
 
 ```
 
@@ -748,7 +837,35 @@ grid.arrange(legend,
 ```
 
 
+# Calculate % of dataset with reltempdiff > 1 and < -1
 
+```{r}
+RRIused <- subset(RRIPlot1, Anomaly %in% c(-1.5, 0, 1.5)) 
+context <- RRIused %>%
+  mutate(diff = ifelse(fit <= -0.5, "negative", 
+                       ifelse(fit > 0.5, "positive", "nodiff")))
+nrow(filter(context, diff == "negative"))
+nrow(filter(context, diff == "nodiff"))
+
+ggplot(context, aes(x = julian, y = fit, fill = diff)) + geom_col()
+ggplot(context, aes(x = Hour, y = fit, fill = diff)) + geom_col()
+
+MRZused <- subset(MRZPlot, Anomaly %in% c(-1.5, 0, 1.5))
+context2 <- MRZused %>%
+  mutate(diff = ifelse(fit <= -1, "negative", 
+                       ifelse(fit > 0.5, "positive", "nodiff")))
+nrow(filter(context2, diff == "negative"))
+6116/nrow(context2)
+1249/nrow(context2)
+
+nrow(filter(context, diff == "nodiff"))
+
+ggplot(context2, aes(x = julian, y = fit, fill = diff)) + geom_col()
+ggplot(context2, aes(x = Hour, y = fit, fill = diff)) + geom_col()
+
+ggplot(context2, aes(x = julian, y = Hour, fill = diff)) + geom_col()
+
+```
 
 
 
