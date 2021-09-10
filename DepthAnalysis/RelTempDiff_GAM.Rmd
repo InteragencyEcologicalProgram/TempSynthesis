@@ -111,6 +111,16 @@ ggplot(relativetempdiff, aes(x= julian, y = Surface))+
   scale_color_viridis(discrete = TRUE) + guides(colour = guide_legend(title = "Time of Day", override.aes = list(size=4)))
 ```
 
+# Surface temp all
+
+```{r}
+Surfacesummary <- relativetempdiff %>%
+  group_by(Station, WY) %>%
+  summarize(meanSurface = mean(Surface),
+            minSurface = min(Surface))
+
+ggplot(Surfacesummary, aes(x = WY, y = meanSurface, color = Station)) + geom_point(size = 4) + theme_bw()
+```
 
 # Surface temp RRI
 ```{r}
@@ -842,7 +852,7 @@ grid.arrange(legend,
 ```{r}
 RRIused <- subset(RRIPlot1, Anomaly %in% c(-1.5, 0, 1.5)) 
 context <- RRIused %>%
-  mutate(diff = ifelse(fit <= -0.5, "negative", 
+  mutate(diff = ifelse(fit <= -1, "negative", 
                        ifelse(fit > 0.5, "positive", "nodiff")))
 nrow(filter(context, diff == "negative"))
 nrow(filter(context, diff == "nodiff"))
@@ -866,8 +876,6 @@ ggplot(context2, aes(x = Hour, y = fit, fill = diff)) + geom_col()
 ggplot(context2, aes(x = julian, y = Hour, fill = diff)) + geom_col()
 
 ```
-
-
 
 
 
