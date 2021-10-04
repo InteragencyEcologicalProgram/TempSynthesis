@@ -206,7 +206,7 @@ MapYears2 %>%
             position = "bottomright")
 ```
 
-Subset data to use to data that has at least 10 years of data, and that extends to 2019, and each year has > 250 days of data
+Subset data to use to data that has at least 10 years of data, and that extends to 2019, and each year has > 275 days of data
 Took out Far North Region. Should we add LIS somewhere else?
 ```{r subset}
 tempToUse <- inner_join(tempFilt, StationYearFilter, by = c("Region","Station", "WY")) 
@@ -243,7 +243,7 @@ tempToUseCalYr <- inner_join(tempFilt, DataYrSubset2, by = c("Region","Station",
 
 
 today = format(today(), "%Y%m%d")
-#saveRDS(tempToUseCalYr, paste0("Data/temp11yearsCalYr_", today, ".rds"))
+#saveRDS(tempToUseCalYr, paste0("Data/temp10yearsCalYr_", today, ".rds"))
 
 
 
