@@ -190,7 +190,7 @@ plot_diff <-ggplot2::ggplot(Difference,aes(y=Type,x=Date,fill=Proportion))+
 #scale_fill_viridis(breaks = round(seq(-0.6,0.2, 0.2),1),option ="cividis") +
   ggplot2::theme_bw()+
   ggplot2::facet_grid(Station~.) +
-  ggplot2::guides(fill = guide_legend(title = "Proportion of time\nsurface is less\nsuitable than\nbottom"))+
+  ggplot2::guides(fill = guide_legend(title = "Proportion of time\nsurface is more\nsuitable than\nbottom"))+
   ggplot2::labs(y = "Difference")+
   theme_fig
 plot_diff
