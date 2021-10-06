@@ -40,16 +40,45 @@ tempRegions <- tempDaily %>%
 
 
 ```{r}
+
+
+# funDaysExceed <- function(species, regions, tolerance, optimum) {
+#   daysExceedance <- tempRegions %>%
+#     left_join(nStations) %>%
+#     group_by(WY, Region) %>%
+#     mutate(nDays = n()) %>%
+#     ungroup() %>%
+#     filter(Region %in% regions) %>%
+#     mutate(ExceedTol = ifelse(maxDaily > tolerance, 1L, 0L),
+#            ExceedOpt = ifelse(maxDaily > optimum, 1L, 0L)) %>%
+#     group_by(WY, Region, nDays, nStation) %>%
+#     summarize(daysExceedanceTol = sum(ExceedTol),
+#               daysExceedanceOpt = sum(ExceedOpt)) %>%
+#     #complete(Region, WY, fill = list(daysExceedanceTol=0, daysExceedanceOpt = 0)) %>%
+#     mutate(propPerYearOpt = round(daysExceedanceOpt/nDays,1),
+#       daysPerYearTol = round(daysExceedanceTol/nDays/nStation*365,1),
+#            daysPerYearOpt = round(daysExceedanceOpt/nDays/nStation*365,1)) %>%
+#     ungroup() %>%
+#     summarize(propOpt = propPerYearOpt,
+#       meanTol = round(mean(daysPerYearTol),1),
+#               minTol = min(daysPerYearTol),
+#               maxTol = max(daysPerYearTol),
+#               meanOpt = round(mean(daysPerYearOpt),1),
+#               minOpt = min(daysPerYearOpt),
+#               maxOpt = max(daysPerYearOpt)) %>%
+#     mutate(Species = species)
+# }
+```
+
+```{r}
 nStations <- tempRegions %>%
   select(Region,Station) %>%
   unique() %>%
   group_by(Region) %>%
   summarize(nStation = n())
 
-
-
 funDaysExceed <- function(species, regions, tolerance, optimum) {
-  daysExceedance <- tempRegions %>%
+daysExceedance <- tempRegions %>%
     left_join(nStations) %>%
     group_by(WY, Region) %>%
     mutate(nDays = n()) %>%
@@ -57,21 +86,22 @@ funDaysExceed <- function(species, regions, tolerance, optimum) {
     filter(Region %in% regions) %>%
     mutate(ExceedTol = ifelse(maxDaily > tolerance, 1L, 0L),
            ExceedOpt = ifelse(maxDaily > optimum, 1L, 0L)) %>%
-    group_by(WY, Region, nDays, nStation) %>%
-    summarize(daysExceedanceTol = sum(ExceedTol),
-              daysExceedanceOpt = sum(ExceedOpt)) %>%
-    #complete(Region, WY, fill = list(daysExceedanceTol=0, daysExceedanceOpt = 0)) %>%
-    mutate(propPerYearOpt = round(daysExceedanceOpt/nDays,1),
-      daysPerYearTol = round(daysExceedanceTol/nDays/nStation*365,1),
-           daysPerYearOpt = round(daysExceedanceOpt/nDays/nStation*365,1)) %>%
-    ungroup() %>%
-    summarize(propOpt = propPerYearOpt,
-      meanTol = round(mean(daysPerYearTol),1),
-              minTol = min(daysPerYearTol),
-              maxTol = max(daysPerYearTol),
-              meanOpt = round(mean(daysPerYearOpt),1),
-              minOpt = min(daysPerYearOpt),
-              maxOpt = max(daysPerYearOpt)) %>%
+  group_by(WY, Date) %>%
+  summarize(propTol = mean(ExceedTol),
+            propOpt = mean(ExceedOpt),
+            ExceedTol2 = ifelse(propTol > 0.3, 1L, 0L),
+            ExceedOpt2 = ifelse(propTol > 0.3, 1L, 0L)) %>%
+  ungroup() %>%
+  group_by(WY) %>%
+    summarize(daysExceedanceTol = sum(ExceedTol2),
+              daysExceedanceOpt = sum(ExceedOpt2)) %>%
+  ungroup() %>%
+  summarize(meanTol = round(mean(daysExceedanceTol),1),
+              minTol = min(daysExceedanceTol),
+              maxTol = max(daysExceedanceTol),
+              meanOpt = round(mean(daysExceedanceOpt),1),
+              minOpt = min(daysExceedanceOpt),
+              maxOpt = max(daysExceedanceOpt)) %>%
     mutate(Species = species)
 }
 ```
@@ -102,33 +132,7 @@ regions = allreg
 
 
 ### This is the one
-daysExceedance <- tempRegions %>%
-    left_join(nStations) %>%
-    group_by(WY, Region) %>%
-    mutate(nDays = n()) %>%
-    ungroup() %>%
-    filter(Region %in% regions) %>%
-    mutate(ExceedTol = ifelse(maxDaily > tolerance, 1L, 0L),
-           ExceedOpt = ifelse(maxDaily > optimum, 1L, 0L)) %>%
-  group_by(WY, Date) %>%
-  summarize(propTol = mean(ExceedTol),
-            propOpt = mean(ExceedOpt),
-            ExceedTol2 = ifelse(propTol > 0.3, 1L, 0L),
-            ExceedOpt2 = ifelse(propTol > 0.3, 1L, 0L)) %>%
-  ungroup() %>%
-  group_by(WY) %>%
-    summarize(daysExceedanceTol = sum(ExceedTol2),
-              daysExceedanceOpt = sum(ExceedOpt2)) %>%
-  ungroup() %>%
 
-
-  summarize(meanTol = round(mean(daysExceedanceTol),1),
-              minTol = min(daysExceedanceTol),
-              maxTol = max(daysExceedanceTol),
-              meanOpt = round(mean(daysExceedanceOpt),1),
-              minOpt = min(daysExceedanceOpt),
-              maxOpt = max(daysExceedanceOpt)) %>%
-    mutate(Species = species)
 
 
 
@@ -154,25 +158,8 @@ stationProp <- daysExceedance %>%
 ## Calculate days exceedance
 ```{r}
 allreg <- c("North Delta", "South", "San Joaquin", "Suisun Bay", "Suisun Marsh", "Sac River")
-
-spltAd<- funDaysExceed("Splittail", allreg, 29, 24)
-spltL<- funDaysExceed("Splittail YOY Large", allreg, 25, 21)
-spltS<- funDaysExceed("Splittail YOY Small", allreg, 26, 22)
-#wstA <- funDaysExceed("White Sturgeon Adult", allreg, 29, 24) need thresholds
-#wstJ <- funDaysExceed("White Sturgeon Juvenile", allreg, 29, 24)
-issA <- funDaysExceed("Silverside Adult", allreg, 31, NA)
-
 salmonReg <- c("North Delta", "South", "San Joaquin", "Suisun Bay", "Sac River")
-
-chAd <- funDaysExceed("Chinook",  salmonReg, 25, 21)
-chCo <- funDaysExceed("Chinook FR",  salmonReg, 22, 20)
-rbt <- funDaysExceed("Rainbow Trout", salmonReg, 22, 20)
-
 smelt <- c("North Delta", "San Joaquin", "Suisun Bay", "Suisun Marsh", "Sac River")
-dsmA <- funDaysExceed("Delta Smelt", smelt, 27, 20)
-wag <- funDaysExceed("Wakasagi", smelt, 29.1, NA)
-lfs <- funDaysExceed("Longfin Smelt", smelt, 26.4, 15)
-
 r1 <- c("San Joaquin", "Suisun Bay", "Suisun Marsh", "Sac River")
 r2 <- c("South", "San Joaquin",  "Sac River")
 r3 <- c( "South", "San Joaquin", "Suisun Bay", "Suisun Marsh", "Sac River")
@@ -183,8 +170,18 @@ r7 <- c("North Delta",  "San Joaquin", "Sac River")
 r8 <- c("North Delta", "South",  "Suisun Bay", "Suisun Marsh", "Sac River")
 r9 <- c( "Suisun Bay", "Suisun Marsh", "Sac River")
 
-
-
+spltAd<- funDaysExceed("Splittail", allreg, 29, 24)
+spltL<- funDaysExceed("Splittail YOY Large", allreg, 25, 21)
+spltS<- funDaysExceed("Splittail YOY Small", allreg, 26, 22)
+#wstA <- funDaysExceed("White Sturgeon Adult", allreg, 29, 24) need thresholds
+#wstJ <- funDaysExceed("White Sturgeon Juvenile", allreg, 29, 24)
+issA <- funDaysExceed("Silverside Adult", allreg, 31, NA)
+chAd <- funDaysExceed("Chinook",  salmonReg, 25, 21)
+chCo <- funDaysExceed("Chinook FR",  salmonReg, 22, 20)
+rbt <- funDaysExceed("Rainbow Trout", salmonReg, 22, 20)
+dsmA <- funDaysExceed("Delta Smelt", smelt, 27, 20)
+wag <- funDaysExceed("Wakasagi", smelt, 29.1, NA)
+lfs <- funDaysExceed("Longfin Smelt", smelt, 26.4, 15)
 dsmJ <- funDaysExceed("Delta Smelt Juvenile", r1, 28, 20)
 dsmL <- funDaysExceed("Delta Smelt Larvae", r2, 27.6, 20)
 lfsY <- funDaysExceed("Longfin Smelt YOY", r3, 24.8, 15)
@@ -199,7 +196,6 @@ LivWR <- funDaysExceed("Chinook WR", "Sac River", 22, 18.5)
 
 These are interpreted as **Days Suitable** instead of **Days Unsuitable**
 ```{r}
-
 egDe <- funDaysExceed("Egeria densa", allreg, 32, 21)
 mic <- funDaysExceed("Microcystis", allreg, 25, 19) #not tolerance
 corb <- funDaysExceed("Corbicula", allreg, 25, 18) #not tolerance
