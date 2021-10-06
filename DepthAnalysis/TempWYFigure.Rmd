@@ -11,6 +11,8 @@ editor_options:
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(lubridate)
+library(CDECRetrieve)
+library(data.table)
 ```
 
 
@@ -21,15 +23,69 @@ WY <- read.csv("Data/WYType.csv")
 Temp <- readRDS("DepthAnalysis/Data/RelativeTempDiff2.rds")
 ```
 
+### RRI Air Temperature data
+```{r}
+sta <- c("RRI", "LIS")
+sensordataset <- list() 
+for(i in 1:length(sta)){
+  dataset <- cdec_datasets(sta[i])
+  dataset$station <- sta[i]  # just for an identifier
+  sensordataset[[i]] <- dataset
+} 
+cdec_datasets_df <-rbindlist(sensordataset)
+
+### Define list of stations ----------------------------------
+stations <- "RRI"
+start <- "2000-01-01"
+end <- "2019-12-31"
+sensors <- "4"
+interval = "E"
+
+Temp_Event <- lapply(stations, 
+                 function(x){
+                   cdec_query(station = x,
+                              sensor_num = sensors,
+                              dur_code = interval,
+                              start_date = start,
+                              end_date = end)
+                 })
+
+Temp_df <- bind_rows(Temp_Event) # bind rows into data frame
+
+Air <- Temp_df %>%
+  mutate(Datetime = as.POSIXct(datetime, format = "%Y-%m-%d %H:%M:%S"),
+         Date = as.Date(Datetime),
+         minute = minute(Datetime)) %>% 
+  rename(Station = location_id,
+         TempF = parameter_value) %>%
+  mutate(AirTempC = round((TempF-32)*5/9,1)) %>%
+  mutate(Month = month(Date),
+         Year = year(Date),
+         WY = ifelse(Month >9, Year + 1, Year)) %>%
+  filter(AirTempC>0,
+         minute == 0) %>%
+  select(-c(agency_cd, parameter_cd, datetime, TempF, Month, Year, minute)) 
+
+str(Air)
+str(Temp)
+
+AirSum <- Air %>%
+  group_by(WY) %>%
+  summarize(meanAirTemp = mean(AirTempC))
+```
+
 ## Manipulate data
 ```{r}
 Temp_long <- Temp %>%
+  ungroup() %>%
   select(-c(TOD:julian)) %>%
+  left_join(Air) %>%
   pivot_longer(cols = Surface:Bottom, names_to = "WaterColumn", values_to = "Temp")
 
 Annual <- Temp_long %>%
   group_by(Station, WY, WaterColumn) %>%
-  summarize(meanTemp = round(mean(Temp),1),
+  summarize(meanWaterTemp = round(mean(Temp),1),
+            meanAirTemp = round(mean(AirTempC),1),
             sd = sd(Temp)) %>%
   left_join(WY) %>%
   filter(WY != 2020,
@@ -39,18 +95,24 @@ Annual <- Temp_long %>%
 
 ```
 
-## Make plot
+## All stations WY Index vs Water Temp
 ```{r}
-ggplot(Annual, aes(x = WaterYearIndex, y = meanTemp)) +
+ggplot(Annual, aes(x = WaterYearIndex, y = meanWaterTemp)) +
   geom_point(aes(color = factor(WY), shape = WaterColumn), size = 4) +
- # geom_errorbar(aes(ymin = meanTemp-sd, ymax = meanTemp+sd), width = 0.3) +
-  viridis::scale_colour_viridis(discrete = TRUE) +
+ # geom_errorbar(aes(ymin = meanWaterTemp-sd, ymax = meanWaterTemp+sd), width = 0.3) +
+  viridis::scale_colour_viridis(discrete = TRUE, option = "turbo") +
+  labs(x = "Water Year Index", y = "Mean Annual Water Temperature (°C)") +
   scale_shape_manual(values = c(8, 20)) +
   facet_wrap(~Station, scales = "free_x")+
-  theme_bw()
+  theme_bw() +
+    theme(legend.title = element_blank(),
+        axis.text = element_text(size = 11),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size = 12),
+        legend.text = element_text(size = 11)) 
 ```
 
-
+## RRI Air vs Water Temp
 ```{r}
 RRI <- readRDS("Data/Temp_filtered.rds") %>%
   filter(Station == "RRI")
@@ -60,25 +122,67 @@ RRISum <- RRI %>%
          Year = year(Date),
          WY = ifelse(Month >9, Year + 1, Year)) %>%
   group_by(WY) %>%
-  summarize(meanTemp = round(mean(Temp),1)) %>%
+  summarize(meanWaterTemp = round(mean(Temp),1)) %>%
   left_join(WY) %>%
+  left_join(AirSum) %>%
   filter(WY!= 2020,
          WY!=2000)
   
 ```
 
+### Plot
 ```{r}
 library(Polychrome)
 pal36 <- palette36.colors(30)
 pal36 <- as.vector(t(pal36))
 
-RRIPlot <- ggplot(RRISum, aes(x = Index_SJ, y = meanTemp)) +
+RRIPlot <- ggplot(RRISum, aes(x = Index_SJ, y = meanWaterTemp)) +
   geom_point(aes(color = factor(WY)), size = 4) +
- # geom_errorbar(aes(ymin = meanTemp-sd, ymax = meanTemp+sd), width = 0.3) +
+ # geom_errorbar(aes(ymin = meanWaterTemp-sd, ymax = meanWaterTemp+sd), width = 0.3) +
   scale_colour_manual(values = pal36) +
-  theme_bw()
+  labs(x = "Water Year Index", y = "Mean Annual Water Temperature (°C)") +
+  theme_bw() +
+  theme(legend.title = element_blank(),
+        axis.text = element_text(size = 11),
+        axis.title = element_text(size = 12)) 
 RRIPlot
 
 plotly::ggplotly(RRIPlot)
+```
+
+## RRI Air vs. Water 
+
+### (Annual)
+```{r}
+ggplot(RRISum, aes(x = meanAirTemp, y = meanWaterTemp)) +
+  geom_point(aes(color = factor(WY)), size = 4) +
+ # geom_errorbar(aes(ymin = meanWaterTemp-sd, ymax = meanWaterTemp+sd), width = 0.3) +
+  scale_colour_manual(values = pal36) +
+  theme_bw()
+
+```
+
+### (Daily)
+```{r}
+RRIDaily <- RRI %>%
+  mutate(Month = month(Date),
+         Year = year(Date),
+         WY = ifelse(Month >9, Year + 1, Year)) %>%
+    left_join(Air) %>%
+  filter(!is.na(AirTempC)) %>%
+  group_by(WY, Date) %>%
+  summarize(meanWaterTemp = round(mean(Temp),1),
+            meanAirTemp = round(mean(AirTempC))) %>%
+  left_join(WY) %>%
+  filter(WY!= 2020,
+         WY!=2000)
+
+ggplot(RRIDaily, aes(x = meanAirTemp, y = meanWaterTemp)) +
+  geom_point(aes(color = Index_SJ), size = 1, alpha = 0.8) +
+  geom_smooth(method = "lm") +
+ # geom_errorbar(aes(ymin = meanWaterTemp-sd, ymax = meanWaterTemp+sd), width = 0.3) +
+ # scale_colour_manual(values = pal36) +
+  viridis::scale_colour_viridis(option = "plasma") + 
+  theme_bw()
 ```
 
