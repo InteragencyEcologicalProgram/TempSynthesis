@@ -1,0 +1,84 @@
+---
+title: "TempWYTypeFigure"
+author: "Catarina Pien"
+date: "10/6/2021"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(lubridate)
+```
+
+
+## Read in data
+```{r}
+setwd("..")
+WY <- read.csv("Data/WYType.csv")
+Temp <- readRDS("DepthAnalysis/Data/RelativeTempDiff2.rds")
+```
+
+## Manipulate data
+```{r}
+Temp_long <- Temp %>%
+  select(-c(TOD:julian)) %>%
+  pivot_longer(cols = Surface:Bottom, names_to = "WaterColumn", values_to = "Temp")
+
+Annual <- Temp_long %>%
+  group_by(Station, WY, WaterColumn) %>%
+  summarize(meanTemp = round(mean(Temp),1),
+            sd = sd(Temp)) %>%
+  left_join(WY) %>%
+  filter(WY != 2020,
+         WY != 2012) %>%
+  mutate(WaterYearIndex = ifelse(Station %in% c("RRI", "ANH"), Index_SJ, Index_Sac))
+
+
+```
+
+## Make plot
+```{r}
+ggplot(Annual, aes(x = WaterYearIndex, y = meanTemp)) +
+  geom_point(aes(color = factor(WY), shape = WaterColumn), size = 4) +
+ # geom_errorbar(aes(ymin = meanTemp-sd, ymax = meanTemp+sd), width = 0.3) +
+  viridis::scale_colour_viridis(discrete = TRUE) +
+  scale_shape_manual(values = c(8, 20)) +
+  facet_wrap(~Station, scales = "free_x")+
+  theme_bw()
+```
+
+
+```{r}
+RRI <- readRDS("Data/Temp_filtered.rds") %>%
+  filter(Station == "RRI")
+
+RRISum <- RRI %>%
+  mutate(Month = month(Date),
+         Year = year(Date),
+         WY = ifelse(Month >9, Year + 1, Year)) %>%
+  group_by(WY) %>%
+  summarize(meanTemp = round(mean(Temp),1)) %>%
+  left_join(WY) %>%
+  filter(WY!= 2020,
+         WY!=2000)
+  
+```
+
+```{r}
+library(Polychrome)
+pal36 <- palette36.colors(30)
+pal36 <- as.vector(t(pal36))
+
+RRIPlot <- ggplot(RRISum, aes(x = Index_SJ, y = meanTemp)) +
+  geom_point(aes(color = factor(WY)), size = 4) +
+ # geom_errorbar(aes(ymin = meanTemp-sd, ymax = meanTemp+sd), width = 0.3) +
+  scale_colour_manual(values = pal36) +
+  theme_bw()
+RRIPlot
+
+plotly::ggplotly(RRIPlot)
+```
+
