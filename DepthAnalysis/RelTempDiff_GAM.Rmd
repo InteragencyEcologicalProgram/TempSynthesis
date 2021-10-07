@@ -25,12 +25,16 @@ library(dplyr)
 library(ggpubr)
 library(viridis)
 library(stargazer)
+library(viridis)
+library(grid)
+library(gridExtra)
+library(metR)
 ```
 
 WD, Read in Data, Separate by Station
 ```{r}
 ## set wd, read in CSV relative tempdiff, bring over all data
-relativetempdiff <- readRDS("DepthAnalysis/Data/RelativeTempDiff2.rds")
+relativetempdiff <- readRDS("../DepthAnalysis/Data/RelativeTempDiff2.rds")
 ## relativetempdiff has all of our parameters: julian day, WY, sinejulian, sinehour etc and is the correct timeframe
 
 relativetempdiff <- relativetempdiff %>% select(-Stress)
@@ -86,6 +90,39 @@ ggplot(relativetempdiff, aes(x= julian, y = RelTempDiff))+
   labs(y = expression("Temperature difference from surface " ( degree~C)),
        x = "Day of year") +
   scale_color_viridis(discrete = TRUE) + guides(colour = guide_legend(title = "Time of Day", override.aes = list(size=4)))
+
+
+
+
+
+reltempdiffplot <- ggplot(relativetempdiff, aes(x= julian, y = RelTempDiff))+ 
+  geom_smooth(aes(color = TOD), method = "gam", formula = y~s(x, k = 5, bs = "cc"), se = T, fullrange = T) +
+  facet_wrap(~Station) + 
+  theme_bw() + theme(
+    strip.text = element_text(size = 13, colour = "white", face = "bold"),
+    strip.background = element_rect(fill = "black"),
+    axis.text = element_text(size = 13),
+          plot.title = element_text(hjust = 0.5),
+          axis.title.x = element_text(size = 13),
+          legend.text = element_text(size = 13),
+          legend.title = element_text(size = 13)) +
+    scale_x_continuous(expand = c(0,0)) +
+    scale_y_continuous(expand = c(0,0))+
+  #scale_color_viridis(discrete = TRUE) + guides(colour = guide_legend(override.aes = list(size=4)))+
+  labs(y = expression("Temperature difference from surface " ( degree~C)),
+       x = "Day of year") +
+  scale_color_viridis(discrete = TRUE) + guides(colour = guide_legend(title = "Time of Day", override.aes = list(size=4)))
+
+
+
+```
+
+Write plot
+```{r}
+tiff(filename=file.path("../Figures/Depth/Figure_AllStation_Gamsmooths.tiff"), units="in",type="cairo", bg="white", height=6, 
+     width=8, res=300, pointsize=10,compression="lzw")
+reltempdiffplot
+dev.off()
 ```
 
 # Plot Surface temps 4 stations
@@ -175,11 +212,13 @@ ggplot(RelTempDiff_MRZ, aes(x= julian, y = Surface))+ geom_smooth(aes(color = TO
 
 ```
 
-# Rel temp diff RRI and MRZ
+# Plot relative temp diff by year
 ```{r}
 RelTempDiff_RRI <- filter(RelTempDiff_RRI, !is.na(TOD))
 RelTempDiff_MRZ <- filter(RelTempDiff_MRZ, !is.na(TOD))
+```
 
+```{r}
 RRIlines <- ggplot(RelTempDiff_RRI, aes(x= julian, y = RelTempDiff))+ geom_smooth(aes(color = TOD), 
   method = "loess", se = T, fullrange = T) +
   facet_wrap(~fWY) + 
@@ -211,39 +250,13 @@ MRZlines <- ggplot(RelTempDiff_MRZ, aes(x= julian, y = RelTempDiff))+ geom_smoot
   scale_color_viridis(discrete = TRUE) + guides(colour = guide_legend(title = "Time of Day", override.aes = list(size=4)))
 
 MRZlines
-
 ```
 
+
+# GAM
 ## RRI
 
-
-```{r}
-gamRRISimp <- bam(RelTempDiff~ fWY + s(julian, by = fWY , k=14, bs = "cc"), data = RelTempDiff_RRI,family = scat,method = "fREML", nthreads = 3, discrete = TRUE)
-summary(gamRRISimp)
-par(mfrow=c(2,2))
-gam.check(gamRRISimp)
-plot(gamRRISimp, pages = 1, all.terms = TRUE)
-par(mfrow=c(1,1))
-vis.gam(x = gamRRISimp,
-        view = c("julian", "Hour"),
-        color = "heat", plot.type = "contour", type = "response")
-```
-
-
-```{r}
-gamHour <- bam(RelTempDiff~te(Hour, by = fWY, k = 14, bs = "cc"),                          data = RelTempDiff_RRI,
-                         family = scat, method = "fREML",
-                         nthreads = 3,
-                         discrete = TRUE)
-par(mfrow=c(2,2))
-gam.check(gamHour)
-plot(gamHour, pages = 1, all.terms = TRUE)
-par(mfrow=c(1,1))
-vis.gam(x = gamRRISimp,
-        view = c("julian", "Hour"),
-        color = "heat", plot.type = "contour", type = "response")
-```
-
+### Anomaly Model 
 
 Create anomaly (same as Brian's) using model of surface data. Add anomaly to data. 
 Use lowest k possible - don't want it to be too fitted.
@@ -266,7 +279,7 @@ plot(gamAnomaly, all.terms = TRUE, pages = 1)
 ```
 
 
-Original anomaly (use this)
+Add residuals into dataset
 ```{r}
 # Add residuals in
 RelTempDiff_RRI <- RelTempDiff_RRI%>%
@@ -284,8 +297,8 @@ str(RelTempDiff_RRI)
 hist(RelTempDiff_RRI$RelTempDiff)
 ```
 
-### Model 1
-Original anomaly
+
+Original anomaly calculation (don't use this)
 ```{r}
 RelTempDiff_RRI <- RelTempDiff_RRI %>%
   group_by(julian, Hour) %>%
@@ -298,8 +311,10 @@ str(RelTempDiff_RRI)
 hist(RelTempDiff_RRI$RelTempDiff)
 ```
 
+### Models 
 
-Model with anomaly
+#### Model 1 - use this
+
 ```{r}
 gamRRI1 <- bam(RelTempDiff~ te(julian, Hour, Anomaly,  k = c(14,7,6), bs = c("cc", "cc", "tp")), data = RelTempDiff_RRI,family = scat,method = "fREML", nthreads = 3, discrete = TRUE)
 summary(gamRRI1)
@@ -312,7 +327,7 @@ vis.gam(x = gamRRI1,
 
 ```
 
-Model with year
+#### Model with year
 ```{r}
 gamRRI2 <- bam(RelTempDiff~ fWY + te(julian, Hour, by = fWY,  k = 15, bs = "cc"), data = RelTempDiff_RRI, family = scat, method = "fREML", nthreads = 3, discrete = TRUE)
 summary(gamRRI2)
@@ -326,7 +341,7 @@ vis.gam(x = gamRRI2,
         color = "heat", plot.type = "contour", type = "response")
 ```
 
-Model with Anomaly2
+#### Model with Anomaly2
 ```{r}
 gamRRI3 <- bam(RelTempDiff~ te(julian, Hour, Anomaly2,  k = c(12,6,5), bs = c("cc", "cc", "tp")), data = RelTempDiff_RRI,family = scat,method = "fREML", nthreads = 3, discrete = TRUE)
 
@@ -338,11 +353,23 @@ vis.gam(x = gamRRI3,
         color = "heat", plot.type = "contour", type = "response")
 ```
 
-TOD
+#### Model by Year and hour (no anomaly)
 ```{r}
-RelTempDiff_RRI <- filter(RelTempDiff_RRI,!is.na(TOD))
-RelTempDiff_RRI$TOD <- as.factor(RelTempDiff_RRI$TOD)
+gamHour <- bam(RelTempDiff~te(Hour, by = fWY, k = 14, bs = "cc"),                          data = RelTempDiff_RRI,
+                         family = scat, method = "fREML",
+                         nthreads = 3,
+                         discrete = TRUE)
+par(mfrow=c(2,2))
+gam.check(gamHour)
+plot(gamHour, pages = 1, all.terms = TRUE)
+par(mfrow=c(1,1))
+vis.gam(x = gamRRISimp,
+        view = c("julian", "Hour"),
+        color = "heat", plot.type = "contour", type = "response")
+```
 
+#### Model with julian, Anomaly, TOD
+```{r}
 gamRRI4 <- bam(RelTempDiff~ TOD + s(julian, Anomaly, by=TOD, k = c(12,6), bs = c("cc", "cc")), data = RelTempDiff_RRI, family = scat, method = "fREML", nthreads = 3, discrete = TRUE)
 
 summary(gamRRI4)
@@ -354,11 +381,8 @@ vis.gam(x = gamRRI4,
         color = "heat", plot.type = "contour", type = "response")
 ```
 
-
+#### Model with julian and TOD
 ```{r}
-RelTempDiff_RRI <- filter(RelTempDiff_RRI,!is.na(TOD))
-RelTempDiff_RRI$TOD <- as.factor(RelTempDiff_RRI$TOD)
-
 gamRRI5 <- bam(RelTempDiff~ TOD + s(julian, by=TOD, k = 10, bs = "cc") + fWY + s(julian, by = fWY, k = 12, bs = "cc"), data = RelTempDiff_RRI, family = scat, method = "fREML", nthreads = 3, discrete = TRUE)
 
 gamMRZ5 <- bam(RelTempDiff~ TOD + s(julian, by=TOD, k = 10, bs = "cc") + fWY + s(julian, by = fWY, k = 12, bs = "cc"), data = RelTempDiff_MRZ, family = scat, method = "fREML", nthreads = 3, discrete = TRUE)
@@ -388,28 +412,11 @@ newdataRRI1 <- expand.grid(#Create all combinations of predictor variables
 
 gamRRI1_pred<-predict(gamRRI1, newdata=newdataRRI1, type="terms", se.fit=TRUE, discrete=T)
 
-### GAM 3
-newdataRRI3 <- expand.grid(#Create all combinations of predictor variables
-                       julian = with(RelTempDiff_RRI, min(julian):max(julian)),
-                       Anomaly2 = c(-3, -1.5, 0, 1.5, 3),
-                       Hour = 1:24) %>%
-                       # Standardize each variable based on full dataset for model
-          mutate(julian_s=(julian-mean(RelTempDiff_RRI$julian, na.rm=T))/sd(RelTempDiff_RRI$julian, na.rm=T),
-                 Hour_s=(Hour-mean(RelTempDiff_RRI$Hour, na.rm=T))/sd(RelTempDiff_RRI$Hour, na.rm=T),
-                 Anomaly2_s=(Anomaly2-mean(RelTempDiff_RRI$Anomaly2, na.rm=T))/sd(RelTempDiff_RRI$Anomaly2, na.rm=T))
-
-gamRRI3_pred<-predict(gamRRI3, newdata=newdataRRI3, type="terms", se.fit=TRUE, discrete=T)
-
 ```
 
 ### Plots
 Plot predictions model 1
 ```{r}
-library(viridis)
-library(grid)
-library(gridExtra)
-library(metR)
-
 predictions1 <- data.frame(gamRRI1_pred$fit, gamRRI1_pred$se.fit)
 colnames(predictions1) <- c("fit", "se.fit")
 range(gamRRI1_pred$fit)
@@ -450,7 +457,7 @@ grid.arrange(pvcool, pcool, pavg, pwarm, pvwarm, nrow = 2)
 ```
 
 
-Exploring Anomaly values
+### Exploring Anomaly values
 ```{r}
 # How does Anomaly compare with original Anomaly? Pretty close to linear.
 ggplot(RelTempDiff_RRI, aes(Anomaly, Anomaly2)) + geom_point() + geom_smooth(method = "lm")
@@ -476,6 +483,7 @@ grid.arrange(v1,v2, nrow = 1)
 
 ```
 
+### Exploring surface and bottom temps by year
 ```{r}
 meanMonthly = RelTempDiff_RRI %>%
   group_by(fWY, Month) %>%
@@ -499,7 +507,7 @@ Relative Temp Difference greater in cooler years of 2017 and 2019 during July - 
 For other years, relative temp difference greatest in May. Not sure why...
 
 
-Make plots for model 3
+### Make plots for model 3
 ```{r}
 predictions3 <- data.frame(gamRRI3_pred$fit, gamRRI3_pred$se.fit)
 colnames(predictions3) <- c("fit", "se.fit")
@@ -554,6 +562,8 @@ grid.arrange(pvcool3, pcool3, pavg3, pwarm3, pvwarm3, nrow = 2)
 
 ## MRZ
 
+### Anomaly Model
+
 Create anomaly using model of surface data. Add anomaly to data. 
 Use lowest k possible - don't want it to be too fitted.
 ```{r}
@@ -562,6 +572,7 @@ gamAnomaly2 <- bam(Surface~te(julian,Hour, k = c(5,5), bs = c("cc", "cc")),
                          family = scat, method = "fREML",
                          nthreads = 3,
                          discrete = TRUE)
+
 par(mfrow = c(2,2))
 gam.check(gamAnomaly2)
 par(mfrow = c(1,1))
@@ -589,7 +600,9 @@ hist(RelTempDiff_MRZ$RelTempDiff)
 ```
 
 
-Model with anomaly
+### Models
+
+#### Model with anomaly - use this
 ```{r}
 gamMRZ1 <- bam(RelTempDiff~ te(julian, Hour, Anomaly,  k = c(14,8,6), bs = c("cc", "cc", "tp")), data = RelTempDiff_MRZ,family = scat,method = "fREML", nthreads = 3, discrete = TRUE)
 
@@ -603,12 +616,12 @@ vis.gam(x = gamMRZ1,
 
 ```
 
-
+#### Model with WY
 ```{r}
 gamMRZ2 <- bam(RelTempDiff~ te(julian, Hour, fWY, d = c(2,1), k = c(15,7), bs = c("cc", "tp")), data = RelTempDiff_MRZ, family = scat, method = "fREML", nthreads = 3, discrete = TRUE)
 ```
 
-TOD
+#### Model with TOD
 ```{r}
 RelTempDiff_MRZ <- filter(RelTempDiff_MRZ,!is.na(TOD))
 RelTempDiff_MRZ$TOD <- as.factor(RelTempDiff_MRZ$TOD)
@@ -624,10 +637,8 @@ vis.gam(x = gamMRZ3,
 
 ```
 
+#### Model with julian, TOD
 ```{r}
-RelTempDiff_MRZ <- filter(RelTempDiff_MRZ,!is.na(TOD))
-RelTempDiff_MRZ$TOD <- as.factor(RelTempDiff_MRZ$TOD)
-
 gamMRZ4 <- bam(RelTempDiff~ TOD + s(julian, by=TOD, k = 18, bs = "cc") +  te(julian, Anomaly, k = c(14,6), bs = c("cc", "tp")), data = RelTempDiff_MRZ, family = scat, method = "fREML", nthreads = 3, discrete = TRUE)
 
 summary(gamMRZ4)
@@ -639,11 +650,8 @@ vis.gam(x = gamMRZ3,
         color = "heat", plot.type = "contour", type = "response")
 ```
 
-
+#### Model with julian, TOD, WY
 ```{r}
-RelTempDiff_MRZ <- filter(RelTempDiff_MRZ,!is.na(TOD))
-RelTempDiff_MRZ$TOD <- as.factor(RelTempDiff_MRZ$TOD)
-
 gamMRZ5 <- bam(RelTempDiff~ TOD + s(julian, by=TOD, k = 10, bs = "cc") + fWY + s(julian, by = fWY, k = 12, bs = "cc"), data = RelTempDiff_MRZ, family = scat, method = "fREML", nthreads = 3, discrete = TRUE)
 
 summary(gamMRZ5)
@@ -656,7 +664,7 @@ vis.gam(x = gamMRZ3,
 ```
 
 
-Predictions
+### Predictions
 ```{r}
 newdataMRZ <- expand.grid(#Create all combinations of predictor variables
                        julian = with(RelTempDiff_MRZ, min(julian):max(julian)),
@@ -670,35 +678,18 @@ newdataMRZ <- expand.grid(#Create all combinations of predictor variables
 gamMRZ1_pred<-predict(gamMRZ1, newdata=newdataMRZ, type="terms", se.fit=TRUE, discrete=T)
 ```
 
-Plot predictions
+### Plot predictions
 ```{r}
-library(viridis)
-library(grid)
-library(gridExtra)
-library(metR)
-
 predictions2 <- data.frame(gamMRZ1_pred$fit, gamMRZ1_pred$se.fit)
 colnames(predictions2) <- c("fit", "se.fit")
 range(gamMRZ1_pred$fit)
 MRZPlot <- cbind(newdataMRZ, predictions2) %>%
   mutate(fit = round(fit,2),
          se.fit = round(se.fit,2))
+```
 
 
-# How does Anomaly compare with original Anomaly? Pretty close to linear.
-ggplot(RelTempDiff_MRZ, aes(Anomaly, Anomaly2)) + geom_point() + geom_smooth(method = "lm")
-# Are there only certain years that reached anomaly of -1.5? 
-ggplot(RelTempDiff_MRZ, aes(x = fWY, y = Anomaly, color = fWY)) + geom_boxplot() 
-ggplot(subset(RelTempDiff_MRZ, Anomaly > -3 & Anomaly < 3), aes(x = Anomaly, y = RelTempDiff, color = fWY), alpha = 0.3) + geom_jitter() + scale_color_viridis(discrete = TRUE)
-
-
-# Is reltempdiff lower during lower anomalies? No. much lower during high anomalies.
-vis1 <- ggplot(subset(RelTempDiff_MRZ, Anomaly > -3 & Anomaly < 3), aes(x = Anomaly, y = RelTempDiff, color = julian)) + geom_jitter() + scale_color_viridis()
-vis2 <- ggplot(MRZPlot, aes(x = Anomaly, y = fit, color = julian)) + geom_jitter() + scale_color_viridis()
-grid.arrange(vis1,vis2, nrow = 1)
-
-breaks = seq(-3,1, by = 0.2)
-
+```{r}
 # Plotting function
 AnomalyPlot <- function(df = MRZPlot, Anomaly = 0) {
   Anomaly = enquo(Anomaly)
@@ -727,6 +718,25 @@ pvwarm2 <- AnomalyPlot(MRZPlot, Anomaly = +3)
 
 
 ```
+
+### Exploring anomaly values
+```{r}
+# How does Anomaly compare with original Anomaly? Pretty close to linear.
+ggplot(RelTempDiff_MRZ, aes(Anomaly, Anomaly2)) + geom_point() + geom_smooth(method = "lm")
+# Are there only certain years that reached anomaly of -1.5? 
+ggplot(RelTempDiff_MRZ, aes(x = fWY, y = Anomaly, color = fWY)) + geom_boxplot() 
+ggplot(subset(RelTempDiff_MRZ, Anomaly > -3 & Anomaly < 3), aes(x = Anomaly, y = RelTempDiff, color = fWY), alpha = 0.3) + geom_jitter() + scale_color_viridis(discrete = TRUE)
+
+
+# Is reltempdiff lower during lower anomalies? No. much lower during high anomalies.
+vis1 <- ggplot(subset(RelTempDiff_MRZ, Anomaly > -3 & Anomaly < 3), aes(x = Anomaly, y = RelTempDiff, color = julian)) + geom_jitter() + scale_color_viridis()
+vis2 <- ggplot(MRZPlot, aes(x = Anomaly, y = fit, color = julian)) + geom_jitter() + scale_color_viridis()
+grid.arrange(vis1,vis2, nrow = 1)
+
+breaks = seq(-3,1, by = 0.2)
+```
+
+
 
 ## Combined plot
 
@@ -815,8 +825,19 @@ DepthPlot <- grid.arrange(legendF, RRIfacet2, MRZfacet2, nrow = 3,
 # ggsave("Figures/RelDiffPlot.pdf", width = 9, height = 6)
 # png("Figures/RelDiffPlot2.png", width = 900, height =600)
 # pdf("Figures/RelDiffPlot2.pdf", width = 9, height = 6)
-
 ```
+
+```{r}
+#Print out figure
+tiff(filename=file.path("../Figures/Depth/Figure_DepthGAM.tiff"), units="in",type="cairo", bg="white", height=5, 
+     width=7, res=300, pointsize=10,compression="lzw")
+grid.arrange(legendF, RRIfacet2, MRZfacet2, nrow = 3, 
+            layout_matrix = rbind(1, 2, 3),
+             widths = c(2), heights = c(0.5,2,2))
+dev.off()
+```
+
+
 
 unfaceted combination
 ```{r}
