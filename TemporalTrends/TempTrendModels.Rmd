@@ -216,39 +216,62 @@ today = format(today(), "%Y%m%d")
 ```
 
 
-Edit dataset for Peggy
+Edit dataset for Peggy (Calendar Year)
+1 more station: SJJ
 ```{r}
-StationYearCombo2 <- tempFilt %>%
-  group_by(Region, Station, Year,  Date) %>%
-  summarize(perDay = n()) %>%
-  ungroup() %>%
+StationYearComboCY <- tempFilt %>%
+  filter(Year>2009) %>%
+  select(c(Region,Station,Year,Month, Date)) %>%
+  unique() %>%
   group_by(Region, Station, Year) %>%
-  summarize(totalDays = n()) %>%
+  mutate(totalDays = n()) %>%
+  ungroup() 
+  
+StationDayFilterCY <- StationYearComboCY %>%
+  filter(totalDays>275) %>%
+  select(-Date) %>%
+  unique() %>%
+  group_by(Region, Station, Year) %>%
+  mutate(nMonth = n()) %>%
   ungroup()
 
-StationNyears2 <- StationYearCombo2 %>%
-  filter(totalDays>250) %>%
+StationMonthFilterCY <- StationDayFilterCY %>%
+  filter(nMonth >10) %>%
+  select(-Month) %>%
+  unique() %>%
   group_by(Region, Station) %>%
-  summarize(firstYear = first(Year),
-            lastYear = last(Year),
-            nYear = n()) %>%
-  ungroup()
+  mutate(nYear = n()) %>%ungroup()
 
-DataYrSubset2 <- filter(StationNyears2, nYear > 9 & lastYear == 2019) %>%
-  left_join(StationYearCombo2) 
+StationYearFilterCY <- StationMonthFilterCY %>%
+  filter(nYear>7) %>%
+  filter(Station!="FLT")
 
-tempToUseCalYr <- inner_join(tempFilt, DataYrSubset2, by = c("Region","Station", "Year")) %>%
-  filter(Region != "Far North") %>%
-  filter(totalDays > 250)
+ListOfStaCY <- StationYearFilterCY %>%
+  select(-c(Year, totalDays, nMonth))%>%
+  unique() 
 
-
+# Write data -------------------------
+tempToUseCY <- inner_join(tempFilt, StationYearFilterCY, by = c("Region","Station", "Year")) %>%
+  select(-nMonth, -nYear, -totalDays)
+#tempToUse$WY = as.numeric(tempToUse$WY)
 today = format(today(), "%Y%m%d")
-#saveRDS(tempToUseCalYr, paste0("Data/temp10yearsCalYr_", today, ".rds"))
-
-
+saveRDS(tempToUseCY, paste0("../Data/temp10yearsCalYr_", today, ".rds"))
 
 ```
 
+```{r}
+tilerecord <- ggplot(StationYearFilterCY, aes(Station, ordered(Year), fill = totalDays)) + geom_tile() + labs(title = "Period of Record - Number of days each water year for each station") +
+  theme_bw() + theme(axis.text.y = element_text(size = 12),
+                     axis.text.x = element_text(size = 10, angle = 90, vjust = 0.5),
+                     axis.title = element_text(size =14),
+                     legend.text = element_text(size = 14),
+                     legend.title = element_text(size = 14))
+ggplotly(tilerecord)
+tilerecord
+
+summary(tempToUseCY)
+
+```
 
 
 
