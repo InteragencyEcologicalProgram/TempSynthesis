@@ -265,14 +265,15 @@ stressDays2 <- tempHeat2 %>%
   group_by(Region, Station,WY,  fWY, StressAllDay) %>%
   summarize(nDays = n()) %>%  
   ungroup() %>%
- complete(StressAllDay, nesting(Region, Station, fWY), fill = list(nDays=0)) %>%
+ complete(StressAllDay, nesting(Region, Station, WY, fWY), fill = list(nDays=0)) %>%
   arrange(Region, Station, WY, fWY) %>%
   left_join(heatDaysSamp2) %>%
-  mutate(propDays = round(nDays/totalDays,3))
+  mutate(propDays = round(nDays/totalDays,3)) %>%
+  ungroup()
 
 
 # write.csv(stressDays1, "Data/heatDaysHighLow21_20210904.csv")
-# write.csv(stressDays2, "Data/noRecovery21_20210904.csv")
+# write.csv(stressDays2, "Data/noRecovery21_20211118.csv")
 ```
 
 #### High Stress

@@ -34,7 +34,7 @@ library(metR)
 WD, Read in Data, Separate by Station
 ```{r}
 ## set wd, read in CSV relative tempdiff, bring over all data
-relativetempdiff <- readRDS("../DepthAnalysis/Data/RelativeTempDiff2.rds")
+relativetempdiff <- readRDS("DepthAnalysis/Data/RelativeTempDiff2.rds")
 ## relativetempdiff has all of our parameters: julian day, WY, sinejulian, sinehour etc and is the correct timeframe
 
 relativetempdiff <- relativetempdiff %>% select(-Stress)
@@ -62,17 +62,15 @@ RelTempDiff_RRI <- relativetempdiff %>% filter(Station == "RRI") %>% ungroup()
 RelTempDiff_MAL <- relativetempdiff %>% filter(Station == "MAL")
 RelTempDiff_ANH <- relativetempdiff %>% filter(Station == "ANH")
 
-```
-
-# Plot of all 4 stations
-```{r}
 relativetempdiff <- filter(relativetempdiff, !is.na(TOD))
 relativetempdiff$TOD <- recode_factor(relativetempdiff$TOD,
                                       `Early:0-7` = "Early:0-7",
                                       `Mid:7-15` = "Mid:8-15")
 levels(relativetempdiff$TOD)
+```
 
-
+# Plot of all 4 stations
+```{r}
 ggplot(relativetempdiff, aes(x= julian, y = RelTempDiff))+ 
   geom_smooth(aes(color = TOD), method = "loess", se = T, fullrange = T) +
   facet_wrap(~Station) + 
@@ -736,6 +734,12 @@ grid.arrange(vis1,vis2, nrow = 1)
 breaks = seq(-3,1, by = 0.2)
 ```
 
+```{r}
+save(predictions1, predictions2, MRZPlot, RRIPlot1, file = "DepthAnalysis/RelTempDiffGAM_20211008.RData")
+
+write.csv(predictions1, "DepthAnalysis/RRI_Predictions.csv")
+write.csv(RelTempDiff_RRI, "DepthAnalysis/RRI_reldiff.csv")
+```
 
 
 ## Combined plot
@@ -792,6 +796,7 @@ MRZfacet <- ggplot(subset(MRZPlot, Anomaly %in% c(-1.5, 0, 1.5)), aes(x = julian
     guides(fill=guide_colorbar(title="Surface-Bottom Temperature Difference", barwidth = 12))
 
 ```
+
 
 
 Combined plot
@@ -898,6 +903,14 @@ ggplot(context2, aes(x = julian, y = Hour, fill = diff)) + geom_col()
 
 ```
 
+Mean reltempdiff
+```{r}
+relativetempdiff %>%
+  group_by(Station) %>%
+  summarize(mean(RelTempDiff),
+            median(RelTempDiff),
+            sd(RelTempDiff))
+```
 
 
 
