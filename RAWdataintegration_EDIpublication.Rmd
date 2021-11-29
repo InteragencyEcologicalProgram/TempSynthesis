@@ -53,6 +53,10 @@ RRI_SURF<- read_csv("C:/Users/nelsonm/OneDrive - California Department of Water 
 ## X9 column was only in ANH and MAL
 
 ANH_bottom <- ANH_bottom[-c(9)]
+# Added below to remove extra column in MAL and also add datetime designation so it can be binded with other files later
+MAL_SURF <- MAL_SURF %>%
+  dplyr::select(-X9)%>%
+  mutate(DATE = as.POSIXct(DATE, format = "%Y-%m-%d %H:%M:%S", tz = "America/Los_Angeles"))
 MAL_bottom <-MAL_bottom[-c(9)]
 
 #continue with Cat's template vis depthdataintegretion
@@ -76,14 +80,16 @@ Prepare and Merge (bind) Files
 ###bottom
 
 bottom <- do.call("rbind", list(ANH_bottom, MAL_bottom, MRZ_bottom, RRI_bottom))
-
+RRI <- bottom_clean %>% filter(Station == "RRI")
+summary(bottom)
 bottom_clean <- bottom %>%
-  select(c(`STATION NAME`, DATE, VALUE, `QAQC Flag`)) %>% ##### this step is where RRI started only showing dates from the 20th of each month 
+  dplyr::select(c(`STATION NAME`, DATE, VALUE, `QAQC Flag`)) %>% ##### this step is where RRI started only showing dates from the 20th of each month 
   mutate(WaterCol = "Bottom") %>%                         #### starting in 2001 to 2012
   rename(Datetime = DATE,
          Temp = VALUE,
          Station = `STATION NAME`) %>%
-  mutate(Station = replace(as.character(Station), as.character(Station) == "(D12A)  Antioch", "ANH"),
+  mutate(Datetime = as.POSIXct(Datetime, format = "%m/%d/%Y %H:%M", tz ="America/Los_Angeles"), #Added the Datetime here instead of separately
+    Station = replace(as.character(Station), as.character(Station) == "(D12A)  Antioch", "ANH"),
          Station = replace(as.character(Station), as.character(Station) == "(D10A)  Mallard", "MAL"),
          Station = replace(as.character(Station), as.character(Station) == "(D6A)  Martinez", "MRZ"),
          Station = replace(as.character(Station), as.character(Station) == "(P8A)  Stockton", "RRI")) %>%
@@ -91,20 +97,23 @@ bottom_clean <- bottom %>%
 
 ###surface
 
-surface <- do.call("rbind", list(ANH_SURF, MAL_SURF, MRZ_SURF, RRI_SURF))
+# Some differences in datetime format with MAL_SURF file so had to separate them and fix the datetime before binding them together (2 steps)
+surface <- do.call("rbind", list(ANH_SURF, MRZ_SURF, RRI_SURF)) %>%
+  mutate(DATE = as.POSIXct(DATE, format = "%m/%d/%Y %H:%M", tz = "America/Los_Angeles"))
+surface2 <- rbind(surface, MAL_SURF)
 
-surface_clean <- surface %>%                              ###MAL GOES MISSING HERE!!!!! why?!
-  select(c(`STATION NAME`, DATE, VALUE, `QAQC Flag`)) %>%
+surface_clean <- surface2 %>%                              ###MAL GOES MISSING HERE!!!!! why?!
+  dplyr::select(c(`STATION NAME`, DATE, VALUE, `QAQC Flag`)) %>%
   mutate(WaterCol = "Surface") %>%
   rename(Datetime = DATE,
          Temp = VALUE,
          Station = `STATION NAME`) %>%
-  mutate(Station = replace(as.character(Station), as.character(Station) == "(D12A)  Antioch", "ANH"),
+  mutate(
+    Station = replace(as.character(Station), as.character(Station) == "(D12A)  Antioch", "ANH"),
          Station = replace(as.character(Station), as.character(Station) == "(D10A)  Mallard", "MAL"),
          Station = replace(as.character(Station), as.character(Station) == "(D6A)  Martinez", "MRZ"),
          Station = replace(as.character(Station), as.character(Station) == "(P8A)  Stockton", "RRI")) %>%
   filter(`QAQC Flag` %in% c("G", "U"))
-
 #timezone?? code didnt work... dont think it is needed I am moving on. 
 
 
@@ -120,9 +129,6 @@ Final steps
 ## trying to get the datetime to be a datetime class
 
 ###Bottom
-bottom_clean$Datetime <- as.POSIXct(bottom_clean$Datetime, tz = "America/Los_Angeles")  ## this error is now coming up "Error in ####as.POSIXlt.character(x, tz, ...) :character string is not in a standard unambiguous format""
-
-
 bottom_clean <- bottom_clean %>%  
        mutate(Date = date(Datetime),
        Year = year(Datetime),
@@ -134,9 +140,6 @@ bottom_clean <- bottom_clean %>%
   filter(Year<2020)
 
 #surface
-
-surface_clean$Datetime <- as.POSIXct(surface_clean$Datetime, format= "%m/%d/%Y %H:%M", tz = "America/Los_Angeles")
-
 surface_clean <- surface_clean %>%
   mutate(Date = date(Datetime),
        Year = year(Datetime),
@@ -151,9 +154,6 @@ surface_clean <- surface_clean %>%
 ```
 
 ```{r}
-
-
-
 ##Hourly
 
 botclean_Hourly <- bottom_clean %>%
