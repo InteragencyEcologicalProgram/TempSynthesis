@@ -3,7 +3,11 @@ title: "TempSynthesisMap"
 author: "Catarina Pien"
 date: "4/12/2021"
 output: html_document
+editor_options: 
+  chunk_output_type: console
 ---
+
+Last updated 15 July, 2021 by C. Pien
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -15,6 +19,9 @@ library(plotly)
 library(pscl)
 library(visreg)
 library(lattice)
+library(cowplot)
+library(rcartocolor)
+library(sf)
 ```
 
 Read in 
@@ -24,10 +31,13 @@ setwd("C:/Users/cpien/OneDrive - California Department of Water Resources/Work/C
 #tempFilt <- readRDS("Data/tempFilt.rds") 
 #tempToUse <- readRDS("Data/temp10years_20200922.rds")
 #tempAn <- readRDS("Data/tempAnnual.rds")
-tempMon <- readRDS("Data/tempMonthly.rds")
-tempDaily <- readRDS("Data/tempDaily.rds")
-tempDailyM <- readRDS("Data/HourlyAnalysisFiltered.rds")
+#tempMon <- readRDS("Data/tempMonthly.rds")
+#tempDaily <- readRDS("Data/tempDaily.rds")
+tempDailyM <- readRDS("Data/tempDaily_20210811.rds")
 LatLon <- read.csv("Data/StationsMetadata.csv")
+regions <- st_read("RosieRegions/shpExport.shp")
+regions$Region <- c("Suisun Marsh", "Suisun Bay","Sac River", "North Delta", "Far North", "San Joaquin" , "South") 
+#regions <- filter(regions, Region!="Far North")
 
 ```
 
@@ -39,20 +49,33 @@ tempInfo <- tempDailyM %>%
 
 ```
 
+California map
+```{r}
+library(spData)
+data("us_states", package = "spData")
+California = filter(us_states, NAME == "California")
+st_crs(California)
+```
+
+
 ```{r}
 library(ggmap)
 library(sf)
 library(deltamapr)
 library(ggspatial)
+library(mapview)
 
 stations_sf <- st_as_sf(tempInfo, coords = c("Longitude", "Latitude"), crs = 4326)
+stations_sf_4269 <- st_transform(stations_sf, crs = st_crs(California))
+regions_4269 <- st_transform(regions, crs = st_crs(California))
 
 # Redefine your boundaries
+buffer = 0.5
 coordDict = list( 
-    'minLat' = 37.25,
-    'maxLat' = 39,
-    'minLon' = -122.75,
-    'maxLon' = -121
+    'minLat' = min(tempInfo$Latitude) - buffer, #bottom
+    'maxLat' = max(tempInfo$Latitude) + buffer , #top
+    'minLon' = min(tempInfo$Longitude) - buffer,
+    'maxLon' = max(tempInfo$Longitude) + buffer
 )
 # Map 
 map_obj <- get_stamenmap(
@@ -60,33 +83,176 @@ map_obj <- get_stamenmap(
   zoom = 9, # zoom lvl; higher number = more detail (but also more processing power)
   maptype = 'terrain-background'# type of basemap; 'terrain' is my default, but check help(get_stamenmap) for a full list
   )
+
+# RevLatLon <- tempInfo %>% ungroup() %>%
+#   summarize(maxLat = max(Latitude) - buffer,
+#             minLat = min(Latitude) + 0.4,
+#                                     maxLon = max(Longitude) - buffer,
+#                                     minLon = min(Longitude) + buffer)
+# RevLatLong <- pivot_longer(RevLatLon ) 
+# st_as_sf(RevLatLon, coords = c("Longitude", "Latitude"), crs = 4326)
+
+
+insetbbox0 = st_as_sfc(st_bbox(stations_sf))
+insetbbox = st_buffer(insetbbox0, dist = 55500)
+```
+
+
+Inset map
+```{r}
+inset <- ggplot() + 
+  geom_sf(data = California, fill = "white") +
+  geom_sf(data = insetbbox, fill = NA, color = "red", size = 1.1) +
+  theme_void()
+
+inset
+```
+
+Main map
+```{r}
+map_final <- ggmap(map_obj) + 
+  geom_sf(data = WW_Delta, fill = "steelblue", alpha = 0.5, inherit.aes = FALSE) + 
+  geom_sf(data = stations_sf_4269, size = 4, shape = 21, 
+          aes(fill = Region), inherit.aes = FALSE)+
+  geom_sf(data = regions_4269, aes(fill = Region), inherit.aes = FALSE, alpha = 0.3)+
+  annotation_north_arrow(location = "tr", which_north = "true", 
+        pad_x = unit(.2, "in"), pad_y = unit(0.2, "in"),
+        style = north_arrow_fancy_orienteering,
+        height = unit(2, "cm"),
+  width = unit(2, "cm"),) +
+  annotation_scale(location = "bl", bar_cols = c("black", "white", "black", "white"), text_cex = 1.5) +
+  annotate(geom = "text", x = -122.3, y = 37.85, label = "San Francisco Bay", fontface = "italic", color = "grey22", size = 4.5) +
+  # coord_sf(xlim = st_bbox(insetbbox)[c(1, 3)],
+  #          ylim = st_bbox(insetbbox)[c(2, 4)])+
+  scale_fill_viridis(discrete = "TRUE") +
+ # scale_fill_viridis(discrete = TRUE) +
+  theme_bw()+
+  theme(axis.title = element_blank(),
+        axis.text = element_text(size = 16),
+        legend.text = element_text(size = 14),
+        legend.title = element_blank(),
+        legend.position = c(0.85, .12),
+        legend.margin = margin(0, 0.1, 0.1, 0.1, "cm") )
+map_final
+```
+
+Merge maps - inset
+```{r}
+gg_inset_map1 = ggdraw() +
+  draw_plot(map_final) +
+  draw_plot(inset, x = 0.19, y = 0.68, width = 0.3, height = 0.3)
+
+gg_inset_map1
 ```
 
 
 ```{r}
-map_final <- ggmap(map_obj) + 
-  geom_sf(data = WW_Delta, fill = "steelblue", alpha = 0.5, inherit.aes = FALSE) + 
-  geom_sf(data = stations_sf, size = 3, shape = 21, 
-          aes(fill = Region), inherit.aes = FALSE)+
-  annotation_north_arrow(location = "tr", which_north = "true", 
-        pad_x = unit(.1, "in"), pad_y = unit(0.2, "in"),
-        style = north_arrow_fancy_orienteering) +
-  annotation_scale(location = "bl", bar_cols = c("black", "white", "black", "white")) +
-  annotate(geom = "text", x = -122.4, y = 37.85, label = "San Francisco Bay", fontface = "italic", color = "grey22", size = 3.5 ) +
+gg_inset_map1
+ggsave("Figures/StationMapInset.jpeg", width = 8, height = 8, device = 'png', dpi = 300, bg = "transparent")
+
+```
+
+Small map of regions
+```{r}
+library(maptools)
+library(rgeos)
+
+buffer2 = 0.1
+coordDict2 = list( 
+    'minLat' = min(tempInfo$Latitude) - buffer2, #bottom
+    'maxLat' = max(tempInfo$Latitude + buffer2), #top
+    'minLon' = min(tempInfo$Longitude - 0.2),
+    'maxLon' = max(tempInfo$Longitude + buffer2)
+)
+# Map 
+map_obj2 <- get_stamenmap(
+  bbox = c(left = coordDict2[['minLon']], bottom = coordDict2[['minLat']], right = coordDict2[['maxLon']], top = coordDict2[['maxLat']]), # the bounding box
+  zoom = 9, # zoom lvl; higher number = more detail (but also more processing power)
+  maptype = 'terrain-background'# type of basemap; 'terrain' is my default, but check help(get_stamenmap) for a full list
+  )
+
+
+regions$centroid <- st_centroid(regions)
+latlonregions <- data.frame(st_coordinates(regions$centroid))
+regions <- cbind(regions, latlonregions)
+rownames(regions) <- regions$Region
+
+map_small <- ggmap(map_obj2) + 
+  geom_sf(data = WW_Delta, fill = "steelblue", alpha = 0.3, inherit.aes = FALSE) + 
+  geom_sf(data = regions_4269, aes(fill = Region), inherit.aes = FALSE, alpha = 0.5)+
+  geom_label(data = regions, aes(x = X, y = Y),label = rownames(regions), nudge_x = 0.1,
+             nudge_y = 0.05, size = 3.5) + 
+  # coord_sf(xlim = st_bbox(insetbbox)[c(1, 3)],
+  #          ylim = st_bbox(insetbbox)[c(2, 4)])+
   scale_fill_brewer(palette = "Dark2") +
  # scale_fill_viridis(discrete = TRUE) +
   theme_bw()+
   theme(axis.title = element_blank(),
-        axis.text = element_text(size = 14),
-        legend.text = element_text(size = 12),
-        legend.title = element_blank(),
-        legend.position = c(0.15, .87),
-        legend.margin = margin(0, 0.1, 0.1, 0.1, "cm") )
-map_final
-```
-```{r}
-map_final
-ggsave("StationMap.jpeg", width = 8, height = 8, device = 'png', dpi = 300, bg = "transparent")
+        axis.text = element_text(size = 12),
+        legend.position = "none")
 
+
+map_small
+
+ggsave("Figures/StationMapSmall.jpeg", width = 4, height = 4, device = 'png', dpi = 300, bg = "transparent")
+```
+
+Big map, no stations
+
+```{r}
+
+# Redefine your boundaries
+buffer3 =0.6
+coordDict3 = list( 
+    'minLat' = min(tempInfo$Latitude) - buffer3, #bottom
+    'maxLat' = max(tempInfo$Latitude) + buffer3 , #top
+    'minLon' = min(tempInfo$Longitude) - buffer3,
+    'maxLon' = max(tempInfo$Longitude) + buffer3
+)
+# Map 
+map_obj3 <- get_stamenmap(
+  bbox = c(left = coordDict3[['minLon']], bottom = coordDict3[['minLat']], right = coordDict3[['maxLon']], top = coordDict3[['maxLat']]), # the bounding box
+  zoom = 9, # zoom lvl; higher number = more detail (but also more processing power)
+  maptype = 'terrain-background'# type of basemap; 'terrain' is my default, but check help(get_stamenmap) for a full list
+  )
+
+
+map_nostations <- ggmap(map_obj3) +
+  geom_sf(data = WW_Delta, fill = "steelblue", alpha = 0.5, inherit.aes = FALSE) + 
+  annotation_north_arrow(location = "tr", which_north = "true", 
+        pad_x = unit(.2, "in"), pad_y = unit(0.2, "in"),
+        style = north_arrow_fancy_orienteering,
+        height = unit(2, "cm"),
+  width = unit(2, "cm"),) +
+  annotation_scale(location = "bl", bar_cols = c("black", "white", "black", "white"), text_cex = 1.5) +
+  annotate(geom = "text", x = -122.3, y = 37.85, label = "San Francisco Bay", fontface = "italic", color = "grey22", size = 5) +
+  # coord_sf(xlim = st_bbox(insetbbox)[c(1, 3)],
+  #          ylim = st_bbox(insetbbox)[c(2, 4)])+
+  scale_fill_brewer(palette = "Dark2") +
+ # scale_fill_viridis(discrete = TRUE) +
+  theme_bw()+
+  theme(axis.title = element_blank(),
+        axis.text = element_text(size = 16),
+        legend.position = "none")
+map_nostations
+
+insetbbox0a = st_as_sfc(st_bbox(stations_sf))
+insetbboxa = st_buffer(insetbbox0a, dist = 66600)
+
+inseta <- ggplot() + 
+  geom_sf(data = California, fill = "white") +
+  geom_sf(data = insetbboxa, fill = NA, color = "red", size = 1.1) +
+  theme_void()
+
+inseta
+
+gg_inset_map2 = ggdraw() +
+  draw_plot(map_nostations) +
+  draw_plot(inseta, x = 0.19, y = 0.68, width = 0.3, height = 0.3)
+
+gg_inset_map2
+
+ggsave("Figures/StationMapnostation.jpeg", width = 9, height = 8, device = 'png', dpi = 300, bg = "transparent")
+```
 ```
 

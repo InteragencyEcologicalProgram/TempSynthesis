@@ -1,0 +1,304 @@
+---
+title: "ThresholdExceedanceFigure"
+author: "Catarina Pien"
+date: "9/22/2021"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+Modified from Brian Mahardja 
+https://github.com/bmahardja/Bottom_Surface_Temp_Analysis/blob/master/R_Continuous_Data_Plots.R
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load packages
+```{r}
+library(tidyverse)
+library(lubridate)
+library(grid)
+library(gridExtra)
+library(viridis)
+library(ggpubr)
+library(scales)
+
+
+# library(broom)
+# library(rgdal)
+# library(mgcv)
+# library(AICcmodavg)
+# library(sf)
+
+# library(gtable)
+# library(plotly)
+# 
+# require(spacetime)
+# require(sp)
+# require(gstat)
+# require(itsadug)
+# require(patchwork)
+```
+
+## Read in data
+```{r}
+tempdiff <- readRDS("Data/RelativeTempDiff2.rds")
+```
+
+## Look at summary of annual means and completeness of datasets
+```{r}
+annual_summary <- tempdiff %>% 
+  group_by(Year,Station) %>% 
+  summarise(AnnualMean=mean(Surface),
+            n = n()) %>%
+  filter(!(Year %in% c(2012, 2020))) %>%ungroup()
+```
+
+```{r}
+ggplot(annual_summary, aes(x = Year, y = Station)) + geom_tile(aes(fill = n, color = AnnualMean)) + scale_fill_viridis()
+```
+
+## Make new dataset for 2015, calculate whether suitable and percent of each day that is suitable
+```{r}
+temp_2015 <- tempdiff %>%
+  ungroup() %>%
+  filter(Year == 2015) %>%
+  filter(Station %in% c("MRZ", "RRI")) %>%
+  #pivot_longer(values_to = "Temp", names_to = "Type", cols = c(4,5,9)) %>%
+  mutate(Suitable_DSM_S = ifelse(Surface<25, 1, 0),
+         Suitable_DSM_B = ifelse(Bottom<25, 1, 0),
+         Suitable_CHN_S = ifelse(Surface<20, 1, 0),
+         Suitable_CHN_B = ifelse(Bottom<20, 1, 0)) 
+
+str(temp_2015)
+```
+
+```{r}
+temp_percent <- temp_2015 %>%
+  group_by(Station, Date) %>%
+  summarize(Percent_DSM_S = mean(Suitable_DSM_S),
+            Percent_DSM_B = mean(Suitable_DSM_B),
+         Percent_CHN_S = mean(Suitable_CHN_S),
+         Percent_CHN_B = mean(Suitable_CHN_B)) %>%
+  mutate(Diff_DSM = Percent_DSM_S-Percent_DSM_B,
+         Diff_CHN = Percent_CHN_S-Percent_CHN_B) %>%
+  ungroup()
+
+temp_percent_long <- temp_percent %>%
+  pivot_longer(cols = c(3:8), names_to = "Type", values_to = "Proportion")
+
+part1 <- temp_percent_long %>%
+  filter(Type != "Diff_DSM")
+part2 <- temp_percent_long %>%
+  filter(Type == "Diff_DSM")
+```
+
+```{r}
+theme_fig <- ggplot2::theme(plot.title=element_text(size=11), 
+               axis.text.x=element_text(size=13, color="black"), 
+               axis.text.y = element_text(size=13, color="black",angle=45), 
+               axis.title.x = element_blank(), 
+               axis.title.y = element_text(size=15, color="black"),
+               strip.text = element_text(size = 13),
+               legend.text=element_text(size = 13),
+               strip.background = element_rect(size=0.3)) 
+```
+
+Make figure for Delta Smelt
+```{r}
+prop_DSM <- part1 %>%
+  filter(grepl("DSM", Type)) %>%
+  mutate(Type = ifelse(Type == "Percent_DSM_S", "Surface",  "Bottom")) %>%
+  mutate(Type = factor(Type)) 
+
+prop_DSM2 <- part2 %>%
+  filter(grepl("DSM", Type))
+
+prop_DSM <- temp_percent_long %>%
+  filter(grepl("DSM",Type)) %>%
+  mutate(Type = ifelse(Type == "Percent_DSM_S", "Surface   ", ifelse(Type == "Percent_DSM_B", "Bottom    ", "Difference"))) %>%
+  mutate(Type = factor(Type)) %>%
+  mutate(Type = fct_relevel(Type,  "Difference", "Bottom    ", "Surface   ")) %>%
+  filter(Type != "Difference")
+
+levels(prop_DSM$Type)
+
+
+# Plot
+plot_habitat_deltasmelt <-ggplot2::ggplot(prop_DSM,aes(y=Type,x=Date,fill=Proportion)) +
+  
+  ggplot2:: geom_tile() +
+  ggplot2:: geom_hline(yintercept=1.5, linetype = "dashed", color = "maroon3") +
+  #scale_fill_viridis(name="Percent Suitable",option ="magma") +
+  ggplot2::theme_bw()+
+  ggplot2::facet_grid(.~Station) +
+  scale_fill_viridis(option = "magma") +
+#  scale_fill_gradientn(colours = c("#918BC3", "#C2CD23", "#808282", "#fcfdbf", "#b73779", "#918BC3", "#918BC3"), breaks = seq(from = -0.5, to = 1.0, by = 0.25), na.value="white")+
+ ggplot2::guides(fill = guide_legend(title = "Proportion of time\n temperature was\n <25°C", reverse = TRUE))+
+  ggplot2::labs(y = "Delta Smelt") + 
+  scale_x_date(date_breaks = "2 months", date_minor_breaks = "1 month", labels = date_format("%b")) +
+  theme_fig
+plot_habitat_deltasmelt
+
+# plot_habitat_deltasmelt2 <-ggplot2::ggplot(prop_DSM2,aes(y=Type,x=Date,fill=Proportion)) +
+#   ggplot2:: geom_tile() +
+#   #scale_fill_viridis(name="Percent Suitable",option ="magma") +
+#   ggplot2::theme_bw()+
+#   ggplot2::facet_grid(Station~.) +
+#   scale_fill_viridis() +
+# #  scale_fill_gradientn(colours = c("#918BC3", "#C2CD23", "#808282", "#fcfdbf", "#b73779", "#918BC3", "#918BC3"), breaks = seq(from = -0.5, to = 1.0, by = 0.25), na.value="white")+
+#  ggplot2::guides(fill = guide_legend(title = "Proportion of time\n temperature was\n <25°C"))+
+#   ggplot2::labs(y = "Delta Smelt")+
+#   ggplot2::theme(plot.title=element_text(size=11), 
+#                axis.text.x=element_text(size=11, color="black"), 
+#                axis.text.y = element_text(size=10, color="black",angle=45), 
+#                axis.title.x = element_blank(), 
+#                axis.title.y = element_text(size=14, color="black"),
+#                strip.text = element_text(size = 11),
+#                legend.text=element_text(size = 11),
+#                strip.background = element_rect(size=0.3)) 
+# plot_habitat_deltasmelt2
+```
+
+Chinook plot
+```{r}
+prop_CHN <- temp_percent_long %>%
+  filter(grepl("CHN",Type)) %>%
+  mutate(Type = ifelse(Type == "Percent_CHN_S", "Surface   ", ifelse(Type == "Percent_CHN_B", "Bottom    ", "Difference"))) %>%
+  mutate(Type = factor(Type, levels = c("Difference","Bottom    ","Surface   ")))
+
+levels(prop_CHN$Type)
+
+CHN1 <- prop_CHN %>%
+  filter(Type!="Difference")
+
+
+plot_habitat_chinook <-ggplot2::ggplot(CHN1,aes(y=Type,x=Date,fill=Proportion))+
+  ggplot2:: geom_tile() +scale_fill_viridis(name="Percent Suitable",option ="magma") +
+  ggplot2:: geom_hline(yintercept=1.5, linetype = "dashed", color = "maroon3") +
+  ggplot2::theme_bw()+
+  ggplot2::facet_grid(.~Station) +
+  ggplot2::guides(fill = guide_legend(title = "Proportion of time\n temperature was\n <20°C", reverse = TRUE))+
+  ggplot2::labs(y = "Chinook Salmon")+
+  scale_x_date(date_breaks = "2 months", date_minor_breaks = "1 month", labels = date_format("%b")) +
+  theme_fig
+plot_habitat_chinook
+```
+
+Difference plot (don't use this)
+```{r}
+Difference <- temp_percent_long %>%
+  filter(grepl("Diff",Type)) %>%
+  mutate(Type = ifelse(Type == "Diff_DSM", "D Smelt", "Chinook"),
+         Type2 = "Difference") %>%
+  mutate(Type = factor(Type, levels = c("Chinook", "D Smelt")))
+
+
+plot_diff <-ggplot2::ggplot(Difference,aes(y=Type,x=Date,fill=Proportion))+
+  ggplot2:: geom_tile() +
+ scale_fill_gradientn(colours = c("#1B2090", "#0F5981", "#ACB7BD", "gray95", "#FFF1B6", "#FFEC08", "#FFF041"), 
+                      breaks = round(seq(from = -0.6, to = 0.8, by = 0.2),1),
+                       na.value="white") +
+#scale_fill_viridis(breaks = round(seq(-0.6,0.2, 0.2),1),option ="cividis") +
+  ggplot2::theme_bw()+
+  ggplot2::facet_grid(Station~.) +
+  ggplot2::guides(fill = guide_legend(title = "Proportion of time\nsurface is more\nsuitable than\nbottom", reverse = TRUE))+
+  ggplot2::labs(y = "Difference")+
+  theme_fig
+plot_diff
+
+
+```
+
+Option b for difference (different faceting - use this)
+```{r}
+DifferenceCHN <- filter(Difference, Type == "Chinook")
+DifferenceDSM <- filter(Difference, Type == "D Smelt")
+
+# plot_diffCHN <-ggplot2::ggplot(DifferenceCHN,aes(y=Type,x=Date,fill=Proportion))+
+#   ggplot2:: geom_tile() +
+#  scale_fill_gradientn(colours = c("#1B2090", "#0F5981", "#ACB7BD", "gray95", "#FFF1B6", "#FFEC08", "#FFF041"),
+#                       breaks = round(seq(from = -0.6, to = 0.8, by = 0.2),1),
+#                        na.value="white") +
+# #scale_fill_viridis(breaks = round(seq(-0.6,0.2, 0.2),1),option ="cividis") +
+#   ggplot2::theme_bw()+
+#   ggplot2::facet_grid(.~Station) +
+#   ggplot2::guides(fill = guide_legend(title = "Proportion of time\nsurface is more\nsuitable than\nbottom", reverse = TRUE))+
+#   ggplot2::labs(y = "Difference")+
+#   theme_fig
+# plot_diffCHN
+
+
+# plot_diffDSM <-ggplot2::ggplot(DifferenceDSM,aes(y=Type,x=Date,fill=Proportion))+
+#   ggplot2:: geom_tile() +
+# scale_fill_gradientn(colours = c("#0F5981", "#ACB7BD","gray95"),
+#                       breaks = round(seq(from = -0.6, to = 0, by = 0.2),1),
+#                        na.value="white") +
+# #scale_fill_viridis(breaks = round(seq(-0.6,0.2, 0.2),1),option ="cividis") +
+#   ggplot2::theme_bw()+
+#   ggplot2::facet_grid(.~Station) +
+#   ggplot2::guides(fill = guide_legend(title = "Proportion of time\nsurface is more\nsuitable than\nbottom", reverse = TRUE))+
+#   ggplot2::labs(y = "Difference")+
+#   theme_fig
+# plot_diffDSM
+
+# Chinook
+plot_diffCHN2 <-ggplot2::ggplot(DifferenceCHN,aes(y=Type2,x=Date,fill=Proportion))+
+  ggplot2:: geom_tile() +
+ scale_fill_gradientn(colours = c("#1B2090", "#0F5981", "#ACB7BD", "gray95", "#FFF1B6", "#FFEC08", "#FFF041"),
+                      breaks = round(seq(from = -0.6, to = 0.8, by = 0.2),1),
+                       na.value="white") +
+#scale_fill_viridis(breaks = round(seq(-0.6,0.2, 0.2),1),option ="cividis") +
+  ggplot2::theme_bw()+
+  ggplot2::facet_grid(.~Station) +
+  scale_x_date(date_breaks = "2 months", date_minor_breaks = "1 month", labels = date_format("%b")) +
+  ggplot2::guides(fill = guide_legend(title = "Proportion of time\nsurface is more\nsuitable than\nbottom", reverse = TRUE))+
+  ggplot2::labs(y = "Chinook Salmon")+
+  theme_fig
+plot_diffCHN
+
+
+
+# Delta Smelt
+plot_diffDSM2 <-ggplot2::ggplot(DifferenceDSM,aes(y=Type2,x=Date,fill=Proportion))+
+  ggplot2:: geom_tile() +
+scale_fill_gradientn(colours = c("#0F5981", "#ACB7BD","gray95"), 
+                      breaks = round(seq(from = -0.6, to = 0, by = 0.2),1),
+                       na.value="white") +
+  scale_x_date(date_breaks = "2 months", date_minor_breaks = "1 month", labels = date_format("%b")) +
+  ggplot2::theme_bw()+
+  ggplot2::facet_grid(.~Station) +
+  ggplot2::guides(fill = guide_legend(title = "Proportion of time\nsurface is more\nsuitable than\nbottom", reverse = TRUE))+
+  ggplot2::labs(y = "Delta Smelt")+
+  theme_fig
+plot_diffDSM
+
+```
+
+```{r}
+#Print out smelt and salmon figure together
+tiff(filename=file.path("Figures/Depth/Figure_Continuous_Data_Suitability3.tiff"), units="in",type="cairo", bg="white", height=9.5, 
+     width=10, res=300, pointsize=10,compression="lzw")
+ggarrange(plot_habitat_chinook, plot_diffCHN, plot_habitat_deltasmelt, plot_diffDSM, ncol=1, nrow=4,labels = c("A","B", "C", "D"),hjust=-0.1)
+dev.off()
+```
+
+Interspersed figure
+```{r}
+#Print out smelt and salmon figure together
+tiff(filename=file.path("Figures/Depth/Figure_Continuous_Data_Suitability2V.tiff"), units="in",type="cairo", bg="white", height=9, 
+     width=10, res=300, pointsize=10,compression="lzw")
+ggarrange(plot_habitat_chinook,  plot_diffCHN,plot_habitat_deltasmelt, plot_diffDSM, ncol=1, nrow=4,labels = c("A","B", "C", "D"), heights = c(2, 1.8, 2, 1.8),hjust=-0.1)
+dev.off()
+```
+
+Difference at the bottom figure
+```{r}
+#Print out smelt and salmon figure together
+tiff(filename=file.path("Figures/Depth/Figure_Continuous_Data_Suitability3V.tiff"), units="in",type="cairo", bg="white", height=10, 
+     width=9, res=300, pointsize=10,compression="lzw")
+ggarrange(plot_habitat_chinook,  plot_habitat_deltasmelt,plot_diffCHN, plot_diffDSM, ncol=1, nrow=4,labels = c("A","B", "C", "D"), heights = c(2, 2, 1.8, 1.8), hjust=-0.1)
+dev.off()
+```
+

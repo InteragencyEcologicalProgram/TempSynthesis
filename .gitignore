@@ -7,5 +7,8 @@ Data/
 *.csv
 *.rds
 *.html
+RasteredPreds*
+Figures/Archive/
+TimeSeriesCat.Rmd
 
 

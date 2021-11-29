@@ -1,0 +1,221 @@
+---
+title: "Trends20"
+author: "Catarina Pien"
+date: "9/29/2021"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(lubridate)
+library(viridis) # color palette
+library(plotly)
+library(pscl)
+library(visreg)
+library(lattice)
+```
+
+## Data Prep and Exploration
+Data import
+```{r import, include = FALSE, message = FALSE, warning = FALSE}
+setwd("C:/Users/cpien/OneDrive - California Department of Water Resources/Work/ClimateChange/R_code/TempSynthesis/")
+
+tempFilt0 <- readRDS("Data/Temp_filtered.rds") %>%
+  select(-StationName) # temperature data 
+
+Regions <- read.csv("Data/Stations_wRosiesReg.csv") %>%
+  select(-c(Latitude, Longitude)) # Rosie's Regions
+
+staInfo <- read.csv("Data/StationsMetadata.csv") # Get habitat type here
+
+LatLon <- select(staInfo, c("Station", "StationName", "Latitude", "Longitude"))
+
+WYType <- read.csv("Data/WYType.csv") %>% # Get WY, WY type, Index 
+  select(-c(starts_with("Runoff"))) %>%
+   mutate(Index_c = Index_Sac + Index_SJ) 
+
+WYSimple <- select(WYType, c("WY", "WYType2_Sac", "Index_c"))
+
+str(tempFilt0)
+```
+
+Add variables
+```{r vars}
+tempFilt0 <- tempFilt0 %>%
+  mutate(Year = year(tempFilt0$Date),
+         Month = month(tempFilt0$Date),
+         yDay = yday(tempFilt0$Date)) %>%
+  mutate(WY = ifelse(Month %in% c(10, 11, 12), Year+1, Year))
+```
+
+Merge regions, habitats, wytype
+```{r regions, message = FALSE, warning = FALSE}
+# subregions <- st_read("Data/EDSM_Subregions/EDSM_Subregions_03302020.shp")
+
+tempFilt1 <- left_join(tempFilt0, Regions, by = "Station") %>%
+  filter(!Station %in% c("CNT", "CPP", "DAR", "DMC", "DYR","ECD", "HBP", "ROR", "DV7", "FLT"),
+         !is.na(Region)) 
+tempFilt2 <- left_join(tempFilt1, staInfo, by = "Station") %>%
+  select(-c(StartDateDataset:County))
+
+tempFilt <- left_join(tempFilt2, WYSimple, by = "WY") 
+
+tempFilt$Region <- as.factor(tempFilt$Region)
+tempFilt$HabitatType <- as.factor(tempFilt$HabitatType)
+
+# saveRDS(tempFilt, "Data/tempFilt.rds")
+
+```
+
+
+
+New filtering code by days then months then years
+8 years of data
+```{r}
+StationYearCombo <- tempFilt %>%
+  filter(WY>1999) %>%
+  select(c(Region,Station,WY,Month, Date)) %>%
+  unique() %>%
+  group_by(Region, Station, WY) %>%
+  mutate(totalDays = n()) %>%
+  ungroup() 
+  
+StationDayFilter <- StationYearCombo %>%
+  filter(totalDays>275) %>%
+  select(-Date) %>%
+  unique() %>%
+  group_by(Region, Station, WY) %>%
+  mutate(nMonth = n()) %>%
+  ungroup()
+
+StationMonthFilter <- StationDayFilter %>%
+  filter(nMonth >10) %>%
+  select(-Month) %>%
+  unique() %>%
+  group_by(Region, Station) %>%
+  mutate(nYear = n())
+
+StationYearFilter <- StationMonthFilter %>%
+  filter(nYear>15) %>%
+  filter(Station!="FLT")
+
+ListOfSta <- StationYearFilter %>%
+  select(-c(WY, totalDays, nMonth))%>%
+  unique() 
+
+# write.csv(StationYearFilter, "StationYearFilter.csv")
+```
+
+
+```{r subset}
+tempToUse20 <- inner_join(tempFilt, StationYearFilter, by = c("Region","Station", "WY")) 
+#tempToUse$WY = as.numeric(tempToUse$WY)
+today = format(today(), "%Y%m%d")
+#saveRDS(tempToUse, paste0("Data/temp10years_", today, ".rds"))
+unique(tempToUse20$Region)
+```
+
+
+Daily Temp
+```{r dailyoverall}
+tempDaily20 <- tempToUse20 %>%
+  group_by(Region, Station, WY, WYType2_Sac, Index_c, Date) %>%
+  summarize(maxDaily = max(Temp),
+            minDaily = min(Temp),
+            meanDaily = round(mean(Temp),1),
+            rangeTemp = maxDaily-minDaily) %>%
+  ungroup()
+tempDaily20$WY <- as.numeric(tempDaily20$WY)
+#saveRDS(tempDaily, "Data/tempDaily_20210811.rds")
+```
+
+
+Look at trends
+```{r}
+tempDaily20b <- tempDaily20 %>%
+  mutate(Region2 = ifelse(Region == "Far North", "North Delta", Region),
+         Month = month(Date),
+         fWY = factor(WY),
+         Season = ifelse(Month >4 & Month <10, "Dry", "Wet")) %>%
+  mutate(Region2 = factor(Region2))
+
+tempDaily20Summary <- tempDaily20b %>%
+  group_by(fWY, Region2, Station) %>%
+  summarize(meanMaxTemp = mean(maxDaily)) %>%
+  ungroup()
+
+tempSeason20Summary <- tempDaily20b %>%
+  group_by(Season, fWY, Region2, Station) %>%
+  summarize(meanMaxTemp = mean(maxDaily))
+```
+
+
+Make figure
+```{r}
+theme_figure <-  theme_bw() + theme(axis.title.y = element_blank(),                                 axis.title.x = element_blank(),legend.position = "right",
+                                     axis.text.x = element_text(size = 10, angle= 90),
+                                     axis.text.y = element_text(size = 10),
+                                    legend.text = element_text(size = 12),
+                                    plot.title = element_text(hjust = 0.5)) 
+
+max20 <- ggplot(tempDailySummary) + geom_tile(aes(x = fWY, y = Region2, fill = meanMaxTemp)) + scale_fill_viridis(option = "magma")
+
+maxdry20 <- ggplot(subset(tempSeason20Summary, Season == "Dry")) + geom_tile(aes(x = fWY, y = Station, fill = meanMaxTemp))  + scale_fill_viridis(option = "plasma")+
+  labs(title = "May - September") + theme_figure
+
+maxwet20 <- ggplot(subset(tempSeason20Summary, Season == "Wet")) + geom_tile(aes(x = fWY, y = Station, fill = meanMaxTemp))  + scale_fill_viridis(option = "mako") + theme_bw() + 
+  labs(title = "October - April") + theme_figure
+
+
+unique(tempDaily20Summary$Region2)
+```
+
+```{r}
+library(gridExtra)
+library(grid)
+
+grid.arrange(maxdry20, maxwet20, nrow = 2)
+```
+
+Scaled
+```{r}
+tempSeason20SummaryScale <- tempSeason20Summary %>%
+  group_by(Season, Region2, Station) %>%
+  mutate(maxScale = scale(meanMaxTemp))  %>%
+  mutate(axiscolor = case_when(Region2 == 2 ~ "orange1",
+                               Region2 == 3 ~ "firebrick3",
+                              Region2 == 4 ~ "navyblue",
+                               Region2 == 5 ~ "lightblue4",
+                               Region2 == 6 ~ "burlywood3",
+                              Region2 == 7 ~ "gray30")) %>%
+  ungroup() 
+
+axisColor = c("orange1", "firebrick3", "navyblue", "lightblue4", "burlywood3", "gray30")
+
+axisColor0 = unique(select(tempSeason20SummaryScale, c(Station, axiscolor))) %>%
+  arrange(Station)
+axisColor = axisColor0$axiscolor
+
+
+levels(tempSeason20SummaryScale$axiscolor)
+
+(maxwet20S <- ggplot(subset(tempSeason20SummaryScale, Season == "Wet")) + geom_tile(aes(x = fWY, y = Station, fill = maxScale))  + scale_fill_viridis(option = "mako") + 
+    theme_bw() + theme_figure + theme(axis.text.y = element_text(size = 10, color = axisColor)) +
+  labs(title = "October - April"))
+
+(maxdry20S <- ggplot(subset(tempSeason20SummaryScale, Season == "Dry")) + geom_tile(aes(x = fWY, y = Station, fill = maxScale))  + scale_fill_viridis(option = "plasma") + 
+    theme_bw() + theme_figure + theme(axis.text.y = element_text(size = 10, color = axisColor)) +
+  labs(title = "May-September") )
+
+grid.arrange(maxdry20S, maxwet20S, nrow = 2)
+```
+
