@@ -20,7 +20,7 @@ library(readr)
 ```{r import}
 dir <- getwd()
 # Run this then check your dir (type dir in console).
-setwd(paste0(dir, "/DepthAnalysis/")) # If your "dir" does not include the DepthAnalysis folder run this line. If it does ignore this line.
+setwd(pastsete0(dir, "/DepthAnalysis/")) # If your "dir" does not include the DepthAnalysis folder run this line. If it does ignore this line.
 depth <- readRDS("/Data/depthdata_heatstress_20201005.rds") # Run this
 #depth$Datetime <- attr(depth$Datetime, "tzone") <- "PDT"
 ```
@@ -32,7 +32,7 @@ depth2 <- depth %>%
          Station == "ANH") %>%
   mutate(Date = date(Datetime)) 
 ## what does this show us?? if I am reading it correctly this shows anh bottom max temperature june-August? -MN
-
+view(depth2)
 # Look at when max temp hour occurs
 depth2a <- depth2 %>%
   group_by(Date) %>%
@@ -270,11 +270,19 @@ ggplot(Max.time.summary, aes(x= Station, y = Median.max.hour)) + facet_grid(~Wat
   theme(axis.text = element_text(size = 15),
         axis.title = element_text(size = 15),
         strip.text = element_text(size = 15))
+##ANH
+ggplot(Max.time.summary, aes(x= "ANH", y = Median.max.hour)) + facet_grid(~WaterCol) + geom_boxplot() + 
+  theme_bw() + 
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        strip.text = element_text(size = 15))
 
 Max.time.summary3 <- Max.time %>%
   summarize(median.max = median(Hour))
 
-
+view(Max.time.summary3)
+view(Max.time)
+view(Max.time.n)
 ```
 
 
@@ -299,6 +307,7 @@ Plot:
 Have a line at 0, plot a bar plot above and below zero
 
 ```{r}
+view(depthDiff)
 #max temp difference at bottom/surface
 depthDiff <- depth_filter %>%
   mutate(Year = year(Date)) %>%
@@ -379,9 +388,32 @@ depthDiff_relA3 <- depthDiff_relA3 %>%
 
 saveRDS(depthDiff_relA3, "Data/RelativeTempDiff2.rds")
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## max temps between warmest and coldest year
 
+summary(RelativeTempDiff2)
 
+sd(RelativeTempDiff2$Surface)
+sd(RelativeTempDiff2$Bottom)
 
+ANH2015 <- RelativeTempDiff2 %>% 
+  filter(Year==2015, Station=="ANH")
+ANH2017 <- RelativeTempDiff2 %>% 
+  filter(Year == 2017, Station =="ANH")
+
+MAL2015 <- RelativeTempDiff2 %>% 
+  filter(Year==2015, Station=="MAL")
+MAL2017 <- RelativeTempDiff2 %>% 
+  filter(Year==2017, Station=="MAL")
+
+MRZ2015 <- RelativeTempDiff2 %>% 
+  filter(Year==2015, Station=="MRZ")
+MRZ2017 <- RelativeTempDiff2 %>% 
+  filter(Year==2017, Station=="MRZ")
+
+RRI2015 <- RelativeTempDiff2 %>% 
+  filter(Year==2015, Station=="RRI")
+RRI2017 <- RelativeTempDiff2 %>% 
+  filter(Year==2017, Station=="RRI")
 # Normal code
 depthDiff_rel <- pivot_wider(depth_filter, names_from = WaterCol, values_from = Temp) %>%
   arrange(Station, Datetime)

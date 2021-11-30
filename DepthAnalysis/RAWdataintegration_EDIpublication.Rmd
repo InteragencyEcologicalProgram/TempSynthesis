@@ -82,7 +82,7 @@ bottom_clean <- bottom %>%
   mutate(WaterCol = "Bottom") %>%                         #### starting in 2001 to 2012
   rename(Datetime = DATE,
          Temp = VALUE,
-         Station = `STATION NAME`) %>%
+         Station = `STATION NAME`) %>%      
   mutate(Station = replace(as.character(Station), as.character(Station) == "(D12A)  Antioch", "ANH"),
          Station = replace(as.character(Station), as.character(Station) == "(D10A)  Mallard", "MAL"),
          Station = replace(as.character(Station), as.character(Station) == "(D6A)  Martinez", "MRZ"),
