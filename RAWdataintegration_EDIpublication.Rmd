@@ -80,8 +80,7 @@ Prepare and Merge (bind) Files
 ###bottom
 
 bottom <- do.call("rbind", list(ANH_bottom, MAL_bottom, MRZ_bottom, RRI_bottom))
-RRI <- bottom_clean %>% filter(Station == "RRI")
-summary(bottom)
+
 bottom_clean <- bottom %>%
   dplyr::select(c(`STATION NAME`, DATE, VALUE, `QAQC Flag`)) %>% ##### this step is where RRI started only showing dates from the 20th of each month 
   mutate(WaterCol = "Bottom") %>%                         #### starting in 2001 to 2012
@@ -120,14 +119,11 @@ surface_clean <- surface2 %>%                              ###MAL GOES MISSING H
 ```
 
 Final steps
-- separate the date out
+- separate the date out, define some datetime attributes
 - Convert to Hourly
 - Filter for dates that was used for the paper from RelativeTempDiff2
 
 ```{r}
-## separate the date out
-## trying to get the datetime to be a datetime class
-
 ###Bottom
 bottom_clean <- bottom_clean %>%  
        mutate(Date = date(Datetime),
@@ -149,8 +145,6 @@ surface_clean <- surface_clean %>%
        Minute = minute(Datetime)) %>%
   mutate(Temp = round(Temp, digits = 1)) %>%
   filter(Year<2020)
-
-
 ```
 
 ```{r}
@@ -165,7 +159,7 @@ botclean_Hourly <- bottom_clean %>%
 ##filter the dates out for same timeframe as RelativeTempDiff
 
 FinalHourlyRawdataBottom <- botclean_Hourly %>% 
-  filter(Datetime >= as.Date("2012-07-16")& Datetime <= as.Date("2019-12-27"))
+  filter(Date >= as.Date("2012-07-16")& Date <= as.Date("2019-12-27"))
 
 
 ###surfacehourly
@@ -177,7 +171,7 @@ surface_Hourly <- surface_clean %>%
   ungroup()
 
 FinalHourlyRawdatasurface <- surface_Hourly %>% 
-  filter(Datetime >= as.Date("2012-07-16")& Datetime <= as.Date("2019-12-27"))
+  filter(Date >= as.Date("2012-07-16")& Date <= as.Date("2019-12-27"))
 
 
 ```
