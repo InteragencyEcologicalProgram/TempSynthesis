@@ -1,0 +1,190 @@
+---
+title: "Rawdataintegration"
+author: "Michelle Nelson"
+date: "11/17/2021"
+output: html_document
+---
+Read in all CEMP data, make hourly, and same dates as dataframe used for Depth Climate synthesis paper
+Used Cat's code from depthdataintegration
+used for publication to EDI 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+
+
+```{r read}
+library(tidyverse)
+library(lubridate)
+library(readr)
+
+## read in the files, not sure if this is working due to the errors I keep getting
+##ANH
+
+ANH_bottom <- read_csv("C:/Users/nelsonm/OneDrive - California Department of Water Resources/EDI Publications/ANH_07122020_12312019_BottomTemp.csv", skip =4,
+col_types = cols( DATE = col_character()))
+
+ANH_SURF <- read_csv("C:/Users/nelsonm/OneDrive - California Department of Water Resources/EDI Publications/ANH_07162020_12272019_SURFTemp.csv", skip =4,
+col_types = cols( DATE = col_character()))
+
+##MAL
+MAL_bottom <- read_csv("C:/Users/nelsonm/OneDrive - California Department of Water Resources/EDI Publications/MAL_07102012_12312019_BottomTemp.csv", skip =4, col_types = cols( DATE = col_character()))
+
+MAL_SURF <- read_csv("C:/Users/nelsonm/OneDrive - California Department of Water Resources/EDI Publications/MAL_07162012_12272019_SURFTemp.csv", skip =4, 
+col_types = cols( DATE = col_character()))
+
+##MRZ
+MRZ_bottom<- read_csv("C:/Users/nelsonm/OneDrive - California Department of Water Resources/EDI Publications/MRZ_07102012_12312019_BottomTemp.csv", skip =4, col_types = cols( DATE = col_character()))
+
+MRZ_SURF<- read_csv("C:/Users/nelsonm/OneDrive - California Department of Water Resources/EDI Publications/MRZ_07162012_12272019_SURFTemp.csv", col_types = cols( DATE = col_character()))
+
+###RRI
+RRI_bottom<- read_csv("C:/Users/nelsonm/OneDrive - California Department of Water Resources/EDI Publications/RRI_01022008_12312019_BottomTemp.csv", skip =4, col_types = cols( DATE = col_character()))
+
+RRI_SURF<- read_csv("C:/Users/nelsonm/OneDrive - California Department of Water Resources/EDI Publications/RRI_07162012_12272019_SURFTemp.csv", skip =4, col_types = cols( DATE = col_character()))
+
+
+
+##Sarah Perry  4:41 PM you can do df <- subset(df, select -c(X9))
+##that'll drop the column
+###(not sure what ur dataframe is named but just put it there instead of df lol)
+## X9 column was only in ANH and MAL
+
+ANH_bottom <- ANH_bottom[-c(9)]
+MAL_bottom <-MAL_bottom[-c(9)]
+
+#continue with Cat's template vis depthdataintegretion
+
+```
+
+Prepare and Merge (bind) Files
+* Rename columns to match integrated dataset
+* Rename stations to match integrated dataset
+* Merge all bottom stations together
+* Filter by QAQC Flag (G = Good, U = Unchecked)
+* Merge middle and bottom stations to undergo standardized QC with integrated dataset
+
+
+```{r}
+# Merge bottom files together
+# Rename stations
+# Rename columns
+
+
+###bottom
+
+bottom <- do.call("rbind", list(ANH_bottom, MAL_bottom, MRZ_bottom, RRI_bottom))
+
+bottom_clean <- bottom %>%
+  select(c(`STATION NAME`, DATE, VALUE, `QAQC Flag`)) %>% ##### this step is where RRI started only showing dates from the 20th of each month 
+  mutate(WaterCol = "Bottom") %>%                         #### starting in 2001 to 2012
+  rename(Datetime = DATE,
+         Temp = VALUE,
+         Station = `STATION NAME`) %>%      
+  mutate(Station = replace(as.character(Station), as.character(Station) == "(D12A)  Antioch", "ANH"),
+         Station = replace(as.character(Station), as.character(Station) == "(D10A)  Mallard", "MAL"),
+         Station = replace(as.character(Station), as.character(Station) == "(D6A)  Martinez", "MRZ"),
+         Station = replace(as.character(Station), as.character(Station) == "(P8A)  Stockton", "RRI")) %>%
+  filter(`QAQC Flag` %in% c("G", "U"))
+
+###surface
+
+surface <- do.call("rbind", list(ANH_SURF, MAL_SURF, MRZ_SURF, RRI_SURF))
+
+surface_clean <- surface %>%                              ###MAL GOES MISSING HERE!!!!! why?!
+  select(c(`STATION NAME`, DATE, VALUE, `QAQC Flag`)) %>%
+  mutate(WaterCol = "Surface") %>%
+  rename(Datetime = DATE,
+         Temp = VALUE,
+         Station = `STATION NAME`) %>%
+  mutate(Station = replace(as.character(Station), as.character(Station) == "(D12A)  Antioch", "ANH"),
+         Station = replace(as.character(Station), as.character(Station) == "(D10A)  Mallard", "MAL"),
+         Station = replace(as.character(Station), as.character(Station) == "(D6A)  Martinez", "MRZ"),
+         Station = replace(as.character(Station), as.character(Station) == "(P8A)  Stockton", "RRI")) %>%
+  filter(`QAQC Flag` %in% c("G", "U"))
+
+#timezone?? code didnt work... dont think it is needed I am moving on. 
+
+
+```
+
+Final steps
+- separate the date out
+- Convert to Hourly
+- Filter for dates that was used for the paper from RelativeTempDiff2
+
+```{r}
+## separate the date out
+## trying to get the datetime to be a datetime class
+
+###Bottom
+bottom_clean$Datetime <- as.POSIXct(bottom_clean$Datetime, tz = "America/Los_Angeles")  ## this error is now coming up "Error in ####as.POSIXlt.character(x, tz, ...) :character string is not in a standard unambiguous format""
+
+
+bottom_clean <- bottom_clean %>%  
+       mutate(Date = date(Datetime),
+       Year = year(Datetime),
+       Month = month(Datetime),
+       Day = day(Datetime),
+       Hour = hour(Datetime),
+       Minute = minute(Datetime)) %>%
+  mutate(Temp = round(Temp, digits = 1)) %>%
+  filter(Year<2020)
+
+#surface
+
+surface_clean$Datetime <- as.POSIXct(surface_clean$Datetime, format= "%m/%d/%Y %H:%M", tz = "America/Los_Angeles")
+
+surface_clean <- surface_clean %>%
+  mutate(Date = date(Datetime),
+       Year = year(Datetime),
+       Month = month(Datetime),
+       Day = day(Datetime),
+       Hour = hour(Datetime),
+       Minute = minute(Datetime)) %>%
+  mutate(Temp = round(Temp, digits = 1)) %>%
+  filter(Year<2020)
+
+
+```
+
+```{r}
+
+
+
+##Hourly
+
+botclean_Hourly <- bottom_clean %>%
+  group_by(WaterCol, Station, Date, Hour) %>% #group (calculations) by these vars
+  arrange(Station, Date, Hour, Minute) %>% #arrange in order of these vars to visualize duplication
+  slice(1) %>% #keep only the first value for each station, date, hour group so 1 value/hour
+  ungroup()
+
+##filter the dates out for same timeframe as RelativeTempDiff
+
+FinalHourlyRawdataBottom <- botclean_Hourly %>% 
+  filter(Datetime >= as.Date("2012-07-16")& Datetime <= as.Date("2019-12-27"))
+
+
+###surfacehourly
+
+surface_Hourly <- surface_clean %>%
+  group_by(WaterCol, Station, Date, Hour) %>% #group (calculations) by these vars
+  arrange(Station, Date, Hour, Minute) %>% #arrange in order of these vars to visualize duplication
+  slice(1) %>% #keep only the first value for each station, date, hour group so 1 value/hour
+  ungroup()
+
+FinalHourlyRawdatasurface <- surface_Hourly %>% 
+  filter(Datetime >= as.Date("2012-07-16")& Datetime <= as.Date("2019-12-27"))
+
+
+```
+Write files
+```{r}
+write.csv(FinalHourlyRawdataBottom, "C:/Users/nelsonm/OneDrive - California Department of Water Resources/EDI Publications/FinalHourlyRawBottomData2.csv")
+
+write.csv(FinalHourlyRawdatasurface, "C:/Users/nelsonm/OneDrive - California Department of Water Resources/EDI Publications/FinalHourlyRawSurfaceData2.csv")
+```
+
