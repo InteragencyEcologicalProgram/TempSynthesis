@@ -490,14 +490,15 @@ colors1 = colors1$color
     geom_rect(xmin = 10.5, xmax = 11.5, ymin = -Inf, ymax = Inf, fill = "gray85") +
       geom_boxplot(aes(x = Species, y = daysExceedanceTol, fill = LifeStage), position = position_dodge(preserve = "single")) +
    viridis::scale_fill_viridis(discrete = TRUE, option = "plasma") + 
-   scale_y_continuous(breaks = seq(from = 0, to = 300, by = 25)) +
-   ylim(0,300) +
+   scale_y_continuous(limits = c(0,300), breaks = seq(from = 0, to = 300, by = 25)) +
     labs( y = "Annual Days \nExceeding Tolerance") +
     theme_bw() +
-    theme(axis.text.x = element_text(angle = 60, vjust = 0.6),
+   theme(axis.text.x = element_text(angle = 60, vjust = 0.5),
         axis.title.x = element_blank(),
         legend.title = element_blank(),
-        legend.position = "bottom"))
+        legend.position = "top",
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank()))
 
 # -----------------------------------------------------------------
 
@@ -537,21 +538,17 @@ FishOpt1 <- ggplot(SpeciesYears2Opt) + geom_boxplot(aes(x = Species, y = daysExc
     geom_rect(xmin = 4.5, xmax = 5.5, ymin = -Inf, ymax = Inf, fill = "gray85") +
     geom_rect(xmin = 6.5, xmax = 7.5, ymin = -Inf, ymax = Inf, fill = "gray85") +
     geom_boxplot(aes(x = Species, y = daysExceedanceOpt, fill = LifeStage), position = position_dodge(preserve = "single")) + # keeps boxplot widths standard
-   annotate(geom = "text", x = 1, y = 300, label = "20°C", size = 3) +
-   annotate(geom = "text", x = 2, y = 300, label = "20°C", size = 3) +
-   annotate(geom = "text", x = 3, y = 300, label = "20°C", size = 3) +
-   annotate(geom = "text", x = 4, y = 300, label = "20°C", size = 3) +
-   annotate(geom = "text", x = 5, y = 300, label = "20°C", size = 3) +
-   annotate(geom = "text", x = 6, y = 300, label = "20°C", size = 3) +
-   annotate(geom = "text", x = 7, y = 300, label = "20°C", size = 3) +
+   geom_text(aes(Species, 1, label = Optimum, group = LifeStage), size = 3.5, position = position_dodge(width = .9))+
     theme_bw() + 
     scale_fill_viridis(discrete = TRUE, option = "plasma") +
     #scale_fill_manual(values = colors2) + 
-   scale_y_continuous(breaks = seq(from = 0, to = 300, by = 25)) +
+    scale_y_continuous(limits = c(0,300), breaks = seq(from = 0, to = 300, by = 25)) +
   labs(y = "Annual Days \nExceeding Optimum")+ 
   theme(axis.text.x = element_text(angle = 60, vjust = 0.5),
         axis.title.x = element_blank(),
-        legend.title = element_blank()))
+        legend.title = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank()))
 
 # ---------------------------------
 
