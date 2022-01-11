@@ -9,6 +9,7 @@ Data/
 *.html
 RasteredPreds*
 Figures/Archive/
+Figures/
 TimeSeriesCat.Rmd
 
 
