@@ -79,7 +79,13 @@ nStations <- tempRegions %>%
   group_by(Region) %>%
   summarize(nStation = n())
 
-tempRegions2 <- left_join(tempRegions, nStations)
+tempRegions2 <- left_join(tempRegions, nStations) %>%
+  mutate(Month = month(Date),
+         Season = case_when(Month %in% c(1,2,3) ~ "Winter",
+                            Month %in% c(4,5,6) ~ "Spring",
+                            Month %in% c(7,8,9) ~ "Summer",
+                            Month %in% c(10,11,12) ~ "Fall",
+                            TRUE~as.character(NA)))
 ```
 
 ## Function for calculating days exceedance
@@ -151,11 +157,11 @@ r7 <- c("North Delta",  "San Joaquin", "Sac River")
 r8 <- c("North Delta", "South",  "Suisun Bay", "Suisun Marsh", "Sac River")
 r9 <- c( "Suisun Bay", "Suisun Marsh", "Sac River")
 
-spltAd<- funDaysExceed("Splittail", NA, allreg, 29, 24)
+spltAd<- funDaysExceed("Splittail", NA,  29, 24)
 spltL<- funDaysExceed("Splittail", "YOY Large", allreg, 25, 21)
 spltS<- funDaysExceed("Splittail","YOY Small", allreg, 26, 22)
 issA <- funDaysExceed("Silverside", "Adult", allreg, 31, NA)
-issYOY <- funDaysExceed("Silverside", "Adult", allreg, 35, NA)
+issYOY <- funDaysExceed("Silverside", "adult", allreg, 35, NA)
 LMB <- funDaysExceed("Largemouth Bass", "Juvenile", allreg, 34, NA)
 chAd <- funDaysExceed("Chinook", NA,  salmonReg, 25, 21)
 chCo <- funDaysExceed("Chinook", "FR",  salmonReg, 22, 20)
