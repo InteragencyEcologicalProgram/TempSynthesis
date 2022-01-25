@@ -859,7 +859,7 @@ range(raster25NRDiff_crop$Prediction2, na.rm=TRUE)
 (raster25DiffPlot <- raster_plotDayDiff(data = raster25Diff_crop, limit1 = -15, limit2 = 45, by = 15))
 
 
-(raster21NRDiffPlot <- raster_plotDayDiff(raster21NRDiff_crop, limit1 = -10, limit2 = 85, by = 15))
+(raster21NRDiffPlot <- raster_plotDayDiff(raster21NRDiff_crop, limit1 = 0, limit2 = 45, by = 15))
 
 (raster25NRDiffPlot <- raster_plotDayDiff(raster25NRDiff_crop,limit1 = -10, limit2 = 85, by = 15))
 ```
@@ -976,7 +976,7 @@ get_legend<-function(myggplot){
 
 # Stress plots
 (plot21_avg <- plot21_avg  + 
-    scale_fill_viridis_c(option = "viridis", breaks = seq(from = 0, to = 125, by = 25), na.value="white", limits = c(0,125)) + 
+    scale_fill_viridis_c(option = "viridis", breaks = seq(from = 0, to = 120, by = 20), na.value="white", limits = c(0,110)) + 
     guides(fill=guide_colorbar(title="Number Stressful Days", barwidth = 9)) +
     theme_fig) 
 
@@ -986,7 +986,7 @@ plot(legend1)
 
 
 (plot21_avg2 <- plot21_avg  + 
-    scale_fill_viridis_c(option = "viridis", breaks = seq(from = 0, to = 125, by = 25), na.value="white", limits = c(0,125)) + 
+    scale_fill_viridis_c(option = "viridis", breaks = seq(from = 0, to = 120, by = 20), na.value="white", limits = c(0,110)) + 
     theme_fig +
     theme(legend.position = "none") + 
     labs(title = "Average Year"))
@@ -995,19 +995,19 @@ plot(legend1)
 (plot21_anom2 <- plot21_anom + 
     theme_fig +
     theme(legend.position = "none") +
-    scale_fill_viridis_c(option = "viridis", breaks = seq(from = 0, to = 125, by = 25), na.value="white", limits = c(0,125)) +
+    scale_fill_viridis_c(option = "viridis", breaks = seq(from = 0, to = 120, by = 20), na.value="white", limits = c(0,110)) +
 
     labs(title = "Warm Year (+1°C)"))
 
 
 (plot25_avg2 <- plot25_avg + 
-    scale_fill_viridis_c(option = "viridis", breaks = seq(from = 0, to = 125, by = 25), na.value="white", limits = c(0,125)) +
+    scale_fill_viridis_c(option = "viridis", breaks = seq(from = 0, to = 120, by = 20), na.value="white", limits = c(0,110)) +
     theme_fig + 
     theme(legend.position = "none"))
 
 
 (plot25_anom2 <- plot25_anom + 
-    scale_fill_viridis_c(option = "viridis", breaks = seq(from = 0, to = 125, by = 25), na.value="white", limits = c(0,125)) + 
+    scale_fill_viridis_c(option = "viridis", breaks = seq(from = 0, to = 120, by = 20), na.value="white", limits = c(0,110)) + 
     theme_fig +
     theme(legend.position = "none"))
 
@@ -1069,7 +1069,7 @@ get_legend<-function(myggplot){
 (plot21NR_avg)
 
 (plot21NR_avg <- plot21NR_avg  + 
-    scale_fill_viridis_c(option = "viridis", breaks = seq(from = 0, to = 125, by = 25), na.value="white", limits = c(0,125)) + 
+    scale_fill_viridis_c(option = "viridis", breaks = seq(from = 0, to = 120, by = 20), na.value="white", limits = c(0,110)) + 
     guides(fill=guide_colorbar(title="Number Stressful Days", barwidth = 9)) +
     theme_fig)
 
@@ -1078,7 +1078,7 @@ legend3 <- get_legend(plot21_avg)
 legend3
 
 (plot21NR_avg2 <- plot21NR_avg  + 
-    scale_fill_viridis_c(option = "viridis", breaks = seq(from = 0, to = 125, by = 25), na.value="white", limits = c(0,125)) + 
+    scale_fill_viridis_c(option = "viridis", breaks = seq(from = 0, to = 120, by = 20), na.value="white", limits = c(0,110)) + 
     theme_fig +
     theme(legend.position = "none") + 
     labs(title = "Average Year"))
@@ -1086,16 +1086,16 @@ legend3
 (plot21NR_anom2 <- plot21NR_anom + 
     theme_fig +
     theme(legend.position = "none") +
-    scale_fill_viridis_c(option = "viridis", breaks = seq(from = 0, to = 125, by = 25), na.value="white", limits = c(0,125)) +
+    scale_fill_viridis_c(option = "viridis", breaks = seq(from = 0, to = 120, by = 20), na.value="white", limits = c(0,110)) +
     labs(title = "Warm Year (+1°C)"))
 
 (plot25NR_avg2 <- plot25NR_avg + 
-    scale_fill_viridis_c(option = "viridis", breaks = seq(from = 0, to = 125, by = 25), na.value="white", limits = c(0,125)) + 
+    scale_fill_viridis_c(option = "viridis", breaks = seq(from = 0, to = 120, by = 20), na.value="white", limits = c(0,110)) + 
     theme_fig +
     theme(legend.position = "none"))
 
 (plot25NR_anom2 <- plot25NR_anom + 
-    scale_fill_viridis_c(option = "viridis", breaks = seq(from = 0, to = 125, by = 25), na.value="white", limits = c(0,125)) +
+    scale_fill_viridis_c(option = "viridis", breaks = seq(from = 0, to = 120, by = 25), na.value="white", limits = c(0,110)) +
     theme_fig +
     theme(legend.position = "none"))
 
@@ -1148,6 +1148,10 @@ ggplot(noRecov25) + geom_point(aes(x = Longitude, y = Latitude, color = propDays
 Info25 <- noRecov25 %>%
   mutate(AnomalyGrp = ifelse(Anomaly>0.4, "High", "Low"))
 
+Range <- Info25 %>%
+  group_by(AnomalyGrp) %>%
+  summarize(min = min(nDaysAdj),
+            max = max(nDaysAdj))
 Anomaly25NRPlot <- ggplot(Info25) + geom_boxplot(aes(x = Region, y = nDays, fill = AnomalyGrp)) + labs(y = "Number of Days", fill = "Anomaly") + scale_fill_viridis(discrete = TRUE, option = "cividis") + theme_bw() + theme(axis.text.x = element_text(angle = 90)) 
 ```
 
