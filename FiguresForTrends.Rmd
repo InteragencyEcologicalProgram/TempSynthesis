@@ -38,7 +38,16 @@ tempDaily20 <- readRDS("Data/tempDaily20yr_20220125.rds") %>%
   mutate(Region = as.character(Region)) %>%
   mutate(Region = replace(Region, Region == "Sac River", "Confluence"),
          Region = replace(Region, Region == "San Joaquin", "Central"))
+
 tempDaily8 <- readRDS("Data/tempDaily_20210811.rds")%>%
+  mutate(Region = as.character(Region)) %>%
+  mutate(Region = replace(Region, Region == "Sac River", "Confluence"),
+         Region = replace(Region, Region == "San Joaquin", "Central"))
+
+LatLon <- read.csv("Data/StationsMetadata.csv")
+
+Regions <- read.csv("Data/Stations_wRosiesReg.csv") %>%
+  select(-Latitude, -Longitude) %>%
   mutate(Region = as.character(Region)) %>%
   mutate(Region = replace(Region, Region == "Sac River", "Confluence"),
          Region = replace(Region, Region == "San Joaquin", "Central"))
@@ -54,6 +63,28 @@ last(tempDaily20$Date)
 
 str(tempDaily20)
 str(tempDaily8)
+```
+
+Make supplemental tables
+```{r}
+summary20 <- tempDaily20 %>%
+  group_by(Station) %>%
+  summarize(StartDateAnalysis = first(Date),
+            EndDateAnalysis = last(Date)) %>%
+  left_join(LatLon %>% select(Station, StationName, Agency, Latitude, Longitude, HabitatType)) %>%
+  left_join(Regions %>% select(Station, Region)) %>%
+  select(Station, StationName, Region, Latitude, Longitude, StartDateAnalysis, EndDateAnalysis, Agency, HabitatType)
+
+#write_csv(summary20, "Tables/Stations_included_20year.csv")
+summary10 <- tempDaily10 %>%
+  group_by(Station) %>%
+  summarize(StartDateAnalysis = first(Date),
+            EndDateAnalysis = last(Date)) %>%
+  left_join(LatLon %>% select(Station, StationName, Agency, Latitude, Longitude, HabitatType)) %>%
+  left_join(Regions %>% select(Station, Region)) %>%
+  select(Station, StationName, Region, Latitude, Longitude, StartDateAnalysis, EndDateAnalysis, Agency, HabitatType)
+
+#write_csv(summary10, "Tables/Stations_included_10year.csv")
 ```
 
 # 20 year trends
@@ -187,28 +218,28 @@ grid.arrange(maxdry20S, maxwet20S, nrow = 2)
 dev.off()
 ```
 
-# 8 year trends
+# 10 year trends
 ```{r}
-tempDaily8b <- tempDaily8 %>%
+tempDaily10b <- tempDaily10 %>%
   mutate(Region2 = ifelse(Region == "Far North", "North Delta", Region),
          Month = month(Date),
          fWY = factor(WY),
          Season = ifelse(Month >4 & Month <10, "Dry", "Wet")) %>%
   mutate(Region2 = factor(Region2))
 
-tempDaily8Summary <- tempDaily8b %>%
+tempDaily10Summary <- tempDaily10b %>%
   group_by(fWY, Region, Region2, Station) %>%
   summarize(meanMaxTemp = mean(maxDaily)) %>%
   ungroup()
 
-tempSeason8SummaryStation <- tempDaily8b %>%
+tempSeason10SummaryStation <- tempDaily10b %>%
   group_by(Season, fWY, WY, Region, Region2,Station) %>%
   summarize(meanMaxTemp = mean(maxDaily),
             sd = sd(maxDaily),
             n = n(),
             se = sd/sqrt(n))
 
-tempSeason8Summary <- tempDaily8b %>%
+tempSeason10Summary <- tempDaily10b %>%
   group_by(Season, fWY, WY, Region, Region2) %>%
   summarize(meanMaxTemp = mean(maxDaily),
             sd = sd(maxDaily),
@@ -218,7 +249,7 @@ tempSeason8Summary <- tempDaily8b %>%
 
 ## Lines
 ```{r}
-(line8yr <- ggplot(tempSeason8Summary) + 
+(line10yr <- ggplot(tempSeason10Summary) + 
   geom_point(aes(x = WY, y = meanMaxTemp, colour = Region), size = 2) +
   geom_line(aes(x = WY, y = meanMaxTemp, colour = Region)) +
    geom_errorbar(aes(x = WY, ymin = meanMaxTemp-se, ymax = meanMaxTemp + se, width = 0.2)) +
@@ -231,9 +262,9 @@ tempSeason8Summary <- tempDaily8b %>%
 ```
 
 ```{r}
-tiff(filename=file.path("Figures/Trends8Years_line.tiff"), units="in",type="cairo", bg="white", height=5.5, 
+tiff(filename=file.path("Figures/Trends10Years_line.tiff"), units="in",type="cairo", bg="white", height=5.5, 
      width=7, res=300, pointsize=12,compression="lzw")
-line8yr
+line10yr
 dev.off()
 ```
 
