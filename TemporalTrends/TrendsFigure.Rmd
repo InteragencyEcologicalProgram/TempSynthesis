@@ -1,0 +1,85 @@
+---
+title: "Trends_Figure"
+author: "Catarina Pien"
+date: "9/29/2021"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+Figure for manuscript and powerpoint
+Tile plots of mean max temperature by year and region
+Plots created for wet and dry seasons
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(tidyverse)
+library(lubridate)
+library(viridis)
+```
+
+```{r}
+setwd("..")
+tempDaily <- readRDS("Data/tempDaily_20210811.rds")
+```
+
+```{r}
+tempDaily2 <- tempDaily %>%
+  mutate(Region2 = ifelse(Region == "Far North", "North Delta", Region),
+         Month = month(Date),
+         fWY = factor(WY),
+         Season = ifelse(Month >4 & Month <10, "Dry", "Wet"))
+
+tempDailySummary <- tempDaily2 %>%
+  group_by(fWY, Region2) %>%
+  summarize(meanMaxTemp = mean(maxDaily))
+
+tempSeasonSummary <- tempDaily2 %>%
+  group_by(Season, fWY, Region2) %>%
+  summarize(meanMaxTemp = mean(maxDaily))
+
+```
+
+
+
+```{r}
+theme_figure <-  theme_bw() + theme(axis.title.y = element_blank(),                                 axis.title.x = element_blank(),legend.position = "bottom",
+                                     axis.text.x = element_text(size = 12, angle= 90),
+                                     axis.text.y = element_text(size = 12),
+                                    legend.text = element_text(size = 12),
+                                    plot.title = element_text(hjust = 0.5)) 
+
+max <- ggplot(tempDailySummary) + geom_tile(aes(x = fWY, y = Region2, fill = meanMaxTemp)) + scale_fill_viridis(option = "magma")
+
+maxdry <- ggplot(subset(tempSeasonSummary, Season == "Dry")) + geom_tile(aes(x = fWY, y = Region2, fill = meanMaxTemp))  + scale_fill_viridis(option = "plasma")+
+  labs(title = "May - September") + theme_figure
+
+maxwet <- ggplot(subset(tempSeasonSummary, Season == "Wet")) + geom_tile(aes(x = fWY, y = Region2, fill = meanMaxTemp))  + scale_fill_viridis(option = "mako") + theme_bw() + 
+  labs(title = "October - April") + theme_figure
+```
+
+```{r}
+library(gridExtra)
+library(grid)
+
+grid.arrange(maxdry, maxwet, nrow = 1)
+```
+
+Scaled
+```{r}
+tempSeasonSummaryScale <- tempSeasonSummary %>%
+  group_by(Season, Region2) %>%
+  mutate(maxScale = scale(meanMaxTemp)) 
+
+(maxwetS <- ggplot(subset(tempSeasonSummaryScale, Season == "Wet")) + geom_tile(aes(x = fWY, y = Region2, fill = maxScale))  + scale_fill_viridis(option = "mako") + theme_bw() + 
+  labs(title = "October - April") + theme_figure)
+
+(maxdryS <- ggplot(subset(tempSeasonSummaryScale, Season == "Dry")) + geom_tile(aes(x = fWY, y = Region2, fill = maxScale))  + scale_fill_viridis(option = "plasma") + theme_bw() + 
+  labs(title = "May - September") + theme_figure)
+
+grid.arrange(maxdryS, maxwetS, nrow = 1)
+```
+

@@ -79,7 +79,7 @@ tempFilt$HabitatType <- as.factor(tempFilt$HabitatType)
 
 
 New filtering code by days then months then years
-8 years of data
+At least 15 years data
 ```{r}
 StationYearCombo <- tempFilt %>%
   filter(WY>1999) %>%
@@ -118,9 +118,9 @@ ListOfSta <- StationYearFilter %>%
 
 ```{r subset}
 tempToUse20 <- inner_join(tempFilt, StationYearFilter, by = c("Region","Station", "WY")) 
-#tempToUse$WY = as.numeric(tempToUse$WY)
+tempToUse20$WY = as.numeric(tempToUse20$WY)
 today = format(today(), "%Y%m%d")
-#saveRDS(tempToUse, paste0("Data/temp10years_", today, ".rds"))
+#saveRDS(tempToUse20, paste0("Data/temp20years_", today, ".rds"))
 unique(tempToUse20$Region)
 ```
 
@@ -135,7 +135,7 @@ tempDaily20 <- tempToUse20 %>%
             rangeTemp = maxDaily-minDaily) %>%
   ungroup()
 tempDaily20$WY <- as.numeric(tempDaily20$WY)
-#saveRDS(tempDaily, "Data/tempDaily_20210811.rds")
+#saveRDS(tempDaily20, "Data/tempDaily20yr_20220125.rds")
 ```
 
 
