@@ -1,0 +1,240 @@
+---
+title: "FiguresForTrends"
+author: "Catarina Pien"
+date: "1/25/2022"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+```
+
+```{r}
+theme_fig = theme_bw() + 
+  theme(axis.text.x = element_text(angle = 90, size = 14),
+        strip.text = element_text(size = 14),
+        axis.title = element_text(size = 14),
+        axis.text.y = element_text(size = 14),
+        legend.text = element_text(size =13),
+        legend.title = element_text(size = 13))
+
+theme_figure <-  theme_bw() + theme(axis.title.y = element_blank(),                                 axis.title.x = element_blank(),legend.position = "right",
+                                     axis.text.x = element_text(size = 10, angle= 90),
+                                     axis.text.y = element_text(size = 10),
+                                    legend.text = element_text(size = 12),
+                                    plot.title = element_text(hjust = 0.5)) 
+```
+
+```{r}
+tempDaily20 <- readRDS("Data/tempDaily20yr_20220125.rds") %>%
+  mutate(Region = as.character(Region)) %>%
+  mutate(Region = replace(Region, Region == "Sac River", "Confluence"),
+         Region = replace(Region, Region == "San Joaquin", "Central"))
+tempDaily8 <- readRDS("Data/tempDaily_20210811.rds")%>%
+  mutate(Region = as.character(Region)) %>%
+  mutate(Region = replace(Region, Region == "Sac River", "Confluence"),
+         Region = replace(Region, Region == "San Joaquin", "Central"))
+```
+
+Station dates 
+```{r}
+first(tempDaily20$Date)
+last(tempDaily20$Date)
+
+first(tempDaily8$Date)
+last(tempDaily20$Date)
+
+str(tempDaily20)
+str(tempDaily8)
+```
+
+# 20 year trends
+Grouping and means for max temp
+```{r}
+tempDaily20b <- tempDaily20 %>%
+  mutate(Region2 = ifelse(Region == "Far North", "North Delta", Region),
+         Month = month(Date),
+         fWY = factor(WY),
+         Season = ifelse(Month >4 & Month <10, "Dry Season", "Wet Season")) %>%
+  mutate(Region2 = factor(Region2))
+
+tempDaily20Summary <- tempDaily20b %>%
+  group_by(fWY, Region, Region2, Station) %>%
+  summarize(meanMaxTemp = mean(maxDaily),
+            meanMinTemp = mean(minDaily)) %>%
+  ungroup()
+
+tempSeason20SummaryStation <- tempDaily20b %>%
+  group_by(Season, fWY, WY, Region, Region2,Station) %>%
+  summarize(meanMaxTemp = mean(maxDaily),
+            meanMinTemp = mean(minDaily),
+            sd = sd(maxDaily),
+            n = n(),
+            se = sd/sqrt(n))
+
+tempSeason20Summary <- tempDaily20b %>%
+  group_by(Season, fWY, WY, Region, Region2) %>%
+  summarize(meanMaxTemp = mean(maxDaily),
+            meanMinTemp = mean(minDaily),
+            sd = sd(maxDaily),
+            n = n(),
+            se = sd/sqrt(n))
+```
+
+
+## Lines
+```{r}
+
+(line20yr <- ggplot(tempSeason20Summary) + 
+  geom_point(aes(x = WY, y = meanMaxTemp, colour = Region), size = 1.5) +
+  geom_line(aes(x = WY, y = meanMaxTemp, colour = Region)) +
+   geom_errorbar(aes(x = WY, ymin = meanMaxTemp-se, ymax = meanMaxTemp + se, width = 0.2)) +
+  facet_grid(Season~., scales = "free_y") +
+  scale_x_continuous(breaks = seq(from = 1999, to = 2019, by = 1)) +
+  scale_colour_viridis(discrete = TRUE) +
+  labs(x = "Water Year", y = "Mean Maximum Daily Temperature (°C)")+
+  theme_fig +
+   theme(legend.position = "top"))
+
+(line20yr_min <- ggplot(tempSeason20Summary) + 
+  geom_point(aes(x = WY, y = meanMinTemp, colour = Region), size = 1.5) +
+  geom_line(aes(x = WY, y = meanMinTemp, colour = Region)) +
+   geom_errorbar(aes(x = WY, ymin = meanMinTemp-se, ymax = meanMinTemp + se, width = 0.2)) +
+  facet_grid(Season~., scales = "free_y") +
+  scale_x_continuous(breaks = seq(from = 1999, to = 2019, by = 1)) +
+  scale_colour_viridis(discrete = TRUE) +
+  labs(x = "Water Year", y = "Mean Minimum Daily Temperature (°C)")+
+  theme_fig +
+   theme(legend.position = "top"))
+```
+
+Max
+```{r}
+tiff(filename=file.path("Figures/TrendsMax20Years_line.tiff"), units="in",type="cairo", bg="white", height=5.5, 
+     width=8, res=300, pointsize=12,compression="lzw")
+line20yr
+dev.off()
+```
+
+Min
+```{r}
+tiff(filename=file.path("Figures/TrendsMin20Years_line.tiff"), units="in",type="cairo", bg="white", height=5.5, 
+     width=8, res=300, pointsize=12,compression="lzw")
+line20yr_min
+dev.off()
+```
+
+## Tile 
+```{r}
+(max20 <- ggplot(tempDaily20Summary) + geom_tile(aes(x = fWY, y = Region, fill = meanMaxTemp)) + scale_fill_viridis(option = "magma")) + theme_fig
+
+maxdry20 <- ggplot(subset(tempSeason20SummaryStation, Season == "Dry")) + geom_tile(aes(x = fWY, y = Station, fill = meanMaxTemp))  + scale_fill_viridis(option = "plasma")+
+  labs(title = "May - September", fill = "Mean Maximum \nWater Temperature\n") + theme_figure
+
+maxwet20 <- ggplot(subset(tempSeason20SummaryStation, Season == "Wet")) + geom_tile(aes(x = fWY, y = Station, fill = meanMaxTemp))  + scale_fill_viridis(option = "mako") + theme_bw() + 
+  labs(title = "October - April", fill = "Mean Maximum \nWater Temperature\n") + theme_figure
+```
+
+```{r}
+grid.arrange(maxdry20, maxwet20, nrow = 2)
+```
+
+
+Scaled and with labels
+```{r}
+tempSeason20SummaryScale <- tempSeason20SummaryStation %>%
+  group_by(Season, Region2, Station) %>%
+  mutate(maxScale = scale(meanMaxTemp))  %>%
+  mutate(axiscolor = case_when(Region2 == 2 ~ "orange1",
+                               Region2 == 3 ~ "firebrick3",
+                              Region2 == 4 ~ "navyblue",
+                               Region2 == 5 ~ "lightblue4",
+                               Region2 == 6 ~ "burlywood3",
+                              Region2 == 7 ~ "gray30")) %>%
+  ungroup() 
+
+axisColor = c("orange1", "firebrick3", "navyblue", "lightblue4", "burlywood3", "gray30")
+
+axisColor0 = unique(select(tempSeason20SummaryScale, c(Station, axiscolor))) %>%
+  arrange(Station)
+axisColor = axisColor0$axiscolor
+
+
+levels(tempSeason20SummaryScale$axiscolor)
+
+(maxwet20S <- ggplot(subset(tempSeason20SummaryScale, Season == "Wet")) + geom_tile(aes(x = fWY, y = Station, fill = maxScale))  + 
+    scale_fill_viridis(option = "mako") + 
+    theme_bw() + theme_figure + theme(axis.text.y = element_text(size = 10, color = axisColor)) +
+  labs(title = "October - April", fill = "Scaled Mean \nMaximum Water \nTemperature\n"))
+
+(maxdry20S <- ggplot(subset(tempSeason20SummaryScale, Season == "Dry")) + geom_tile(aes(x = fWY, y = Station, fill = maxScale))  + scale_fill_viridis(option = "plasma") + 
+    theme_bw() + theme_figure + theme(axis.text.y = element_text(size = 10, color = axisColor)) +
+  labs(title = "May-September", fill = "Scaled Mean \nMaximum Water \nTemperature\n") )
+```
+
+```{r}
+tiff(filename=file.path("Figures/Trends20Years_scaled.tiff"), units="in",type="cairo", bg="white", height=7, 
+     width=7, res=300, pointsize=12,compression="lzw")
+grid.arrange(maxdry20S, maxwet20S, nrow = 2)
+dev.off()
+```
+
+# 8 year trends
+```{r}
+tempDaily8b <- tempDaily8 %>%
+  mutate(Region2 = ifelse(Region == "Far North", "North Delta", Region),
+         Month = month(Date),
+         fWY = factor(WY),
+         Season = ifelse(Month >4 & Month <10, "Dry", "Wet")) %>%
+  mutate(Region2 = factor(Region2))
+
+tempDaily8Summary <- tempDaily8b %>%
+  group_by(fWY, Region, Region2, Station) %>%
+  summarize(meanMaxTemp = mean(maxDaily)) %>%
+  ungroup()
+
+tempSeason8SummaryStation <- tempDaily8b %>%
+  group_by(Season, fWY, WY, Region, Region2,Station) %>%
+  summarize(meanMaxTemp = mean(maxDaily),
+            sd = sd(maxDaily),
+            n = n(),
+            se = sd/sqrt(n))
+
+tempSeason8Summary <- tempDaily8b %>%
+  group_by(Season, fWY, WY, Region, Region2) %>%
+  summarize(meanMaxTemp = mean(maxDaily),
+            sd = sd(maxDaily),
+            n = n(),
+            se = sd/sqrt(n))
+```
+
+## Lines
+```{r}
+(line8yr <- ggplot(tempSeason8Summary) + 
+  geom_point(aes(x = WY, y = meanMaxTemp, colour = Region), size = 2) +
+  geom_line(aes(x = WY, y = meanMaxTemp, colour = Region)) +
+   geom_errorbar(aes(x = WY, ymin = meanMaxTemp-se, ymax = meanMaxTemp + se, width = 0.2)) +
+  facet_grid(Season~., scales = "free_y") +
+  scale_x_continuous(breaks = seq(from = 2010, to = 2019, by = 1)) +
+  scale_colour_viridis(discrete = TRUE) +
+  labs(x = "Water Year", y = "Mean Maximum Daily Temperature (°C)")+
+  theme_fig +
+   theme(legend.position = "top"))
+```
+
+```{r}
+tiff(filename=file.path("Figures/Trends8Years_line.tiff"), units="in",type="cairo", bg="white", height=5.5, 
+     width=7, res=300, pointsize=12,compression="lzw")
+line8yr
+dev.off()
+```
+
+
