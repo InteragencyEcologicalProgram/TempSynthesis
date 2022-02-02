@@ -98,7 +98,7 @@ daysExceedance <- tempRegions2 %>%
     # group_by(WY, Region) %>%
     # mutate(nDays = n()) %>%
     # ungroup() 
-    filter(Region %in% regions) %>%
+    filter(C(Region, season) %in% c(regions$region, regions$season)) %>%
     mutate(ExceedTol = ifelse(maxDaily > tolerance, 1L, 0L),
            ExceedOpt = ifelse(maxDaily > optimum, 1L, 0L)) %>%
   group_by(WY, Date) %>%

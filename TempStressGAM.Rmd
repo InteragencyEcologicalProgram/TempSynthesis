@@ -97,7 +97,7 @@ heatDays21 <- heatDays210 %>%
 highStress21 <- heatDays21 %>%
   filter(Stress == "High")%>%
  mutate(nDaysAdj = round((propDays*365),0)) %>%
-  rename(Index = X1) %>%
+  rename(Index = ...1) %>%
   left_join(latlon)%>%
   filter(WY>2009 & WY<2020,
          Station != "OH1")
@@ -105,14 +105,14 @@ highStress21 <- heatDays21 %>%
 highStress25 <- heatDays25 %>%
   filter(Stress == "High") %>%
   mutate(nDaysAdj = round((propDays*365),0)) %>%
-  rename(Index = X1) %>%
+  rename(Index = ...1) %>%
   left_join(latlon)%>%
   filter(WY>2009 & WY<2020,
          Station != "OH1")
 
 noRecov21 <- noRecov210 %>%
   left_join(Anomaly) %>%
-  rename(Index = X1) %>%
+  rename(Index = ...1) %>%
   filter(StressAllDay == "Y") %>%
   mutate(nDaysAdj = round((propDays*365),0)) %>%
   left_join(latlon) %>%
@@ -121,7 +121,7 @@ noRecov21 <- noRecov210 %>%
 
 noRecov25 <- noRecov250 %>%
   left_join(Anomaly) %>%
-  rename(Index = X1) %>%
+  rename(Index = ...1) %>%
   filter(StressAllDay == "Y")%>%
   mutate(nDaysAdj = round((propDays*365),0)) %>%
   left_join(latlon)%>%
@@ -511,7 +511,7 @@ This function creates new data based off of your data limits
 ```{r}
 HD_pred<-function(Full_data=Data,
                   Delta_subregions = regions,
-                  Delta_water=delta2,
+                  Delta_water=delta,
                   Stations = stas,
                   n=500, # 500 points x, 500  points y
                   AnomalyRange = 0:1
@@ -590,6 +590,15 @@ newdatag25abin<-newdata_25a%>%
          L95=Prediction-SE*1.96,
          U95=Prediction+SE*1.96)
 
+# 25a
+modelg25abin_predictions2<-predict(g25abinQ, newdata=newdata_25a, type="response", se.fit=TRUE, discrete=T) # Create predictions
+# Edit data frame
+newdatag25abi2n<-newdata_25a%>%
+  mutate(Prediction=modelg25abin_predictions2$fit)%>%
+  mutate(SE=modelg25abin_predictions2$se.fit,
+         L95=Prediction-SE*1.96,
+         U95=Prediction+SE*1.96)
+
 # * no recovery ----
 
 # NR21a
@@ -617,11 +626,21 @@ Check model predictions
 range(filter(highStress21,Anomaly>=0)$nDays) #48-185
 range(newdatag21abin$Prediction*365) #50-138
 
+range(filter(highStress21,Anomaly < .1)$nDays) #48-185
+range(filter(newdatag21abin, Anomaly ==0)$Prediction*365) #50-138
+
+
 range(filter(noRecov21,Anomaly>=0)$nDays) #0-154
 range(newdatag21NRabin$Prediction*365) #11-108
 
 range(filter(highStress25,Anomaly>=0)$nDays) #0-110
-range(newdatag25abin$Prediction*365) #0.218-319.6
+range(newdatag25abi2n$Prediction*365) #0.218-319.6
+
+range(filter(highStress25,Anomaly <0.1)$nDays) #0-107
+range(filter(newdatag25abin, Anomaly ==0)$Prediction*365) #0.217, 77.4
+
+foo = filter(newdatag25abin, Anomaly ==0)
+foo2 = filter(newdatag25abin, Anomaly ==1)
 
 range(noRecov25$nDays) #0-76
 range(newdatag25NRabin$Prediction*365) # very small
