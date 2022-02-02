@@ -36,7 +36,7 @@ setwd("C:/Users/cpien/OneDrive - California Department of Water Resources/Work/C
 tempDailyM <- readRDS("Data/tempDaily_20210811.rds")
 LatLon <- read.csv("Data/StationsMetadata.csv")
 regions <- st_read("RosieRegions/shpExport.shp")
-regions$Region <- c("Suisun Marsh", "Suisun Bay","Sac River", "North Delta", "Far North", "San Joaquin" , "South") 
+regions$Region <- c("Suisun Marsh", "Suisun Bay","Confluence", "North Delta", "Far North", "Central" , "South") 
 #regions <- filter(regions, Region!="Far North")
 
 ```
@@ -64,13 +64,19 @@ library(sf)
 library(deltamapr)
 library(ggspatial)
 library(mapview)
+library(sp)
 
 stations_sf <- st_as_sf(tempInfo, coords = c("Longitude", "Latitude"), crs = 4326)
-stations_sf_4269 <- st_transform(stations_sf, crs = st_crs(California))
+stations_sf_4269 <- st_transform(stations_sf, crs = st_crs(California)) %>%
+  mutate(Region = as.character(Region)) %>%
+  mutate(Region = replace(Region, Region == "Sac River", "Confluence"),
+         Region = replace(Region, Region == "San Joaquin", "Central"))
 regions_4269 <- st_transform(regions, crs = st_crs(California))
+centroids <- (st_centroid(regions_4269)) 
+centroid_coords <- cbind(centroids, as.data.frame(st_coordinates(centroids)))
 
 # Redefine your boundaries
-buffer = 0.5
+buffer = 0.1
 coordDict = list( 
     'minLat' = min(tempInfo$Latitude) - buffer, #bottom
     'maxLat' = max(tempInfo$Latitude) + buffer , #top
@@ -102,7 +108,7 @@ Inset map
 ```{r}
 inset <- ggplot() + 
   geom_sf(data = California, fill = "white") +
-  geom_sf(data = insetbbox, fill = NA, color = "red", size = 1.1) +
+  geom_sf(data = insetbbox0, fill = NA, color = "red", size = 1.1) +
   theme_void()
 
 inset
@@ -111,17 +117,21 @@ inset
 Main map
 ```{r}
 map_final <- ggmap(map_obj) + 
-  geom_sf(data = WW_Delta, fill = "steelblue", alpha = 0.5, inherit.aes = FALSE) + 
-  geom_sf(data = stations_sf_4269, size = 4, shape = 21, 
-          aes(fill = Region), inherit.aes = FALSE)+
   geom_sf(data = regions_4269, aes(fill = Region), inherit.aes = FALSE, alpha = 0.3)+
+  geom_sf(data = WW_Delta, fill = "steelblue", colour = "steelblue", alpha = 0.6, inherit.aes = FALSE) + 
+  geom_sf(data = stations_sf_4269, size = 2, shape = 21, 
+          aes(fill = Region), inherit.aes = FALSE)+
+  geom_label(data = centroid_coords, aes(label = Region, x = X, y = Y), inherit.aes = FALSE, 
+             nudge_y = ifelse(centroid_coords$Region %in% c("Suisun Marsh"), 0.15, ifelse(centroid_coords$Region == "Suisun Bay", -0.1, ifelse(centroid_coords$Region == "Central", 0.08, 0))), 
+             nudge_x = ifelse(centroid_coords$Region %in% c("North Delta", "Central"), 0.3,ifelse(centroid_coords$Region == "Far North", 0.25, ifelse(centroid_coords$Region == "South", 0.25, ifelse(centroid_coords$Region == "Confluence", 0.35, 0)))))+
   annotation_north_arrow(location = "tr", which_north = "true", 
         pad_x = unit(.2, "in"), pad_y = unit(0.2, "in"),
         style = north_arrow_fancy_orienteering,
         height = unit(2, "cm"),
   width = unit(2, "cm"),) +
   annotation_scale(location = "bl", bar_cols = c("black", "white", "black", "white"), text_cex = 1.5) +
-  annotate(geom = "text", x = -122.3, y = 37.85, label = "San Francisco Bay", fontface = "italic", color = "grey22", size = 4.5) +
+  
+  #annotate(geom = "text", x = -122.3, y = 37.85, label = "San Francisco Bay", fontface = "italic", color = "grey22", size = 4.5) +
   # coord_sf(xlim = st_bbox(insetbbox)[c(1, 3)],
   #          ylim = st_bbox(insetbbox)[c(2, 4)])+
   scale_fill_viridis(discrete = "TRUE") +
@@ -131,7 +141,8 @@ map_final <- ggmap(map_obj) +
         axis.text = element_text(size = 16),
         legend.text = element_text(size = 14),
         legend.title = element_blank(),
-        legend.position = c(0.85, .12),
+        #legend.position = c(0.84, .65),
+        legend.position = "none",
         legend.margin = margin(0, 0.1, 0.1, 0.1, "cm") )
 map_final
 ```
@@ -148,7 +159,7 @@ gg_inset_map1
 
 ```{r}
 gg_inset_map1
-ggsave("Figures/StationMapInset.jpeg", width = 8, height = 8, device = 'png', dpi = 300, bg = "transparent")
+ggsave("Figures/StationMapInset2.jpeg", width = 8, height = 8, device = 'png', dpi = 300, bg = "transparent")
 
 ```
 
@@ -254,5 +265,8 @@ gg_inset_map2
 
 ggsave("Figures/StationMapnostation.jpeg", width = 9, height = 8, device = 'png', dpi = 300, bg = "transparent")
 ```
+```
+```{r}
+mapview::mapview(stations_sf_4269)
 ```
 

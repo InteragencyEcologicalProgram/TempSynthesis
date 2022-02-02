@@ -79,7 +79,7 @@ tempFilt$HabitatType <- as.factor(tempFilt$HabitatType)
 
 
 New filtering code by days then months then years
-8 years of data
+At least 15 years data
 ```{r}
 StationYearCombo <- tempFilt %>%
   filter(WY>1999) %>%
@@ -118,9 +118,9 @@ ListOfSta <- StationYearFilter %>%
 
 ```{r subset}
 tempToUse20 <- inner_join(tempFilt, StationYearFilter, by = c("Region","Station", "WY")) 
-#tempToUse$WY = as.numeric(tempToUse$WY)
+tempToUse20$WY = as.numeric(tempToUse20$WY)
 today = format(today(), "%Y%m%d")
-#saveRDS(tempToUse, paste0("Data/temp10years_", today, ".rds"))
+#saveRDS(tempToUse20, paste0("Data/temp20years_", today, ".rds"))
 unique(tempToUse20$Region)
 ```
 
@@ -135,7 +135,7 @@ tempDaily20 <- tempToUse20 %>%
             rangeTemp = maxDaily-minDaily) %>%
   ungroup()
 tempDaily20$WY <- as.numeric(tempDaily20$WY)
-#saveRDS(tempDaily, "Data/tempDaily_20210811.rds")
+#saveRDS(tempDaily20, "Data/tempDaily20yr_20220125.rds")
 ```
 
 
@@ -170,10 +170,10 @@ theme_figure <-  theme_bw() + theme(axis.title.y = element_blank(),             
 max20 <- ggplot(tempDailySummary) + geom_tile(aes(x = fWY, y = Region2, fill = meanMaxTemp)) + scale_fill_viridis(option = "magma")
 
 maxdry20 <- ggplot(subset(tempSeason20Summary, Season == "Dry")) + geom_tile(aes(x = fWY, y = Station, fill = meanMaxTemp))  + scale_fill_viridis(option = "plasma")+
-  labs(title = "May - September") + theme_figure
+  labs(title = "May - September", fill = "Mean Maximum \nWater Temperature\n") + theme_figure
 
 maxwet20 <- ggplot(subset(tempSeason20Summary, Season == "Wet")) + geom_tile(aes(x = fWY, y = Station, fill = meanMaxTemp))  + scale_fill_viridis(option = "mako") + theme_bw() + 
-  labs(title = "October - April") + theme_figure
+  labs(title = "October - April", fill = "Mean Maximum \nWater Temperature\n") + theme_figure
 
 
 unique(tempDaily20Summary$Region2)
@@ -183,7 +183,12 @@ unique(tempDaily20Summary$Region2)
 library(gridExtra)
 library(grid)
 
+tiff(filename=file.path("Figures/Trends20Years.tiff"), units="in",type="cairo", bg="white", height=7, 
+     width=7, res=300, pointsize=12,compression="lzw")
+
+
 grid.arrange(maxdry20, maxwet20, nrow = 2)
+dev.off()
 ```
 
 Scaled
@@ -210,12 +215,17 @@ levels(tempSeason20SummaryScale$axiscolor)
 
 (maxwet20S <- ggplot(subset(tempSeason20SummaryScale, Season == "Wet")) + geom_tile(aes(x = fWY, y = Station, fill = maxScale))  + scale_fill_viridis(option = "mako") + 
     theme_bw() + theme_figure + theme(axis.text.y = element_text(size = 10, color = axisColor)) +
-  labs(title = "October - April"))
+  labs(title = "October - April", fill = "Scaled Mean \nMaximum Water \nTemperature\n"))
 
 (maxdry20S <- ggplot(subset(tempSeason20SummaryScale, Season == "Dry")) + geom_tile(aes(x = fWY, y = Station, fill = maxScale))  + scale_fill_viridis(option = "plasma") + 
     theme_bw() + theme_figure + theme(axis.text.y = element_text(size = 10, color = axisColor)) +
-  labs(title = "May-September") )
+  labs(title = "May-September", fill = "Scaled Mean \nMaximum Water \nTemperature\n") )
 
+
+tiff(filename=file.path("Figures/Trends20Years_scaled.tiff"), units="in",type="cairo", bg="white", height=7, 
+     width=7, res=300, pointsize=12,compression="lzw")
 grid.arrange(maxdry20S, maxwet20S, nrow = 2)
+dev.off()
+
 ```
 

@@ -6,8 +6,9 @@ output: html_document
 editor_options: 
   chunk_output_type: console
 ---
+# Days Exceedance
+Last updated 1/11/2022 by C. Pien
 
-Last updated 10/4/2021 by C. Pien
 Calculate days exceedance for temperature suitability based on tolerance and optimum temperatures in species table
 
 ```{r setup, include=FALSE}
@@ -17,6 +18,8 @@ library(lubridate)
 library(ggpubr)
 library(grid)
 library(gridExtra)
+library(readxl)
+library(viridis)
 ```
 
 ## Import data
@@ -24,51 +27,14 @@ library(gridExtra)
 ```{r}
 tempToUse <- readRDS("Data/tempToUse_20210811.rds")
 tempDaily <- readRDS("Data/tempDaily_20210811.rds")
+species <- readxl::read_excel("SpeciesTableStructure.xlsx", sheet = 2)
 ```
 
-
+## Manipulate data
 ```{r}
 # Combine Far North and North Delta
 tempRegions <- tempDaily %>%
   mutate(Region = replace(Region, Region == "Far North", "North Delta"))
-```
-
-Initial function (don't use)
-
-* Calculate total number of days per year/region in the dataset
-* Add up number of days exceeding threshold (maxDaily temperature)
-* Divide number of days exceeding threshold by number of days per year and multiply by 365 to get expected ndays
-* Summarize min, mean, and max number of days for each region (based on region-year combos)
-* Label species and type of threshold
-
-
-```{r}
-# funDaysExceed <- function(species, regions, tolerance, optimum) {
-#   daysExceedance <- tempRegions %>%
-#     left_join(nStations) %>%
-#     group_by(WY, Region) %>%
-#     mutate(nDays = n()) %>%
-#     ungroup() %>%
-#     filter(Region %in% regions) %>%
-#     mutate(ExceedTol = ifelse(maxDaily > tolerance, 1L, 0L),
-#            ExceedOpt = ifelse(maxDaily > optimum, 1L, 0L)) %>%
-#     group_by(WY, Region, nDays, nStation) %>%
-#     summarize(daysExceedanceTol = sum(ExceedTol),
-#               daysExceedanceOpt = sum(ExceedOpt)) %>%
-#     #complete(Region, WY, fill = list(daysExceedanceTol=0, daysExceedanceOpt = 0)) %>%
-#     mutate(propPerYearOpt = round(daysExceedanceOpt/nDays,1),
-#       daysPerYearTol = round(daysExceedanceTol/nDays/nStation*365,1),
-#            daysPerYearOpt = round(daysExceedanceOpt/nDays/nStation*365,1)) %>%
-#     ungroup() %>%
-#     summarize(propOpt = propPerYearOpt,
-#       meanTol = round(mean(daysPerYearTol),1),
-#               minTol = min(daysPerYearTol),
-#               maxTol = max(daysPerYearTol),
-#               meanOpt = round(mean(daysPerYearOpt),1),
-#               minOpt = min(daysPerYearOpt),
-#               maxOpt = max(daysPerYearOpt)) %>%
-#     mutate(Species = species)
-# }
 ```
 
 Calculate the number of stations within each region
@@ -79,10 +45,39 @@ nStations <- tempRegions %>%
   group_by(Region) %>%
   summarize(nStation = n())
 
-tempRegions2 <- left_join(tempRegions, nStations)
+tempRegions2 <- left_join(tempRegions, nStations) %>%
+  mutate(Month = month(Date),
+         Season = case_when(Month %in% c(1,2,3) ~ "Winter",
+                            Month %in% c(4,5,6) ~ "Spring",
+                            Month %in% c(7,8,9) ~ "Summer",
+                            Month %in% c(10,11,12) ~ "Fall",
+                            TRUE~as.character(NA)),
+         SeasonRegion = paste0(Season, Region))
 ```
 
-## Function for calculating days exceedance
+Reformat Species Table
+```{r}
+species1 <- species %>%
+  select(-Optimimum, -Tolerance) %>%
+  mutate(Season = 
+           case_when(Season == "Jan" ~"Winter",
+                     Season == "April" ~"Spring",
+                     Season == "July" ~ "Summer",
+                     Season == "Oct" ~ "Fall",
+                     TRUE ~ as.character(Season))) %>%
+  rename(LifeStage = `Life Stage`) %>%
+  mutate(Presence = "Yes") 
+
+speciesComp <- complete(species1, nesting(Species, LifeStage), Region, Season, fill = list(Presence = "No")) %>%
+  mutate(SeasonRegion = paste0(Season,Region))
+
+speciesWide <- pivot_wider(speciesComp, names_from = Region, values_from = Presence)
+```
+
+## Calculations
+
+
+Original Function for calculating days exceedance
 
 * Filter to regions selected
 * For each station-day, compare max daily temp to inputted tolerance and optimum. If in exceedance, assign 1. If not, assign 0.
@@ -93,37 +88,99 @@ tempRegions2 <- left_join(tempRegions, nStations)
 * Add species name
 
 ```{r}
-funDaysExceed <- function(species, lifestage, regions, tolerance, optimum) {
+# funDaysExceed <- function(species, lifestage, regions, tolerance, optimum) {
+# daysExceedance <- tempRegions2 %>%
+#     # group_by(WY, Region) %>%
+#     # mutate(nDays = n()) %>%
+#     # ungroup() 
+#     filter(Region %in% regions) %>%
+#     mutate(ExceedTol = ifelse(maxDaily > tolerance, 1L, 0L),
+#            ExceedOpt = ifelse(maxDaily > optimum, 1L, 0L)) %>%
+#   group_by(WY, Date) %>%
+#   summarize(propTol = mean(ExceedTol, na.rm = TRUE),
+#             propOpt = mean(ExceedOpt, na.rm = TRUE),
+#             ExceedTol2 = ifelse(propTol > 0.3, 1L, 0L),
+#             ExceedOpt2 = ifelse(propOpt > 0.3, 1L, 0L)) %>%
+#   ungroup() %>%
+#   group_by(WY) %>%
+#     summarize(daysExceedanceTol = sum(ExceedTol2, na.rm = TRUE),
+#               daysExceedanceOpt = sum(ExceedOpt2, na.rm = TRUE)) %>%
+#   ungroup() %>%
+#   summarize(meanTol = round(mean(daysExceedanceTol, na.rm = TRUE),1),
+#               minTol = min(daysExceedanceTol, na.rm = TRUE),
+#               maxTol = max(daysExceedanceTol, na.rm = TRUE),
+#               meanOpt = round(mean(daysExceedanceOpt, na.rm = TRUE),1),
+#               minOpt = min(daysExceedanceOpt, na.rm = TRUE),
+#               maxOpt = max(daysExceedanceOpt, na.rm = TRUE)) %>%
+#     mutate(Species = species,
+#            LifeStage = lifestage,
+#            Tolerance = tolerance,
+#            Optimum = optimum) %>%
+#   select(Species, Tolerance, meanTol, minTol, maxTol,
+#          meanOpt, minOpt, maxOpt, Optimum) 
+# }
+```
+
+### Function for calculating days exceedance
+* Filter to regions and seasons given the species table (species life stage)
+* For each station-day, compare max daily temp to inputted tolerance and optimum. If in exceedance, assign 1. If not, assign 0.
+* For each date, calculate the average number of stations that exceeded tolerance. 
+* If there is more than one season-region that this life stage is present, select the max proportion for below decision
+* If more than 30% of stations on a particular day exceeded tolerance or optimum, assign 1. 
+* For each WY, sum up the number of days exceeding tolerance
+* Calculate over all years the min, mean, and max number of days exceeding thresholds.
+* Add species name
+```{r}
+funDaysExceed <- function(species, lifestage, tolerance, optimum) {
+filternewdf <- speciesComp %>%
+  mutate(tolerance = tolerance,
+         optimum = optimum) %>%
+  filter(Species == species,
+         LifeStage == lifestage,
+         Presence == "Yes")
+
 daysExceedance <- tempRegions2 %>%
+<<<<<<< HEAD
     # group_by(WY, Region) %>%
     # mutate(nDays = n()) %>%
     # ungroup() 
     filter(C(Region, season) %in% c(regions$region, regions$season)) %>%
     mutate(ExceedTol = ifelse(maxDaily > tolerance, 1L, 0L),
            ExceedOpt = ifelse(maxDaily > optimum, 1L, 0L)) %>%
+=======
+  filter(SeasonRegion %in% filternewdf$SeasonRegion) %>%
+  mutate(ExceedTol = ifelse(maxDaily > tolerance, 1L, 0L),
+         ExceedOpt = ifelse(maxDaily > optimum, 1L, 0L)) %>%
+  group_by(WY, Date, SeasonRegion) %>%
+  summarize(maxDaily = maxDaily,
+            propTol = mean(ExceedTol, na.rm = TRUE),
+            propOpt = mean(ExceedOpt, na.rm = TRUE)) %>%
+  ungroup() %>%
+>>>>>>> 421c4f65c842a3a86a3a5bd25ab07330e120ea80
   group_by(WY, Date) %>%
-  summarize(propTol = mean(ExceedTol, na.rm = TRUE),
-            propOpt = mean(ExceedOpt, na.rm = TRUE),
-            ExceedTol2 = ifelse(propTol > 0.3, 1L, 0L),
-            ExceedOpt2 = ifelse(propOpt > 0.3, 1L, 0L)) %>%
+  summarize(maxPropTol = max(propTol),
+            maxPropOpt = max(propOpt),
+            ExceedTol = ifelse(maxPropTol > 0.3, 1L, 0L),
+            ExceedOpt = ifelse(maxPropOpt > 0.3, 1L, 0L)) %>%
   ungroup() %>%
   group_by(WY) %>%
-    summarize(daysExceedanceTol = sum(ExceedTol2, na.rm = TRUE),
-              daysExceedanceOpt = sum(ExceedOpt2, na.rm = TRUE)) %>%
+  summarize(daysExceedanceTol = sum(ExceedTol, na.rm = TRUE),
+            daysExceedanceOpt = sum(ExceedOpt, na.rm = TRUE))%>%
   ungroup() %>%
   summarize(meanTol = round(mean(daysExceedanceTol, na.rm = TRUE),1),
-              minTol = min(daysExceedanceTol, na.rm = TRUE),
-              maxTol = max(daysExceedanceTol, na.rm = TRUE),
-              meanOpt = round(mean(daysExceedanceOpt, na.rm = TRUE),1),
-              minOpt = min(daysExceedanceOpt, na.rm = TRUE),
-              maxOpt = max(daysExceedanceOpt, na.rm = TRUE)) %>%
-    mutate(Species = species,
-           LifeStage = lifestage,
-           Tolerance = tolerance,
-           Optimum = optimum) %>%
-  select(Species, Tolerance, meanTol, minTol, maxTol,
+            minTol = min(daysExceedanceTol, na.rm = TRUE),
+            maxTol = max(daysExceedanceTol, na.rm = TRUE),
+            meanOpt = round(mean(daysExceedanceOpt, na.rm = TRUE),1),
+            minOpt = min(daysExceedanceOpt, na.rm = TRUE),
+            maxOpt = max(daysExceedanceOpt, na.rm = TRUE))%>%
+  mutate(Species = species,
+         LifeStage = lifestage,
+         Tolerance = tolerance,
+         Optimum = optimum) %>%
+  select(Species, LifeStage, Tolerance, meanTol, minTol, maxTol,
          meanOpt, minOpt, maxOpt, Optimum) 
 }
+
 ```
 
 Test function
@@ -131,53 +188,41 @@ Test function
 tolerance = 23
 optimum = 15
 species = "Splittail"
-regions = r9
+lifestage = "adult"
 
-test <- funDaysExceed("All", r9, 23, 21)
+test <- funDaysExceed(species, lifestage, 23, 21)
 ```
 
-## Calculate days exceedance
+### Calculate days exceedance
+#### Fish
 ```{r}
-allreg <- c("North Delta", "South", "San Joaquin", "Suisun Bay", "Suisun Marsh", "Sac River")
-salmonReg <- c("North Delta", "South", "San Joaquin", "Suisun Bay", "Sac River")
-smelt <- c("North Delta", "San Joaquin", "Suisun Bay", "Suisun Marsh", "Sac River")
-r1 <- c("San Joaquin", "Suisun Bay", "Suisun Marsh", "Sac River")
-r2 <- c("South", "San Joaquin",  "Sac River")
-r3 <- c( "South", "San Joaquin", "Suisun Bay", "Suisun Marsh", "Sac River")
-r4 <- c("North Delta", "Suisun Bay", "Suisun Marsh", "Sac River")
-r5 <- c("Suisun Marsh", "Sac River")
-r6 <- c("North Delta",  "Sac River")
-r7 <- c("North Delta",  "San Joaquin", "Sac River")
-r8 <- c("North Delta", "South",  "Suisun Bay", "Suisun Marsh", "Sac River")
-r9 <- c( "Suisun Bay", "Suisun Marsh", "Sac River")
-
-spltAd<- funDaysExceed("Splittail", NA, allreg, 29, 24)
-spltL<- funDaysExceed("Splittail", "YOY Large", allreg, 25, 21)
-spltS<- funDaysExceed("Splittail","YOY Small", allreg, 26, 22)
-issA <- funDaysExceed("Silverside", "Adult", allreg, 31, NA)
-issYOY <- funDaysExceed("Silverside", "Adult", allreg, 35, NA)
-LMB <- funDaysExceed("Largemouth Bass", "Juvenile", allreg, 34, NA)
-chAd <- funDaysExceed("Chinook", NA,  salmonReg, 25, 21)
-chCo <- funDaysExceed("Chinook", "FR",  salmonReg, 22, 20)
-rbt <- funDaysExceed("Rainbow Trout", NA, salmonReg, 22, 20)
-dsmA <- funDaysExceed("Delta Smelt", NA, smelt, 27, 20)
-wag <- funDaysExceed("Wakasagi", NA, smelt, 29.1, NA)
-lfs <- funDaysExceed("Longfin Smelt", NA, smelt, 26.4, 15)
-dsmJ <- funDaysExceed("Delta Smelt", "Juvenile", r1, 28, 20)
-dsmL <- funDaysExceed("Delta Smelt", "Larvae", r2, 27.6, 20)
-lfsY <- funDaysExceed("Longfin Smelt", "YOY", r3, 24.8, 15)
-gstA <- funDaysExceed("Green Sturgeon", "Adult", r4, NA, 21)
-gstEA <- funDaysExceed("Green Sturgeon", "Early Adult", r5, 23, 15)
-gstL <- funDaysExceed("Green Sturgeon", "Larvae", r6, 33.7,19)
-stbJ <- funDaysExceed("Striped Bass", "Juvenile", r6, 32, 25)
-wstL <- funDaysExceed("White Sturgeon", "Larvae", r7, 25,19)
-wstA <- funDaysExceed("White Sturgeon", "Adult", allreg, NA, 21)
-wstJ <- funDaysExceed("White Sturgeon", "Juvenile", allreg, NA, 25)
-stbA <- funDaysExceed("Striped Bass", "Adult", r8, NA,24)
-LivWR <- funDaysExceed("Chinook", "WR", "Sac River", 22, 18.5)
+spltAd<- funDaysExceed("Splittail", "adult",  29, 24)
+spltJuv<- funDaysExceed("Splittail", "juvenile", 25, 21)
+issA <- funDaysExceed("Silverside", "adult", 35, NA)
+issJ <- funDaysExceed("Silverside", "juvenile", 31, NA)
+issE <- funDaysExceed("Silverside", "larvae", 34,25) #egg
+LMB <- funDaysExceed("LMB", "juvenile",  34, NA)
+chAd <- funDaysExceed("Chinook", "adult",  25, 21)
+chCo <- funDaysExceed("Chinook FR", "juvenile",  22, 20)
+rbt <- funDaysExceed("Steelhead", "juvenile", 22, 19)
+dsmA <- funDaysExceed("DSM", "adult",  27, 20)
+dsmJ <- funDaysExceed("DSM", "juvenile",  28, 20)
+dsmL <- funDaysExceed("DSM", "larvae",  27.6, 20)
+#wag <- funDaysExceed("Wakasagi", NA,  29.1, NA)
+lfsA <- funDaysExceed("LFS", "adult",  26.4, 15)
+lfsL <- funDaysExceed("LFS", "larvae",  24.8, 15)
+# gstA <- funDaysExceed("Green Sturgeon", "adult",  NA, 21)
+# gstEA <- funDaysExceed("Green Sturgeon", "Early adult",  23, 15)
+# gstL <- funDaysExceed("Green Sturgeon", "larvae",  33.7,19)
+stbJ <- funDaysExceed("STB", "juvenile",  32, 25)
+# wstL <- funDaysExceed("White Sturgeon", "larvae",  25,19)
+# wstA <- funDaysExceed("White Sturgeon", "adult",  NA, 21)
+# wstJ <- funDaysExceed("White Sturgeon", "juvenile",  NA, 25)
+stbA <- funDaysExceed("STB", "adult",  NA, 24)
+# LivWR <- funDaysExceed("Chinook", "WR",  22, 18.5)
 ```
 
-Veg
+####Veg
 ```{r}
 egDe <- funDaysExceed("Egeria densa", allreg, 32, 21)
 mic <- funDaysExceed("Microcystis", allreg, NA, 19) #not tolerance
@@ -190,14 +235,14 @@ pot <- funDaysExceed("Potamocorbula", r9, 30, 15)
 
 
 
-## Bind into table
+### Bind into table
 ```{r}
 # Fish
 SpeciesTable <- rbind(chAd, chCo, rbt,
-                      spltAd, spltL, spltS, 
-                      dsmA, wag, lfs, dsmJ, dsmL, lfsY,
-                      gstA, gstEA, gstL,
-                      wstL, wstJ, wstA, stbJ, stbA, issA, issYOY, LMB)
+                      spltAd, spltJuv,  
+                      dsmA, dsmJ, dsmL, lfsA,  lfsL,
+                     stbJ, stbA, issA, issJ, issE, LMB)
+                      #wag,wstL, wstJ, wstA,  gstA, gstEA, gstL, )
 SpeciesTable2 <- SpeciesTable %>%
   mutate(meanOpt = replace(meanOpt, is.na(Optimum), NA),
          minOpt = replace(minOpt, is.na(Optimum), NA),
@@ -227,7 +272,7 @@ InvLong2 <- InvLong %>%
 ```
 
 
-## Function for calculating days exceedance, no means or sums for boxplot
+## Boxplot Function for calculating days exceedance, no means or sums for boxplot
 
 * Filter to regions selected
 * For each station-day, compare max daily temp to inputted tolerance and optimum. If in exceedance, assign 1. If not, assign 0.
@@ -237,23 +282,32 @@ InvLong2 <- InvLong %>%
 # Add species name
 
 ```{r}
-funDaysExceed2 <- function(species,lifestage, regions, tolerance, optimum) {
+funDaysExceed2 <- function(species, lifestage, tolerance, optimum) {
+filternewdf <- speciesComp %>%
+  mutate(tolerance = tolerance,
+         optimum = optimum) %>%
+  filter(Species == species,
+         LifeStage == lifestage,
+         Presence == "Yes")
+
 daysExceedance <- tempRegions2 %>%
-    # group_by(WY, Region) %>%
-    # mutate(nDays = n()) %>%
-    # ungroup() 
-    filter(Region %in% regions) %>%
-    mutate(ExceedTol = ifelse(maxDaily > tolerance, 1, 0),
-           ExceedOpt = ifelse(maxDaily > optimum, 1, 0)) %>%
+  filter(SeasonRegion %in% filternewdf$SeasonRegion) %>%
+  mutate(ExceedTol = ifelse(maxDaily > tolerance, 1L, 0L),
+         ExceedOpt = ifelse(maxDaily > optimum, 1L, 0L)) %>%
+  group_by(WY, Date, SeasonRegion) %>%
+  summarize(maxDaily = maxDaily,
+            propTol = mean(ExceedTol, na.rm = TRUE),
+            propOpt = mean(ExceedOpt, na.rm = TRUE)) %>%
+  ungroup() %>%
   group_by(WY, Date) %>%
-  summarize(propTol = mean(ExceedTol, na.rm = TRUE),
-            propOpt = mean(ExceedOpt, na.rm = TRUE),
-            ExceedTol2 = ifelse(propTol > 0.3, 1, 0),
-            ExceedOpt2 = ifelse(propOpt > 0.3, 1, 0)) %>%
+  summarize(maxPropTol = max(propTol),
+            maxPropOpt = max(propOpt),
+            ExceedTol = ifelse(maxPropTol > 0.3, 1L, 0L),
+            ExceedOpt = ifelse(maxPropOpt > 0.3, 1L, 0L)) %>%
   ungroup() %>%
   group_by(WY) %>%
-    summarize(daysExceedanceTol = sum(ExceedTol2, na.rm = TRUE),
-              daysExceedanceOpt = sum(ExceedOpt2, na.rm = TRUE)) %>%
+  summarize(daysExceedanceTol = sum(ExceedTol, na.rm = TRUE),
+              daysExceedanceOpt = sum(ExceedOpt, na.rm = TRUE)) %>%
   ungroup() %>%
     mutate(Species = species,
            LifeStage= lifestage,
@@ -261,35 +315,63 @@ daysExceedance <- tempRegions2 %>%
            Optimum = optimum) %>%
   select(WY, Species, LifeStage, Tolerance, daysExceedanceTol, daysExceedanceOpt, Optimum) 
 }
+
+# funDaysExceed2 <- function(species,lifestage, regions, tolerance, optimum) {
+# daysExceedance <- tempRegions2 %>%
+#     # group_by(WY, Region) %>%
+#     # mutate(nDays = n()) %>%
+#     # ungroup() 
+#     filter(Region %in% regions) %>%
+#     mutate(ExceedTol = ifelse(maxDaily > tolerance, 1, 0),
+#            ExceedOpt = ifelse(maxDaily > optimum, 1, 0)) %>%
+#   group_by(WY, Date) %>%
+#   summarize(propTol = mean(ExceedTol, na.rm = TRUE),
+#             propOpt = mean(ExceedOpt, na.rm = TRUE),
+#             ExceedTol2 = ifelse(propTol > 0.3, 1, 0),
+#             ExceedOpt2 = ifelse(propOpt > 0.3, 1, 0)) %>%
+#   ungroup() %>%
+#   group_by(WY) %>%
+#     summarize(daysExceedanceTol = sum(ExceedTol2, na.rm = TRUE),
+#               daysExceedanceOpt = sum(ExceedOpt2, na.rm = TRUE)) %>%
+#   ungroup() %>%
+#     mutate(Species = species,
+#            LifeStage= lifestage,
+#            Tolerance = tolerance,
+#            Optimum = optimum) %>%
+#   select(WY, Species, LifeStage, Tolerance, daysExceedanceTol, daysExceedanceOpt, Optimum) 
+# }
 ```
 
+### Run Function
+#### Fish
 ```{r}
-spltAd2<- funDaysExceed2("Splittail", "Adult", allreg, 29, 24)
-spltL2<- funDaysExceed2("Splittail", "YOY Large", allreg, 25, 21)
-spltS2<- funDaysExceed2("Splittail","YOY Small", allreg, 26, 22)
-issA2 <- funDaysExceed2("Silverside", "Adult", allreg, 31, NA)
-issYOY2 <- funDaysExceed2("Silverside", "Adult", allreg, 35, NA)
-LMB2 <- funDaysExceed2("Largemouth Bass", "Juvenile", allreg, 34, NA)
-chAd2 <- funDaysExceed2("Chinook", "Adult",  salmonReg, 25, 21)
-chCo2 <- funDaysExceed2("Chinook", "Juvenile FR",  salmonReg, 22, 20)
-LivWR2 <- funDaysExceed2("Chinook", "Juvenile WR", "Sac River", 22, 18.5)
-rbt2 <- funDaysExceed2("Rainbow Trout", "Juvenile", salmonReg, 22, 20)
-dsmA2 <- funDaysExceed2("Delta Smelt", "Adult", smelt, 27, 20)
-dsmJ2 <- funDaysExceed2("Delta Smelt", "Juvenile", r1, 28, 20)
-dsmL2 <- funDaysExceed2("Delta Smelt", "Larvae", r2, 27.6, 20)
-wag2 <- funDaysExceed2("Wakasagi", "Adult", smelt, 29.1, NA)
-lfs2 <- funDaysExceed2("Longfin Smelt", "Adult",  smelt, 26.4, 15)
-lfsY2 <- funDaysExceed2("Longfin Smelt", "YOY", r3, 24.8, 15)
-gstA2 <- funDaysExceed2("Green Sturgeon", "Adult", r4, NA, 21)
-gstEA2 <- funDaysExceed2("Green Sturgeon", "Early Adult", r5, 23, 15)
-gstL2 <- funDaysExceed2("Green Sturgeon", "Larvae", r6, 33.7,19)
-stbJ2 <- funDaysExceed2("Striped Bass", "Juvenile", r6, 32, 25)
-wstL2 <- funDaysExceed2("White Sturgeon", "Larvae", r7, 25,19)
-wstA2 <- funDaysExceed2("White Sturgeon", "Adult", allreg, NA, 21)
-wstJ2 <- funDaysExceed2("White Sturgeon", "Juvenile", allreg, NA, 25)
-stbA2 <- funDaysExceed2("Striped Bass", "Adult", r8, NA,24)
+spltAd2<- funDaysExceed2("Splittail", "adult",  29, 24)
+spltJuv2<- funDaysExceed2("Splittail", "juvenile", 25, 21)
+issA2 <- funDaysExceed2("Silverside", "adult", 35, NA)
+issJ2 <- funDaysExceed2("Silverside", "juvenile", 31, NA)
+issE2 <- funDaysExceed2("Silverside", "larvae", 34,25) #egg
+LMB2 <- funDaysExceed2("LMB", "juvenile",  34, NA)
+chAd2 <- funDaysExceed2("Chinook", "adult",  25, 21)
+chCo2 <- funDaysExceed2("Chinook FR", "juvenile",  22, 20)
+rbt2 <- funDaysExceed2("Steelhead", "juvenile", 22, 19)
+dsmA2 <- funDaysExceed2("DSM", "adult",  27, 20)
+dsmJ2 <- funDaysExceed2("DSM", "juvenile",  28, 20)
+dsmL2 <- funDaysExceed2("DSM", "larvae",  27.6, 20)
+#wag <- funDaysExceed2("Wakasagi", NA,  29.1, NA)
+lfsA2 <- funDaysExceed2("LFS", "adult",  26.4, 15)
+lfsJ2 <- funDaysExceed2("LFS", "juvenile",  24.8, 15)
+# gstA <- funDaysExceed2("Green Sturgeon", "adult",  NA, 21)
+# gstEA <- funDaysExceed2("Green Sturgeon", "Early adult",  23, 15)
+# gstL <- funDaysExceed2("Green Sturgeon", "larvae",  33.7,19)
+stbJ2 <- funDaysExceed2("STB", "juvenile",  32, 25)
+# wstL <- funDaysExceed2("White Sturgeon", "larvae",  25,19)
+# wstA <- funDaysExceed2("White Sturgeon", "adult",  NA, 21)
+# wstJ <- funDaysExceed2("White Sturgeon", "juvenile",  NA, 25)
+stbA2 <- funDaysExceed2("STB", "adult",  NA, 24)
+# LivWR <- funDaysExceed2("Chinook", "WR",  22, 18.5)
 ```
 
+#### Veg
 These are interpreted as **Days Suitable** instead of **Days Unsuitable**
 ```{r}
 egDe2 <- funDaysExceed2("Egeria densa", allreg, 32, 21)
@@ -300,47 +382,57 @@ hya2 <- funDaysExceed2("Water Hyacinth", salmonReg, 34, 28)
 pot2 <- funDaysExceed2("Potamocorbula", r9, 30, 15)
 ```
 
+###Bind together all rows of data. 
+#### Fish
 ```{r}
-# Fish
-SpeciesYears <- rbind(chAd2, chCo2, LivWR2, rbt2,
-                      spltAd2, spltL2, spltS2, 
-                      dsmA2, wag2, lfs2, dsmJ2, dsmL2, lfsY2,
-                      gstA2, gstEA2, gstL2,
-                      wstL2, wstJ2, wstA2, stbJ2, stbA2, issA2, issYOY2, LMB2)
+SpeciesYears <- rbind(chAd2, chCo2, rbt2,
+                      spltAd2, spltJuv2,  
+                      dsmA2, dsmJ2, dsmL2, lfsA2,  lfsJ2,
+                     stbJ2, stbA2, issA2, issJ2, issE2, LMB2)
 
 SpeciesYears2 <- SpeciesYears %>%
   dplyr::mutate(daysExceedanceOpt = replace(daysExceedanceOpt, is.na(Optimum), NA),
          daysExceedanceTol = replace(daysExceedanceTol, is.na(Tolerance), NA),
+         LifeStage = ifelse(Species == "Chinook FR", "juvenile FR", LifeStage),
+         Species = case_when(Species == "STB" ~ "Striped Bass",
+                             Species == "LFS" ~ "Longfin Smelt",
+                             Species == "LMB" ~ "Largemouth Bass",
+                             Species == "DSM" ~ "Delta Smelt",
+                             Species == "Chinook FR" ~ "Chinook",
+                             TRUE~as.character(Species)),
          Species2 = ifelse(is.na(LifeStage), Species, paste(Species, LifeStage))) %>%
-  dplyr::mutate(color = case_when(Species2 == "Chinook Adult" ~ "skyblue3",
-                           Species2 == "Chinook Juvenile FR" ~ "lightblue2",
-                           Species2 == "Chinook Juvenile WR" ~ "slateblue4",
-                           Species2 == "Rainbow Trout Juvenile" ~ "olivedrab4",
-                           Species2 == "Delta Smelt Adult" ~ "hotpink3",
-                           Species2 == "Delta Smelt Juvenile" ~ "plum1",
-                           Species2 == "Delta Smelt Larvae" ~ "pink3",
-                           Species2 == "Wakasagi Adult" ~ "red",
-                           Species2 == "Green Sturgeon Adult" ~ "darkgreen",
-                           Species2 == "Green Sturgeon Early Adult" ~ "green3",
-                           Species2 == "Green Sturgeon Larvae" ~ "darkseagreen3",
-                           Species2 == "White Sturgeon Adult" ~ "azure4",
-                           Species2 == "White Sturgeon Juvenile" ~ "azure3",
-                           Species2 == "White Sturgeon Larvae" ~ "azure2",
-                           Species2 == "Longfin Smelt Adult" ~ "purple4",
-                           Species2 == "Longfin Smelt YOY" ~ "mediumpurple2",
-                           Species2 == "Silverside Adult" ~ "grey90",
-                           Species2 == "Splittail Adult" ~ "darkgoldenrod3",
-                           Species2 == "Splittail YOY Large" ~ "goldenrod2",
-                           Species2 == "Splittail YOY Small" ~ "lightgoldenrod1",
-                           Species2 == "Striped Bass Adult" ~ "aquamarine4",
-                           Species2 == "Striped Bass Juvenile" ~ "aquamarine",
-                           Species2 == "Largemouth Bass Juvenile" ~ "burlywood1")) %>%
+  dplyr::mutate(color = case_when(
+                           Species2 == "Chinook adult" ~ "skyblue3",
+                           Species2 == "Chinook juvenile FR" ~ "lightblue2",
+                           Species2 == "Chinook juvenile WR" ~ "slateblue4",
+                           Species2 == "Steelhead juvenile" ~ "olivedrab4",
+                           Species2 == "Delta Smelt adult" ~ "hotpink3",
+                           Species2 == "Delta Smelt juvenile" ~ "plum1",
+                           Species2 == "Delta Smelt larvae" ~ "pink3",
+                           #Species2 == "Wakasagi adult" ~ "red",
+                           #Species2 == "Green Sturgeon adult" ~ "darkgreen",
+                           #Species2 == "Green Sturgeon Early adult" ~ "green3",
+                           #Species2 == "Green Sturgeon larvae" ~ "darkseagreen3",
+                           #Species2 == "White Sturgeon adult" ~ "azure4",
+                           #Species2 == "White Sturgeon juvenile" ~ "azure3",
+                           #Species2 == "White Sturgeon larvae" ~ "azure2",
+                           Species2 == "Longfin Smelt adult" ~ "purple4",
+                           Species2 == "Longfin Smelt juvenile" ~ "mediumpurple2",
+                           Species2 == "Silverside adult" ~ "grey90",
+                           Species2 == "Silverside juvenile" ~ "grey60",
+                           Species2 == "Silverside larvae" ~ "grey30",
+                           Species2 == "Splittail adult" ~ "darkgoldenrod3",
+                           Species2 == "Splittail juvenile" ~ "goldenrod2",
+                           Species2 == "Striped Bass adult" ~ "aquamarine4",
+                           Species2 == "Striped Bass juvenile" ~ "aquamarine",
+                           Species2 == "Largemouth Bass juvenile" ~ "burlywood1")) %>%
            dplyr::arrange(Species2)
 
 SpeciesYearsLong <- pivot_longer(SpeciesYears2, cols = daysExceedanceOpt:daysExceedanceTol, names_to = "Type", values_to = "DaysUnsuitable")
+```
 
-
-# Veg
+#### Veg
+```{r}
 InvYears <- rbind(egDe, mic, corb, arund, hya, pot)
 InvYears2 <- InvYears %>%
   mutate(meanOpt = replace(meanOpt, is.na(Optimum), NA),
@@ -357,19 +449,9 @@ InvYearsLong2 <- InvYearsLong %>%
   mutate(Suitable = 365-DaysUnsuitable)
 ```
 
+## Plots
 
-
-
-
-
-
-
-
-
-
-
-
-## Plots for invasives
+### Invasives
 ```{r}
 ggplot(filter(InvLong, Type %in% c("meanTol", "maxTol", "minTol"))) + geom_point(aes(x = Tolerance, y = DaysUnsuitable, color = Species)) + viridis::scale_colour_viridis(discrete = TRUE, option = "viridis") + theme_bw() +  labs(title = "Tolerance")
 
@@ -377,6 +459,7 @@ ggplot(filter(InvLong, Type %in% c("meanOpt", "maxOpt", "minOpt"))) + geom_point
 
 ```
 
+### Fish
 ```{r}
 library(Polychrome)
 pal36 <- palette36.colors(30)
@@ -414,26 +497,41 @@ colors1 = colors1$color
     geom_rect(xmin = 10.5, xmax = 11.5, ymin = -Inf, ymax = Inf, fill = "gray85") +
       geom_boxplot(aes(x = Species, y = daysExceedanceTol, fill = LifeStage), position = position_dodge(preserve = "single")) +
    viridis::scale_fill_viridis(discrete = TRUE, option = "plasma") + 
-    scale_y_continuous(breaks = seq(from = 0, to = 150, by = 25)) +
+   scale_y_continuous(limits = c(0,300), breaks = seq(from = 0, to = 300, by = 25)) +
     labs( y = "Annual Days \nExceeding Tolerance") +
     theme_bw() +
-    theme(axis.text.x = element_text(angle = 60, vjust = 0.6),
+   theme(axis.text.x = element_text(angle = 60, vjust = 0.5),
         axis.title.x = element_blank(),
         legend.title = element_blank(),
-        legend.position = "bottom"))
+        legend.position = "top",
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank()))
 
-# -----------------------------------------------------------------
 
 
-# Optimum colors
-FishTol2 <- ggplot(SpeciesYears2Tol) + geom_boxplot(aes(x = Species, y = daysExceedanceTol, fill = Tolerance)) + theme_bw() + viridis::scale_fill_viridis() + labs(title = "Tolerance") + 
-  scale_y_continuous(breaks = seq(from = 0, to = 250, by = 25)) +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.1),
-        axis.title.x = element_blank())
+#--------------- smaller scale
+(FishTol1b <- 
+    ggplot(SpeciesYears2Tol) + 
+    geom_rect(xmin = 0, xmax = 1.5, ymin = -Inf, ymax = Inf, fill = "gray85") +
+    geom_rect(xmin = 2.5, xmax = 3.5, ymin = -Inf, ymax = Inf, fill = "gray85") +
+    geom_rect(xmin = 4.5, xmax = 5.5, ymin = -Inf, ymax = Inf, fill = "gray85") +
+    geom_rect(xmin = 6.5, xmax = 7.5, ymin = -Inf, ymax = Inf, fill = "gray85") +
+    geom_rect(xmin = 8.5, xmax = 9.5, ymin = -Inf, ymax = Inf, fill = "gray85") +
+    geom_rect(xmin = 10.5, xmax = 11.5, ymin = -Inf, ymax = Inf, fill = "gray85") +
+      geom_boxplot(aes(x = Species, y = daysExceedanceTol, fill = LifeStage), position = position_dodge(preserve = "single")) +
+   viridis::scale_fill_viridis(discrete = TRUE, option = "plasma") + 
+  scale_y_continuous(breaks = seq(from = 0, to = 150, by = 50)) +
+    labs( y = "Annual Days \nExceeding Tolerance") +
+    theme_bw() +
+   theme(axis.text.x = element_text(angle = 60, vjust = 0.5),
+        axis.title.x = element_blank(),
+        legend.title = element_blank(),
+        legend.position = "top",
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank()))
 ```
 
 ### Boxplots: Optima
-
 ```{r}
 SpeciesYears2Opt <- SpeciesYears2 %>%
   filter((!(is.na(daysExceedanceOpt)))) %>%
@@ -450,7 +548,7 @@ colors2 = colors2$color
 
 FishOpt1 <- ggplot(SpeciesYears2Opt) + geom_boxplot(aes(x = Species, y = daysExceedanceOpt, fill = Optimum)) + theme_bw() + #scale_fill_manual(values = colors2) + 
   viridis::scale_fill_viridis() + 
-  scale_y_continuous(breaks = seq(from = 0, to = 250, by = 25)) +
+  scale_y_continuous(breaks = seq(from = 0, to = 300, by = 25)) +
   labs(title = "Optimum", y = "Annual Days Exceedance")+ theme(axis.text.x = element_text(angle = 90, vjust = 0.1))
 
 # This one ---------------------------------
@@ -460,15 +558,18 @@ FishOpt1 <- ggplot(SpeciesYears2Opt) + geom_boxplot(aes(x = Species, y = daysExc
     geom_rect(xmin = 4.5, xmax = 5.5, ymin = -Inf, ymax = Inf, fill = "gray85") +
     geom_rect(xmin = 6.5, xmax = 7.5, ymin = -Inf, ymax = Inf, fill = "gray85") +
     geom_boxplot(aes(x = Species, y = daysExceedanceOpt, fill = LifeStage), position = position_dodge(preserve = "single")) + # keeps boxplot widths standard
+   geom_text(aes(Species, 1, label = Optimum, group = LifeStage), size = 3.5, position = position_dodge(width = .9))+
     theme_bw() + 
     scale_fill_viridis(discrete = TRUE, option = "plasma") +
     #scale_fill_manual(values = colors2) + 
-   scale_y_continuous(breaks = seq(from = 0, to = 300, by = 25)) +
-
+    scale_y_continuous(limits = c(0,300), breaks = seq(from = 0, to = 300, by = 50)) +
   labs(y = "Annual Days \nExceeding Optimum")+ 
   theme(axis.text.x = element_text(angle = 60, vjust = 0.5),
         axis.title.x = element_blank(),
-        legend.title = element_blank()))
+        legend.title = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank()))
+
 # ---------------------------------
 
 # Facet
@@ -479,15 +580,14 @@ FishOpt1 <- ggplot(SpeciesYears2Opt) + geom_boxplot(aes(x = Species, y = daysExc
   scale_fill_viridis(discrete = TRUE, option = "plasma") +
     #scale_fill_manual(values = colors2) + 
   scale_y_continuous(breaks = seq(from = 0, to = 250, by = 25)) +
-
   labs(title = "Optimum", y = "Annual Days Exceedance")+ 
   theme(axis.text.x = element_text(angle = 90, vjust = 0.1),
         axis.title.x = element_blank())
 ```
 
-Save images
-```{r}
 
+##Save images
+```{r}
 tiff(filename=file.path("Figures/FishOptima.tiff"), units="in",type="cairo", bg="white", height=5, 
      width=7, res=300, pointsize=12,compression="lzw")
 FishOpt2
@@ -507,7 +607,7 @@ dev.off()
 
 ```
 
-Combined
+### Combined (Final Plot)
 ```{r}
 # save legend separately for final figure
 get_legend<-function(myggplot){
@@ -520,10 +620,23 @@ legend <- get_legend(FishTol1)
 (FishOpt2_noleg <- FishOpt2 + theme(legend.position = "none") )
 (FishTol1_noleg<- FishTol1 + theme(legend.position = "none") )
 
-tiff(filename=file.path("Figures/Figure_Opt_Tol.tiff"), units="in",type="cairo", bg="white", height=7, 
-     width=8, res=300, pointsize=12,compression="lzw")
+tiff(filename=file.path("Figures/Figure_Opt_Tol.tiff"), units="in",type="cairo", bg="white", height=5.5, 
+     width=6, res=300, pointsize=12,compression="lzw")
 ggarrange(legend, FishOpt2_noleg, FishTol1_noleg, ncol=1, nrow=3,
-             heights = c(0.75,3,3), labels = c("", "A","B"))
+             heights = c(0.75,3,3.3), labels = c("", "A","B"))
+dev.off()
+```
+
+Different scale bars
+```{r}
+legend2 <- get_legend(FishTol1b)
+(FishOpt2_noleg <- FishOpt2 + theme(legend.position = "none") )
+(FishTol1b_noleg<- FishTol1b + theme(legend.position = "none") )
+
+tiff(filename=file.path("Figures/Figure_Opt_Tol_scalesdiff.tiff"), units="in",type="cairo", bg="white", height=5.5, 
+     width=6, res=300, pointsize=12,compression="lzw")
+ggarrange(legend, FishOpt2_noleg, FishTol1b_noleg, ncol=1, nrow=3,
+             heights = c(0.75,3,3.3), labels = c("", "A","B"))
 dev.off()
 ```
 
