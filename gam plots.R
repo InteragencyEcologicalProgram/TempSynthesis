@@ -47,14 +47,15 @@ raster_plot2<-function(data, date, labels="All", palette = "E"){
   ggplot()+
     geom_stars(data=data)+
     # facet_wrap(~Date)+
-    scale_fill_viridis_c(option = palette, name = NULL, na.value="white",  limits = c(0,6),
+    scale_fill_viridis_c(option = palette, name = NULL, na.value="white",  limits = c(0,4),
                          guide = guide_colorbar(direction="vertical",  barwidth = .5, ticks.linewidth = 2,
                                                 barheight=5, title.hjust=0.5, label.theme=element_text(size=8)
                          ))+
-    scale_x_continuous(breaks = c(-122.2, -121.8, -121.4, -121.0)) +
-    coord_sf()+
-    ylab("Latitude")+
-    xlab("Longitude")+
+    scale_x_continuous(breaks = c(590000, 630000)) +
+    coord_sf(crs = st_crs(32610), default_crs = sf::st_crs(32610),
+              datum = sf::st_crs(32610))+ 
+    ylab(NULL)+
+    xlab(NULL)+
     theme_bw() + theme(legend.position = "right")
 }
 
@@ -65,16 +66,19 @@ raster_plot3<-function(data, date, labels="All", palette = "D" ){
   deltabuff = st_transform(deltabuff, crs = 32610)
   data = st_crop(data, deltabuff)
   ggplot()+
+   
     geom_stars(data=data)+
+    
     # facet_wrap(~Date)+
     scale_fill_viridis_c(option = palette, name=NULL, na.value="white", 
                          guide = guide_colorbar(direction="vertical",  barwidth = .5, ticks.linewidth = 2,
                                                 barheight=5, title.hjust=0.5, label.theme=element_text(size=8)
                                                 ))+
-    scale_x_continuous(breaks = c(-122.2, -121.8, -121.4, -121.0)) +
-    coord_sf()+
-    ylab("Latitude")+
-    xlab("Longitude")+
+   scale_x_continuous(breaks = c(590000, 630000)) +
+    
+    ylab(NULL)+
+    xlab(NULL)+coord_sf(crs = st_crs(32610), default_crs = sf::st_crs(32610),
+                               datum = sf::st_crs(32610))+ 
     theme_bw() + theme(legend.position = "right")
 }
 
@@ -132,7 +136,7 @@ allplots = grid.arrange( JanMin, JanMax, MeanJan, RangeJan,
             #   gp = gpar(fontsize = 20), rot = 90,
             #   x = 0.5))
 allplots
-ggsave("MinMeanMax.svg", plot = allplots, device = "svg", width = 11, height = 8, units = "in")
+ggsave("MinMeanMax.pdf", plot = allplots, device = "pdf", width = 11, height = 8, units = "in")
 
 margin = theme(plot.margin = unit(c(.5,1,.5,1), "cm"))
 grid.arrange(MinJan + margin,  Minapr + margin, MinJul + margin,
