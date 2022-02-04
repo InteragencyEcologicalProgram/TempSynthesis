@@ -549,7 +549,7 @@ FishOpt1 <- ggplot(SpeciesYears2Opt) + geom_boxplot(aes(x = Species, y = daysExc
     geom_rect(xmin = 4.5, xmax = 5.5, ymin = -Inf, ymax = Inf, fill = "gray85") +
     geom_rect(xmin = 6.5, xmax = 7.5, ymin = -Inf, ymax = Inf, fill = "gray85") +
     geom_boxplot(aes(x = Species, y = daysExceedanceOpt, fill = LifeStage), position = position_dodge(preserve = "single")) + # keeps boxplot widths standard
-   geom_text(aes(Species, 1, label = Optimum, group = LifeStage), size = 3.5, position = position_dodge(width = .9))+
+  # geom_text(aes(Species, 1, label = Optimum, group = LifeStage), size = 3.5, position = position_dodge(width = .9))+
     theme_bw() + 
     scale_fill_viridis(discrete = TRUE, option = "plasma") +
     #scale_fill_manual(values = colors2) + 
