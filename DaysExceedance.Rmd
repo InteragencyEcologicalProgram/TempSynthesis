@@ -140,6 +140,14 @@ filternewdf <- speciesComp %>%
          Presence == "Yes")
 
 daysExceedance <- tempRegions2 %>%
+<<<<<<< HEAD
+    # group_by(WY, Region) %>%
+    # mutate(nDays = n()) %>%
+    # ungroup() 
+    filter(C(Region, season) %in% c(regions$region, regions$season)) %>%
+    mutate(ExceedTol = ifelse(maxDaily > tolerance, 1L, 0L),
+           ExceedOpt = ifelse(maxDaily > optimum, 1L, 0L)) %>%
+=======
   filter(SeasonRegion %in% filternewdf$SeasonRegion) %>%
   mutate(ExceedTol = ifelse(maxDaily > tolerance, 1L, 0L),
          ExceedOpt = ifelse(maxDaily > optimum, 1L, 0L)) %>%
@@ -148,6 +156,7 @@ daysExceedance <- tempRegions2 %>%
             propTol = mean(ExceedTol, na.rm = TRUE),
             propOpt = mean(ExceedOpt, na.rm = TRUE)) %>%
   ungroup() %>%
+>>>>>>> 421c4f65c842a3a86a3a5bd25ab07330e120ea80
   group_by(WY, Date) %>%
   summarize(maxPropTol = max(propTol),
             maxPropOpt = max(propOpt),
