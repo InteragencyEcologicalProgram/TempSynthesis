@@ -43,7 +43,7 @@ library(scales)
 
 ## Read in data
 ```{r}
-tempdiff <- readRDS("Data/RelativeTempDiff2.rds")
+tempdiff <- readRDS("DepthAnalysis/Data/RelativeTempDiff2.rds")
 ```
 
 ## Look at summary of annual means and completeness of datasets
@@ -81,8 +81,8 @@ temp_percent <- temp_2015 %>%
             Percent_DSM_B = mean(Suitable_DSM_B),
          Percent_CHN_S = mean(Suitable_CHN_S),
          Percent_CHN_B = mean(Suitable_CHN_B)) %>%
-  mutate(Diff_DSM = Percent_DSM_S-Percent_DSM_B,
-         Diff_CHN = Percent_CHN_S-Percent_CHN_B) %>%
+  mutate(Diff_DSM = Percent_DSM_B-Percent_DSM_S,
+         Diff_CHN = Percent_CHN_B-Percent_CHN_S) %>%
   ungroup()
 
 temp_percent_long <- temp_percent %>%
@@ -197,13 +197,14 @@ Difference <- temp_percent_long %>%
 
 plot_diff <-ggplot2::ggplot(Difference,aes(y=Type,x=Date,fill=Proportion))+
   ggplot2:: geom_tile() +
- scale_fill_gradientn(colours = c("#1B2090", "#0F5981", "#ACB7BD", "gray95", "#FFF1B6", "#FFEC08", "#FFF041"), 
+ scale_fill_gradientn(colours = c("#FFF041", "#FFEC08", "#FFF1B6", "gray95",
+                                  "#ACB7BD","#0F5981","#1B2090"), 
                       breaks = round(seq(from = -0.6, to = 0.8, by = 0.2),1),
                        na.value="white") +
 #scale_fill_viridis(breaks = round(seq(-0.6,0.2, 0.2),1),option ="cividis") +
   ggplot2::theme_bw()+
   ggplot2::facet_grid(Station~.) +
-  ggplot2::guides(fill = guide_legend(title = "Proportion of time\nsurface is more\nsuitable than\nbottom", reverse = TRUE))+
+  ggplot2::guides(fill = guide_legend(title = "Proportion of time\nbottom is more\nsuitable than\nsurface", reverse = TRUE))+
   ggplot2::labs(y = "Difference")+
   theme_fig
 plot_diff
@@ -246,41 +247,43 @@ DifferenceDSM <- filter(Difference, Type == "D Smelt")
 # Chinook
 plot_diffCHN2 <-ggplot2::ggplot(DifferenceCHN,aes(y=Type2,x=Date,fill=Proportion))+
   ggplot2:: geom_tile() +
- scale_fill_gradientn(colours = c("#1B2090", "#0F5981", "#ACB7BD", "gray95", "#FFF1B6", "#FFEC08", "#FFF041"),
+ scale_fill_gradientn(colours = c("#FFF041", "#FFEC08", "#FFF1B6","gray95",
+                                  "#ACB7BD","#0F5981","#1B2090" ),
                       breaks = round(seq(from = -0.6, to = 0.8, by = 0.2),1),
                        na.value="white") +
 #scale_fill_viridis(breaks = round(seq(-0.6,0.2, 0.2),1),option ="cividis") +
   ggplot2::theme_bw()+
   ggplot2::facet_grid(.~Station) +
   scale_x_date(date_breaks = "2 months", date_minor_breaks = "1 month", labels = date_format("%b")) +
-  ggplot2::guides(fill = guide_legend(title = "Proportion of time\nsurface is more\nsuitable than\nbottom", reverse = TRUE))+
+  ggplot2::guides(fill = guide_legend(title = "Proportion of time\nbottom is more\nsuitable than\nsurface", reverse = TRUE))+
   ggplot2::labs(y = "Chinook Salmon")+
   theme_fig
-plot_diffCHN
+plot_diffCHN2
 
 
 
 # Delta Smelt
 plot_diffDSM2 <-ggplot2::ggplot(DifferenceDSM,aes(y=Type2,x=Date,fill=Proportion))+
   ggplot2:: geom_tile() +
-scale_fill_gradientn(colours = c("#0F5981", "#ACB7BD","gray95"), 
-                      breaks = round(seq(from = -0.6, to = 0, by = 0.2),1),
+scale_fill_gradientn(colours = c("gray95", "#ACB7BD","#0F5981"), 
+                      breaks = round(seq(from = -0.1, to = 0.5, by = 0.2),1),
                        na.value="white") +
   scale_x_date(date_breaks = "2 months", date_minor_breaks = "1 month", labels = date_format("%b")) +
   ggplot2::theme_bw()+
   ggplot2::facet_grid(.~Station) +
-  ggplot2::guides(fill = guide_legend(title = "Proportion of time\nsurface is more\nsuitable than\nbottom", reverse = TRUE))+
+  ggplot2::guides(fill = guide_legend(title = "Proportion of time\nbottom is more\nsuitable than\nsurface", reverse = TRUE))+
   ggplot2::labs(y = "Delta Smelt")+
   theme_fig
-plot_diffDSM
+plot_diffDSM2
 
 ```
 
+This one
 ```{r}
 #Print out smelt and salmon figure together
 tiff(filename=file.path("Figures/Depth/Figure_Continuous_Data_Suitability3.tiff"), units="in",type="cairo", bg="white", height=9.5, 
      width=10, res=300, pointsize=10,compression="lzw")
-ggarrange(plot_habitat_chinook, plot_diffCHN, plot_habitat_deltasmelt, plot_diffDSM, ncol=1, nrow=4,labels = c("A","B", "C", "D"),hjust=-0.1)
+ggarrange(plot_habitat_chinook, plot_diffCHN2, plot_habitat_deltasmelt, plot_diffDSM2, ncol=1, nrow=4,labels = c("A","B", "C", "D"),hjust=-0.1)
 dev.off()
 ```
 
