@@ -159,7 +159,7 @@ gg_inset_map1
 
 ```{r}
 gg_inset_map1
-ggsave("Figures/StationMapInset2.png", width = 8, height = 8, device = 'png', dpi = 300, bg = "transparent")
+ggsave("Figures/StationMapInset2.tiff", width = 8, height = 8, device = 'tiff', dpi = 300, bg = "transparent")
 
 ```
 
