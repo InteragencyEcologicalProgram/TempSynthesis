@@ -283,7 +283,7 @@ This one
 #Print out smelt and salmon figure together
 tiff(filename=file.path("Figures/Depth/Figure_Continuous_Data_Suitability3.tiff"), units="in",type="cairo", bg="white", height=9.5, 
      width=10, res=300, pointsize=10,compression="lzw")
-ggarrange(plot_habitat_chinook, plot_diffCHN2, plot_habitat_deltasmelt, plot_diffDSM2, ncol=1, nrow=4,labels = c("A","B", "C", "D"),hjust=-0.1)
+ggarrange(plot_habitat_chinook, plot_diffCHN2, plot_habitat_deltasmelt, plot_diffDSM2, ncol=1, nrow=4,labels = c(" a)"," b)", " c)", " d)"),hjust=-0.1)
 dev.off()
 ```
 
@@ -301,7 +301,7 @@ Difference at the bottom figure
 #Print out smelt and salmon figure together
 tiff(filename=file.path("Figures/Depth/Figure_Continuous_Data_Suitability3V.tiff"), units="in",type="cairo", bg="white", height=10, 
      width=9, res=300, pointsize=10,compression="lzw")
-ggarrange(plot_habitat_chinook,  plot_habitat_deltasmelt,plot_diffCHN, plot_diffDSM, ncol=1, nrow=4,labels = c("A","B", "C", "D"), heights = c(2, 2, 1.8, 1.8), hjust=-0.1)
+ggarrange(plot_habitat_chinook,  plot_habitat_deltasmelt,plot_diffCHN, plot_diffDSM, ncol=1, nrow=4,labels = c("a)","b)", "c)", "d)"), heights = c(2, 2, 1.8, 1.8), hjust=-0.1)
 dev.off()
 ```
 
