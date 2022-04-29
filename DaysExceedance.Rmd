@@ -28,16 +28,15 @@ library(here)
 ```{r}
 tempToUse <- readRDS(here::here("Data", "tempToUse_20210811.rds"))
 tempDaily <- readRDS(here::here("Data", "tempDaily_20210811.rds"))
-species <- readxl::read_excel(here::here("SpeciesTables", "SpeciesTableStructure.xlsx"), sheet = 2)
-thresholds <- readxl::read_excel(here::here("SpeciesTables", "SpeciesThresholds.xlsx"))
+thresholds <- readxl::read_excel(here::here("SpeciesTables", "SpeciesThresholds.xlsx")) %>%
+  na_if(.,"NA") 
+species <- readxl::read_excel(here::here("SpeciesTables", "SpeciesTableStructure.xlsx"), sheet = 2) 
 ```
 
 ## Manipulate data
 ```{r}
-# Combine Far North and North Delta
 tempRegions <- tempDaily %>%
-  mutate(Region = replace(Region, Region == "Far North", "North Delta"),
-         Region = replace(Region, Region == "San Joaquin", "Central Delta"),
+  mutate(Region = replace(Region, Region == "San Joaquin", "Central"),
          Region = replace(Region, Region == "Sac River", "Confluence"))
 ```
 
@@ -62,17 +61,34 @@ tempRegions2 <- left_join(tempRegions, nStations) %>%
 Reformat Species Table
 ```{r}
 species1 <- species %>%
-  rename(LifeStage = `Life Stage`) %>%
   mutate(Presence = "Yes") 
-
 
 speciesComp <- complete(species1, nesting(Species, LifeStage), Region, Season, fill = list(Presence = "No")) %>%
   mutate(SeasonRegion = paste0(Season,Region))%>%
-  left_join(thresholds, by = c("Species", "LifeStage"))
-
-#speciesWide <- pivot_wider(speciesComp, names_from = Region, values_from = Presence)
+  mutate(LifeStage = ifelse(is.na(LifeStage), "Undifferentiated", LifeStage)) %>%
+  left_join(thresholds, by = c("Species", "LifeStage")) 
 ```
 
+Remove any group with no thresholds listed
+```{r}
+none <- speciesComp %>%
+  select(Species, LifeStage, Suboptimum, Tolerance) %>%
+  distinct() %>%
+  filter(is.na(Suboptimum) & is.na(Tolerance))
+
+speciesComp <- filter(speciesComp, !(is.na(Suboptimum) & is.na(Tolerance)))
+```
+
+Add species_lifestage variable for easier filtering
+```{r}
+speciesComp$SpeciesLS = paste0(speciesComp$Species, "_", speciesComp$LifeStage)
+SpeciesLS <- unique(speciesComp$SpeciesLS)
+```
+
+Define order of species ls
+```{r}
+level_order = c("Green Sturgeon", "White Sturgeon","Delta Smelt", "Longfin Smelt", "Wakasagi","Chinook Salmon", "Steelhead/Rainbow Trout","Sacramento Splittail", "Sacramento Pikeminnow", "Sacramento Sucker", "Sacramento Blackfish", "Hitch", "Tule Perch", "Threespine Stickleback", "Prickly Sculpin", "Mississippi Silverside", "Striped Bass", "Largemouth Bass", "Giant Reed EAV", "Brazilian Waterweed", "Water Hyacinth FAV", "Microcystis", "Asian Clam", "Overbite Clam")
+```
 
 ## Boxplot Function for calculating days exceedance, no means or sums for boxplot
 
@@ -83,15 +99,8 @@ speciesComp <- complete(species1, nesting(Species, LifeStage), Region, Season, f
 * For each WY, sum up the number of days exceeding tolerance
 # Add species name
 
-Add species_lifestage variable for easier filtering
 ```{r}
-speciesComp$SpeciesLS = paste0(speciesComp$Species, "_", speciesComp$LifeStage)
-SpeciesLS <- unique(speciesComp$SpeciesLS)
-```
-
-Function
-```{r}
-funDaysExceedBox <- function(specieslsinput) {
+funDaysExceedBox <- function(specieslsinput, tolerancecol = "filternewdf$Tolerance", tolerancecol2 = "Tolerance", optcol = "filternewdf$Suboptimum", optcol2 = "Suboptimum") {
 filternewdf <- speciesComp %>%
   # mutate(tolerance = tolerance,
          # optimum = optimum) %>%
@@ -100,16 +109,16 @@ filternewdf <- speciesComp %>%
 
 daysExceedance3 <- tempRegions2 %>%
   filter(SeasonRegion %in% filternewdf$SeasonRegion) %>%
-  mutate(ExceedTol = ifelse(maxDaily > filternewdf$Tolerance[1], 1L, 0L),
-         ExceedOpt = ifelse(maxDaily > filternewdf$SubOptimum[1], 1L, 0L)) %>%
+  mutate(ExceedTol = ifelse(maxDaily > tolerancecol[1], 1L, 0L),
+         ExceedOpt = ifelse(maxDaily > optcol[1], 1L, 0L)) %>%
   group_by(WY, Date, SeasonRegion) %>%
   summarize(maxDaily = maxDaily,
             propTol = mean(ExceedTol, na.rm = TRUE),
             propOpt = mean(ExceedOpt, na.rm = TRUE)) %>%
   ungroup() %>%
   group_by(WY, Date) %>%
-  summarize(maxPropTol = max(propTol),
-            maxPropOpt = max(propOpt),
+  summarize(maxPropTol = max(propTol, na.rm = TRUE),
+            maxPropOpt = max(propOpt, na.rm = TRUE),
             ExceedTol = ifelse(maxPropTol > 0.3, 1L, 0L),
             ExceedOpt = ifelse(maxPropOpt > 0.3, 1L, 0L)) %>%
   ungroup() %>%
@@ -119,46 +128,65 @@ daysExceedance3 <- tempRegions2 %>%
   ungroup() %>%
     mutate(SpeciesLS = specieslsinput) %>%
   left_join(filternewdf) %>%
-  select(WY, Species, LifeStage, Tolerance, daysExceedanceTol, daysExceedanceOpt, SubOptimum) 
+  select(WY, Species, LifeStage, tolerancecol2, daysExceedanceTol, daysExceedanceOpt, optcol2) 
 }
 ```
 
-Run function
-Takes a minute
+```{r}
+funDaysExceedBox <- function(specieslsinput) {
+filternewdf <- speciesComp %>%
+  filter(SpeciesLS == specieslsinput,
+         Presence == "Yes") 
+
+daysExceedance3 <- tempRegions2 %>%
+  filter(SeasonRegion %in% filternewdf$SeasonRegion) %>%
+  mutate(ExceedTol = ifelse(maxDaily > filternewdf$Tolerance[1], 1L, 0L),
+         ExceedOpt = ifelse(maxDaily > filternewdf$Suboptimum[1], 1L, 0L)) %>%
+  group_by(WY, Date, SeasonRegion) %>%
+  summarize(maxDaily = maxDaily,
+            propTol = mean(ExceedTol, na.rm = TRUE),
+            propOpt = mean(ExceedOpt, na.rm = TRUE)) %>%
+  ungroup() %>%
+  group_by(WY, Date) %>%
+  summarize(maxPropTol = max(propTol, na.rm = TRUE),
+            maxPropOpt = max(propOpt, na.rm = TRUE),
+            ExceedTol = ifelse(maxPropTol > 0.3, 1L, 0L),
+            ExceedOpt = ifelse(maxPropOpt > 0.3, 1L, 0L)) %>%
+  ungroup() %>%
+  group_by(WY) %>%
+  summarize(daysExceedanceTol = sum(ExceedTol, na.rm = TRUE),
+              daysExceedanceOpt = sum(ExceedOpt, na.rm = TRUE)) %>%
+  ungroup() %>%
+    mutate(SpeciesLS = specieslsinput) %>%
+  left_join(filternewdf) %>%
+  select(WY, Species, LifeStage, Tolerance,  daysExceedanceTol, daysExceedanceOpt, Suboptimum)%>%
+  distinct() 
+}
+```
+Run function - Takes a minute
 ```{r}
 DaysExceedanceBox <- lapply(SpeciesLS, funDaysExceedBox)
 ```
 
 Bind data together
 ```{r}
-DaysExceedanceData0 <- bind_rows(DaysExceedanceBox) %>% distinct() # Not sure why it's creating so many extra rows. For now just apply distinct. 
-
-level_order = c("Green Sturgeon", "White Sturgeon","Delta Smelt", "Longfin Smelt", "Wakasagi","Chinook Salmon", "Steelhead/RB Trout","Splittail", "Silverside", "Striped Bass", "Largemouth Bass", "Arundo", "Brazilian Waterweed", "Water Hyacinth", "Microcystis", "Potamocorbula")
+DaysExceedanceData0 <- bind_rows(DaysExceedanceBox) 
 
 DaysExceedanceData <- DaysExceedanceData0 %>%
-  dplyr::mutate(daysExceedanceOpt = replace(daysExceedanceOpt, is.na(SubOptimum), NA),
-         daysExceedanceTol = replace(daysExceedanceTol, is.na(Tolerance), NA),
-         Species = case_when(Species == "STB" ~ "Striped Bass",
-                             Species == "LFS" ~ "Longfin Smelt",
-                             Species == "LMB" ~ "Largemouth Bass",
-                             Species == "DSM" ~ "Delta Smelt",
-                             Species == "Chinook" ~ "Chinook Salmon",
-                             Species == "SteelheadRBT" ~ "Steelhead/RB Trout",
-                             Species == "Hyacinth" ~ "Water Hyacinth",
-                             Species == "Egeria" ~ "Brazilian Waterweed",
-                             TRUE~as.character(Species))) %>%
+  dplyr::mutate(daysExceedanceOpt = replace(daysExceedanceOpt, is.na(Suboptimum), NA),
+         daysExceedanceTol = replace(daysExceedanceTol, is.na(Tolerance), NA)) %>%
   dplyr::mutate(Species = factor(Species, levels = level_order))
 
 ```
 
-## Plot Data
 
+## Plot Data
 ```{r}
 theme_plots <-
   theme_bw() +
-   theme(axis.text.x = element_text(size = 12, angle = 70, vjust = 0.7, hjust = 0.7),
-         axis.text.y = element_text(size = 12),
-         axis.title.y = element_text(size = 12),
+   theme(axis.text.x = element_text(size = 11, angle = 70, vjust = 0.7, hjust = 0.7),
+         axis.text.y = element_text(size = 11),
+         axis.title.y = element_text(size = 11.5),
          legend.text = element_text(size = 11),
         axis.title.x = element_blank(),
         legend.title = element_blank(),
@@ -167,10 +195,10 @@ theme_plots <-
         panel.grid.minor = element_blank())
 ```
 
-### Tolerance
+Plot function
 ```{r}
-(FishTol1 <- 
-    ggplot(DaysExceedanceData) + 
+f_threshold_plot <- function(df, var) {
+  ggplot(df) + 
     geom_rect(xmin = 0, xmax = 1.5, ymin = -Inf, ymax = Inf, fill = "gray85") +
     geom_rect(xmin = 2.5, xmax = 3.5, ymin = -Inf, ymax = Inf, fill = "gray85") +
     geom_rect(xmin = 4.5, xmax = 5.5, ymin = -Inf, ymax = Inf, fill = "gray85") +
@@ -179,38 +207,27 @@ theme_plots <-
     geom_rect(xmin = 10.5, xmax = 11.5, ymin = -Inf, ymax = Inf, fill = "gray85") +
    geom_rect(xmin = 12.5, xmax = 13.5, ymin = -Inf, ymax = Inf, fill = "gray85") +
    geom_rect(xmin = 14.5, xmax = 15.5, ymin = -Inf, ymax = Inf, fill = "gray85") +
-   geom_vline(aes(xintercept = stage(Species, after_scale = 11.5)), linetype = "dashed", size = 1, color = "palegreen4") +
-    geom_boxplot(aes(x = Species,  y = daysExceedanceTol, fill = LifeStage), position = position_dodge(preserve = "single")) +
-   annotate(geom = "text", x = 6, y = 300, label = "Fish", vjust = 1, size = 5) +
-   annotate(geom = "text", x = 14, y = 300, label = "Vegetation & Clams", vjust = 1, size = 5) +
+      geom_rect(xmin = 16.5, xmax = 17.5, ymin = -Inf, ymax = Inf, fill = "gray85") +
+      geom_rect(xmin = 18.5, xmax = 19.5, ymin = -Inf, ymax = Inf, fill = "gray85") +
+      geom_rect(xmin = 20.5, xmax = 21.5, ymin = -Inf, ymax = Inf, fill = "gray85") +
+      geom_rect(xmin = 22.5, xmax = 23.5, ymin = -Inf, ymax = Inf, fill = "gray85") +
+   geom_vline(aes(xintercept = stage(Species, after_scale = 18.5)), linetype = "dashed", size = 0.5, color = "orangered2") +
+    geom_boxplot(aes_string(x = "Species",  y = var, fill = "LifeStage"), position = position_dodge(preserve = "single"), color = "gray35") +
+   annotate(geom = "text", x = 10, y = 300, label = "Fish", vjust = 1, size = 4) +
+   annotate(geom = "text", x = 21.5, y = 300, label = "Vegetation & Clams", vjust = 1, size = 4) +
     viridis::scale_fill_viridis(discrete = TRUE, option = "turbo") + 
    scale_y_continuous(limits = c(0,300), breaks = seq(from = 0, to = 300, by = 25)) +
-    labs( y = "Annual Days \nExceeding Tolerance") +
-   theme_plots)
-    
+   theme_plots
+}
 ```
 
-### SubOptimum
+### Make plots
 ```{r}
-(FishOpt1 <- 
-      ggplot(DaysExceedanceData) + 
-    geom_rect(xmin = 0, xmax = 1.5, ymin = -Inf, ymax = Inf, fill = "gray85") +
-    geom_rect(xmin = 2.5, xmax = 3.5, ymin = -Inf, ymax = Inf, fill = "gray85") +
-    geom_rect(xmin = 4.5, xmax = 5.5, ymin = -Inf, ymax = Inf, fill = "gray85") +
-    geom_rect(xmin = 6.5, xmax = 7.5, ymin = -Inf, ymax = Inf, fill = "gray85") +
-    geom_rect(xmin = 8.5, xmax = 9.5, ymin = -Inf, ymax = Inf, fill = "gray85") +
-    geom_rect(xmin = 10.5, xmax = 11.5, ymin = -Inf, ymax = Inf, fill = "gray85") +
-   geom_rect(xmin = 12.5, xmax = 13.5, ymin = -Inf, ymax = Inf, fill = "gray85") +
-   geom_rect(xmin = 14.5, xmax = 15.5, ymin = -Inf, ymax = Inf, fill = "gray85") +
-      geom_vline(aes(xintercept = stage(Species, after_scale = 11.5)), linetype = "dashed", size = 1, color = "palegreen4") +
-      geom_boxplot(aes(x = Species, y = daysExceedanceOpt, fill = LifeStage), position = position_dodge(preserve = "single")) +
-    annotate(geom = "text", x = 6, y = 300, label = "Fish", vjust = 1, size = 5) +
-   annotate(geom = "text", x = 14, y = 300, label = "Vegetation & Clams", vjust = 1, size = 5) +
-   viridis::scale_fill_viridis(discrete = TRUE, option = "turbo") + 
-   scale_y_continuous(limits = c(0,300), breaks = seq(from = 0, to = 300, by = 25)) +
-    labs( y = "Annual Days \nExceeding Optimum")  +
-   theme_plots)
- 
+(FishTol1 <- f_threshold_plot(DaysExceedanceData, var = "daysExceedanceTol") +
+    labs( y = "Annual Days \nExceeding Tolerance") )
+(FishOpt1 <- f_threshold_plot(DaysExceedanceData, var = "daysExceedanceOpt") +
+    labs( y = "Annual Days \nExceeding Optimum") )
+    
 ```
 
 ### Combined (Final Plot)
@@ -247,11 +264,141 @@ ggarrange(legend, FishOpt2_noleg, FishTol1b_noleg, ncol=1, nrow=3,
 dev.off()
 ```
 
+## Upper values
+```{r}
+funDaysExceedBoxUpper <- function(specieslsinput) {
+filternewdf <- speciesComp %>%
+  filter(SpeciesLS == specieslsinput,
+         Presence == "Yes") 
+
+daysExceedance3 <- tempRegions2 %>%
+  filter(SeasonRegion %in% filternewdf$SeasonRegion) %>%
+  mutate(ExceedTol = ifelse(maxDaily > filternewdf$Tolerance_Upper[1], 1L, 0L),
+         ExceedOpt = ifelse(maxDaily > filternewdf$Suboptimum_Upper[1], 1L, 0L)) %>%
+  group_by(WY, Date, SeasonRegion) %>%
+  summarize(maxDaily = maxDaily,
+            propTol = mean(ExceedTol, na.rm = TRUE),
+            propOpt = mean(ExceedOpt, na.rm = TRUE)) %>%
+  ungroup() %>%
+  group_by(WY, Date) %>%
+  summarize(maxPropTol = max(propTol, na.rm = TRUE),
+            maxPropOpt = max(propOpt, na.rm = TRUE),
+            ExceedTol = ifelse(maxPropTol > 0.3, 1L, 0L),
+            ExceedOpt = ifelse(maxPropOpt > 0.3, 1L, 0L)) %>%
+  ungroup() %>%
+  group_by(WY) %>%
+  summarize(daysExceedanceTol = sum(ExceedTol, na.rm = TRUE),
+              daysExceedanceOpt = sum(ExceedOpt, na.rm = TRUE)) %>%
+  ungroup() %>%
+    mutate(SpeciesLS = specieslsinput) %>%
+  left_join(filternewdf) %>%
+  select(WY, Species, LifeStage, Tolerance_Upper,  daysExceedanceTol, daysExceedanceOpt, Suboptimum_Upper)%>%
+  distinct() 
+}
+```
+
+```{r}
+DaysExceedanceBoxUpper <- lapply(SpeciesLS, funDaysExceedBoxUpper)
+
+DaysExceedanceDataUpper0 <- bind_rows(DaysExceedanceBoxUpper) %>% distinct() # Not sure why it's creating so many extra rows. For now just apply distinct. 
+
+DaysExceedanceDataUpper <- DaysExceedanceDataUpper0 %>%
+  dplyr::mutate(daysExceedanceOpt = replace(daysExceedanceOpt, is.na(Suboptimum_Upper), NA),
+         daysExceedanceTol = replace(daysExceedanceTol, is.na(Tolerance_Upper), NA)) %>%
+  dplyr::mutate(Species = factor(Species, levels = level_order))
+```
+
+```{r}
+(FishTolU <- f_threshold_plot(DaysExceedanceDataUpper, var = "daysExceedanceTol") +
+    labs( y = "Annual Days \nExceeding Tolerance") )
+(FishOptU <- f_threshold_plot(DaysExceedanceDataUpper, var = "daysExceedanceOpt") +
+    labs( y = "Annual Days \nExceeding Optimum") )
+```
+
+```{r}
+# save legend separately for final figure
+get_legend<-function(myggplot){
+  tmp <- ggplot_gtable(ggplot_build(myggplot))
+  leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
+  legend <- tmp$grobs[[leg]]
+  return(legend)
+}
+legend <- get_legend(FishTolU)
+(FishOptU_noleg <- FishOptU + theme(legend.position = "none",
+                                    axis.text.x = element_blank()))
+(FishTolU_noleg<- FishTolU + theme(legend.position = "none") )
+
+tiff(filename=file.path("Figures/Figure_Opt_Tol_Upper.tiff"), units="in",type="cairo", bg="white", height=7.5, 
+     width=8, res=300, pointsize=12,compression="lzw")
+ggarrange(legend, FishOptU_noleg, FishTolU_noleg, ncol=1, nrow=3,
+             heights = c(0.75,2.5,4), labels = c("", "A","B"))
+dev.off()
+```
 
 
 
+Absence/Presence Tile Plot
+```{r}
+level_order2 = c("Green Sturgeon_Juvenile", "White Sturgeon_Juvenile", "White Sturgeon_Larvae", "Delta Smelt_Adult", "Delta Smelt_Juvenile", "Delta Smelt_Larvae", "Longfin Smelt_Adult", "Longfin Smelt_Juvenile", "Longfin Smelt_Larvae", "Wakasagi_Juvenile","Chinook Salmon_Adult", "Chinook Salmon_Juvenile", "Chinook Salmon_Larvae", "Steelhead/Rainbow Trout_Adult","Steelhead/Rainbow Trout_Juvenile","Steelhead/Rainbow Trout_Larvae","Sacramento Splittail_Adult","Sacramento Splittail_Juvenile","Sacramento Splittail_Larvae", "Sacramento Pikeminnow_Adult", "Sacramento Sucker_Adult", "Sacramento Blackfish_Adult","Sacramento Blackfish_Juvenile-Larvae", "Hitch_Adult", "Tule Perch_Adult", "Threespine Stickleback_Adult", "Threespine Stickleback_Juvenile-Larvae","Prickly Sculpin_Adult", "Mississippi Silverside_Adult", "Mississippi Silverside_Juvenile","Mississippi Silverside_Larvae", "Striped Bass_Adult", "Striped Bass_Juvenile","Striped Bass_Larvae","Largemouth Bass_Adult","Largemouth Bass_Juvenile", "Giant Reed EAV_Undifferentiated", "Brazilian Waterweed_Undifferentiated", "Water Hyacinth FAV_Undifferentiated", "Microcystis_Undifferentiated", "Asian Clam_Undifferentiated", "Overbite Clam_Undifferentiated")
+
+check <- unique(tiledata$SpeciesLS)
+print(setdiff(level_order2, check ))
+```
+
+```{r}
+library(RColorBrewer)
+str(speciesComp)
+tiledata <- speciesComp %>%
+  mutate(Tolerance_Upper = as.numeric(Tolerance_Upper),
+         Max_Field_Temp = as.numeric(Max_Field_Temp),
+         Tol_Field_Difference = ifelse(Presence == "No", "No", Tolerance_Upper-Max_Field_Temp),
+         Tol_Field_Difference2 = ifelse(is.na(Tol_Field_Difference), Presence, Tol_Field_Difference))
+
+num <- tiledata %>% filter(!(Tol_Field_Difference2 %in% c("Yes", "No"))) %>%
+  mutate(Tol_Field_Diff = as.numeric(Tol_Field_Difference2),
+         col = cut(Tol_Field_Diff, 7)) %>%
+  select(-Tol_Field_Difference)
+chr <- tiledata %>% filter((Tol_Field_Difference2 %in% c("Yes", "No")))%>%
+  mutate(Tol_Field_Diff = ifelse(Tol_Field_Difference2 == "Yes", "Present", "Not present"),
+         col = as.character(Tol_Field_Diff)) %>%
+  select(-Tol_Field_Difference)
 
 
+tiledataf <- rbind(num, chr) %>%
+  mutate(SpeciesLS = factor(SpeciesLS, levels = level_order2),
+         Region = factor(Region, levels = c("Far North", "North Delta", "Confluence", "Central", "South", "Suisun Bay", "Suisun Marsh")))
+
+
+
+```
+
+```{r}
+tilescale <- c(viridis(7, direction = -1, option = "cividis"), "darkseagreen", "snow2")
+(plot_abspresall <- ggplot(tiledataf) + 
+    geom_tile(aes(x = Season, y = SpeciesLS, fill = col), color = "black") + 
+    facet_wrap(~Region,nrow = 2) +
+    scale_fill_manual("Tolerance-Max Field Detection \nTemperature Difference (°C)", values = tilescale)) + 
+  theme_bw() + 
+  theme(axis.text.y = element_text(size = 7),
+        axis.title.x = element_blank(),
+        axis.text.x = element_text(angle = 70, vjust = 0.5),
+        strip.text = element_text(size = 11))
+```
+
+```{r}
+tiff("Figures/Figure_Absence_Presence.tiff", units="in",type="cairo", bg="white", height=8, width=11, res=300, pointsize=11,compression="lzw")
+(plot_abspresall <- ggplot(tiledataf) + 
+    geom_tile(aes(x = Season, y = SpeciesLS, fill = col), color = "black") + 
+    facet_wrap(~Region,nrow = 2) +
+    scale_fill_manual("Tolerance-Max Field Detection \nTemperature Difference (°C)", values = tilescale)) + 
+  theme_bw() + 
+  theme(axis.text.y = element_text(size = 7),
+        axis.title = element_blank(),
+        axis.text.x = element_text(angle = 70, vjust = 0.5),
+        strip.text = element_text(size = 10),
+        legend.title = element_text(size = 10))
+dev.off()
+```
 
 
 
@@ -719,7 +866,7 @@ colors1 = colors1$color
         panel.grid.minor = element_blank()))
 ```
 
-### Boxplots: Optima
+### Boxplots
 ```{r}
 SpeciesYears2Opt <- SpeciesYears2 %>%
   filter((!(is.na(daysExceedanceOpt)))) %>%
@@ -792,4 +939,35 @@ FishOpt1
 dev.off()
 
 
+```
+
+Absence/Presence Plot
+```{r}
+speciesComp$Season = factor(speciesComp$Season, levels = c("Winter", "Spring", "Summer", "Fall"))
+
+nonfish <- c("Giant Reed EAV", "Overbite Clam", "Asian Clam", "Water Hyacinth FAV", "Microcystis", "Brazilian Waterweed")
+
+
+(abspres <- ggplot(speciesComp %>% filter(!(Species %in%  nonfish))) + geom_tile(aes(x = Region, y = SpeciesLS, fill = Presence), color = "black") + facet_wrap(~Season) + 
+    labs(y = "Species_Lifestage") +
+    scale_fill_manual(values = c("indianred2", "mediumblue")) + 
+  theme(axis.text.x = element_text(angle = 90),
+        axis.text.y = element_text(size = 8)))
+
+
+(abspres2 <- ggplot(speciesComp %>% filter(!(Species %in% nonfish))) + geom_tile(aes(x = Season, y = SpeciesLS, fill = Presence), color = "black") + facet_wrap(~Region) + 
+    labs(y = "Species_Lifestage") +
+    scale_fill_manual(values = c("indianred2", "mediumblue")) + 
+  theme(axis.text.x = element_text(angle = 90),
+        axis.text.y = element_text(size = 8)))
+
+tiff(filename=file.path("Figures/FishAbsencePresence.tiff"), units="in",type="cairo", bg="white", height=8, 
+     width=8, res=300, pointsize=12,compression="lzw")
+abspres
+dev.off()
+
+tiff(filename=file.path("Figures/FishAbsencePresenceRegion.tiff"), units="in",type="cairo", bg="white", height=7, 
+     width=7, res=300, pointsize=12,compression="lzw")
+abspres2
+dev.off()
 ```
