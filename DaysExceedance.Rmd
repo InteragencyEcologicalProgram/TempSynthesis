@@ -30,7 +30,7 @@ tempToUse <- readRDS(here::here("Data", "tempToUse_20210811.rds"))
 tempDaily <- readRDS(here::here("Data", "tempDaily_20210811.rds"))
 thresholds <- readxl::read_excel(here::here("SpeciesTables", "SpeciesThresholds.xlsx")) %>%
   na_if(.,"NA") 
-species <- readxl::read_excel(here::here("SpeciesTables", "SpeciesTableStructure.xlsx"), sheet = 2) 
+species <- readr::read_csv(here::here("SpeciesTables", "absence_presence_temp.csv")) 
 ```
 
 ## Manipulate data
@@ -100,36 +100,36 @@ level_order = c("Green Sturgeon", "White Sturgeon","Delta Smelt", "Longfin Smelt
 # Add species name
 
 ```{r}
-funDaysExceedBox <- function(specieslsinput, tolerancecol = "filternewdf$Tolerance", tolerancecol2 = "Tolerance", optcol = "filternewdf$Suboptimum", optcol2 = "Suboptimum") {
-filternewdf <- speciesComp %>%
-  # mutate(tolerance = tolerance,
-         # optimum = optimum) %>%
-  filter(SpeciesLS == specieslsinput,
-         Presence == "Yes")
-
-daysExceedance3 <- tempRegions2 %>%
-  filter(SeasonRegion %in% filternewdf$SeasonRegion) %>%
-  mutate(ExceedTol = ifelse(maxDaily > tolerancecol[1], 1L, 0L),
-         ExceedOpt = ifelse(maxDaily > optcol[1], 1L, 0L)) %>%
-  group_by(WY, Date, SeasonRegion) %>%
-  summarize(maxDaily = maxDaily,
-            propTol = mean(ExceedTol, na.rm = TRUE),
-            propOpt = mean(ExceedOpt, na.rm = TRUE)) %>%
-  ungroup() %>%
-  group_by(WY, Date) %>%
-  summarize(maxPropTol = max(propTol, na.rm = TRUE),
-            maxPropOpt = max(propOpt, na.rm = TRUE),
-            ExceedTol = ifelse(maxPropTol > 0.3, 1L, 0L),
-            ExceedOpt = ifelse(maxPropOpt > 0.3, 1L, 0L)) %>%
-  ungroup() %>%
-  group_by(WY) %>%
-  summarize(daysExceedanceTol = sum(ExceedTol, na.rm = TRUE),
-              daysExceedanceOpt = sum(ExceedOpt, na.rm = TRUE)) %>%
-  ungroup() %>%
-    mutate(SpeciesLS = specieslsinput) %>%
-  left_join(filternewdf) %>%
-  select(WY, Species, LifeStage, tolerancecol2, daysExceedanceTol, daysExceedanceOpt, optcol2) 
-}
+# funDaysExceedBox <- function(specieslsinput, tolerancecol = "filternewdf$Tolerance", tolerancecol2 = "Tolerance", optcol = "filternewdf$Suboptimum", optcol2 = "Suboptimum") {
+# filternewdf <- speciesComp %>%
+#   # mutate(tolerance = tolerance,
+#          # optimum = optimum) %>%
+#   filter(SpeciesLS == specieslsinput,
+#          Presence == "Yes")
+# 
+# daysExceedance3 <- tempRegions2 %>%
+#   filter(SeasonRegion %in% filternewdf$SeasonRegion) %>%
+#   mutate(ExceedTol = ifelse(maxDaily > tolerancecol[1], 1L, 0L),
+#          ExceedOpt = ifelse(maxDaily > optcol[1], 1L, 0L)) %>%
+#   group_by(WY, Date, SeasonRegion) %>%
+#   summarize(maxDaily = maxDaily,
+#             propTol = mean(ExceedTol, na.rm = TRUE),
+#             propOpt = mean(ExceedOpt, na.rm = TRUE)) %>%
+#   ungroup() %>%
+#   group_by(WY, Date) %>%
+#   summarize(maxPropTol = max(propTol, na.rm = TRUE),
+#             maxPropOpt = max(propOpt, na.rm = TRUE),
+#             ExceedTol = ifelse(maxPropTol > 0.3, 1L, 0L),
+#             ExceedOpt = ifelse(maxPropOpt > 0.3, 1L, 0L)) %>%
+#   ungroup() %>%
+#   group_by(WY) %>%
+#   summarize(daysExceedanceTol = sum(ExceedTol, na.rm = TRUE),
+#               daysExceedanceOpt = sum(ExceedOpt, na.rm = TRUE)) %>%
+#   ungroup() %>%
+#     mutate(SpeciesLS = specieslsinput) %>%
+#   left_join(filternewdf) %>%
+#   select(WY, Species, LifeStage, tolerancecol2, daysExceedanceTol, daysExceedanceOpt, optcol2) 
+# }
 ```
 
 ```{r}
@@ -181,6 +181,8 @@ DaysExceedanceData <- DaysExceedanceData0 %>%
 
 
 ## Plot Data
+
+### Theme
 ```{r}
 theme_plots <-
   theme_bw() +
@@ -195,7 +197,7 @@ theme_plots <-
         panel.grid.minor = element_blank())
 ```
 
-Plot function
+### Plot function
 ```{r}
 f_threshold_plot <- function(df, var) {
   ggplot(df) + 
@@ -215,7 +217,7 @@ f_threshold_plot <- function(df, var) {
     geom_boxplot(aes_string(x = "Species",  y = var, fill = "LifeStage"), position = position_dodge(preserve = "single"), color = "gray35") +
    annotate(geom = "text", x = 10, y = 300, label = "Fish", vjust = 1, size = 4) +
    annotate(geom = "text", x = 21.5, y = 300, label = "Vegetation & Clams", vjust = 1, size = 4) +
-    viridis::scale_fill_viridis(discrete = TRUE, option = "turbo") + 
+    viridis::scale_fill_viridis(discrete = TRUE, option = "plasma") + 
    scale_y_continuous(limits = c(0,300), breaks = seq(from = 0, to = 300, by = 25)) +
    theme_plots
 }
@@ -297,6 +299,7 @@ daysExceedance3 <- tempRegions2 %>%
 }
 ```
 
+### Run code
 ```{r}
 DaysExceedanceBoxUpper <- lapply(SpeciesLS, funDaysExceedBoxUpper)
 
@@ -309,12 +312,29 @@ DaysExceedanceDataUpper <- DaysExceedanceDataUpper0 %>%
 ```
 
 ```{r}
+daysExceedanceSummary <- DaysExceedanceDataUpper %>%
+  group_by(Species, LifeStage) %>%
+  summarize(meanTolerance = round(mean(daysExceedanceTol, na.rm = TRUE),0),
+            minTolerance= min(daysExceedanceTol, na.rm = TRUE),
+            maxTolerance =  max(daysExceedanceTol, na.rm = TRUE),
+            meanSuboptimum = round(mean(daysExceedanceOpt, na.rm = TRUE),0),
+            minSuboptimum= min(daysExceedanceOpt, na.rm = TRUE),
+            maxSuboptimum =  max(daysExceedanceOpt, na.rm = TRUE)) %>%
+  mutate(outputTolerance = paste0(meanTolerance, " (", minTolerance, "-", maxTolerance, ")"),
+         outputSuboptimum = paste0(meanSuboptimum, " (", minSuboptimum, "-", maxSuboptimum, ")"))
+
+write_csv(daysExceedanceSummary, here::here("SpeciesTables","Table_numDaysExceedance.csv"))            
+```
+
+
+### Make plot
+```{r}
 (FishTolU <- f_threshold_plot(DaysExceedanceDataUpper, var = "daysExceedanceTol") +
     labs( y = "Annual Days \nExceeding Tolerance") )
 (FishOptU <- f_threshold_plot(DaysExceedanceDataUpper, var = "daysExceedanceOpt") +
     labs( y = "Annual Days \nExceeding Optimum") )
 ```
-
+### Combined
 ```{r}
 # save legend separately for final figure
 get_legend<-function(myggplot){
@@ -337,69 +357,3 @@ dev.off()
 
 
 
-## Absence/Presence Tile Plot
-```{r}
-level_order2 = c("Green Sturgeon_Juvenile", "White Sturgeon_Juvenile", "White Sturgeon_Larvae", "Delta Smelt_Adult", "Delta Smelt_Juvenile", "Delta Smelt_Larvae", "Longfin Smelt_Adult", "Longfin Smelt_Juvenile", "Longfin Smelt_Larvae", "Wakasagi_Juvenile","Chinook Salmon_Adult", "Chinook Salmon_Juvenile", "Chinook Salmon_Larvae", "Steelhead/Rainbow Trout_Adult","Steelhead/Rainbow Trout_Juvenile","Steelhead/Rainbow Trout_Larvae","Sacramento Splittail_Adult","Sacramento Splittail_Juvenile","Sacramento Splittail_Larvae", "Sacramento Pikeminnow_Adult", "Sacramento Sucker_Adult", "Sacramento Blackfish_Adult","Sacramento Blackfish_Juvenile-Larvae", "Hitch_Adult", "Tule Perch_Adult", "Threespine Stickleback_Adult", "Threespine Stickleback_Juvenile-Larvae","Prickly Sculpin_Adult", "Mississippi Silverside_Adult", "Mississippi Silverside_Juvenile","Mississippi Silverside_Larvae", "Striped Bass_Adult", "Striped Bass_Juvenile","Striped Bass_Larvae","Largemouth Bass_Adult","Largemouth Bass_Juvenile", "Giant Reed EAV_Undifferentiated", "Brazilian Waterweed_Undifferentiated", "Water Hyacinth FAV_Undifferentiated", "Microcystis_Undifferentiated", "Asian Clam_Undifferentiated", "Overbite Clam_Undifferentiated")
-
-
-```
-
-```{r}
-library(RColorBrewer)
-str(speciesComp)
-tiledata <- speciesComp %>%
-  mutate(Tolerance_Upper = as.numeric(Tolerance_Upper),
-         Max_Field_Temp = as.numeric(Max_Field_Temp),
-         Tol_Field_Difference = ifelse(Presence == "No", "No", Tolerance_Upper-Max_Field_Temp),
-         Tol_Field_Difference2 = ifelse(is.na(Tol_Field_Difference), Presence, Tol_Field_Difference))
-
-num <- tiledata %>% filter(!(Tol_Field_Difference2 %in% c("Yes", "No"))) %>%
-  mutate(Tol_Field_Diff = as.numeric(Tol_Field_Difference2),
-         #col = cut(Tol_Field_Diff, 7),
-         col = cut(Tol_Field_Diff, breaks = c(-8, 0, 3, 6, 12))) %>%
-  dplyr::select(-Tol_Field_Difference)
-
-chr <- tiledata %>% filter((Tol_Field_Difference2 %in% c("Yes", "No")))%>%
-  mutate(Tol_Field_Diff = ifelse(Tol_Field_Difference2 == "Yes", "Present", "Not present"),
-         col = as.character(Tol_Field_Diff)) %>%
-  dplyr::select(-Tol_Field_Difference)
-
-
-tiledataf <- rbind(num, chr) %>%
-  mutate(SpeciesLS = factor(SpeciesLS, levels = level_order2),
-         Region = factor(Region, levels = c("Far North", "North Delta", "Confluence", "Central", "South", "Suisun Bay", "Suisun Marsh")))
-
-check <- unique(tiledata$SpeciesLS)
-print(setdiff(level_order2, check ))
-
-```
-
-```{r}
-tilescale <- c("indianred3", "tan1", "gold", "darkolivegreen4", "lightsteelblue3", "snow2")
-(plot_abspresall <- ggplot(tiledataf) + 
-    geom_tile(aes(x = Season, y = SpeciesLS, fill = col), color = "black") + 
-    facet_wrap(~Region,nrow = 2) +
-    scale_fill_manual("Tolerance-Max Field Detection \nTemperature Difference (°C)", values = tilescale)) + 
-  theme_bw() + 
-  theme(axis.text.y = element_text(size = 7),
-        axis.title.x = element_blank(),
-        axis.text.x = element_text(angle = 70, vjust = 0.5),
-        strip.text = element_text(size = 11),
-        legend.position = c(.87, .25))
-```
-
-```{r}
-tiff("Figures/Figure_Absence_Presence.tiff", units="in",type="cairo", bg="white", height=8, width=11, res=300, pointsize=11,compression="lzw")
-(plot_abspresall <- ggplot(tiledataf) + 
-    geom_tile(aes(x = Season, y = SpeciesLS, fill = col), color = "black") + 
-    facet_wrap(~Region,nrow = 2) +
-    scale_fill_manual("Tolerance-Max Field Detection \nTemperature Difference (°C)", values = tilescale)) + 
-  theme_bw() + 
-  theme(axis.text.y = element_text(size = 7),
-        axis.title.x = element_blank(),
-        axis.text.x = element_text(angle = 70, vjust = 0.5),
-        strip.text = element_text(size = 11),
-        legend.position = c(.885, .2),
-        legend.text = element_text(size = 9))
-dev.off()
-```
