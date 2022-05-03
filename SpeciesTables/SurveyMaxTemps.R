@@ -123,6 +123,23 @@ fishpresent <- combine %>% filter(Count > 0,
                                Taxa == "Cottus asper" & Length <40 ~ "Juvenile-Larvae",
                                Taxa == "Cottus asper" & Length >=40 ~ "Adult",
                                TRUE ~ as.character("Undifferentiated")))
+
+# Write file ---------------------------------------------------------
+# saveRDS(fishpresent, "SpeciesTables/SurveyTempsAllData.rds")
+
+# Look at high temps
+hightemps <- fishpresent %>%
+  filter(WaterTemperature >25)
+
+hightempSummary <- hightemps %>%
+  mutate(Taxa_LS = paste(Taxa, LifeStage)) %>% 
+  dplyr::select(-Length, -Count) %>%
+  distinct() %>%
+  group_by(WaterTemperature, Taxa_LS) %>%
+  summarize(n = n())
+
+ggplot(hightempSummary, aes(x = WaterTemperature, y = Taxa_LS, color = n)) + geom_point() + scale_color_viridis()  
+
 # Plot  --------------------------------
 plot <- ggplot(fishpresent) + geom_boxplot(aes(x = LifeStage, y = WaterTemperature, fill = LifeStage)) + facet_wrap(~Taxa) + theme(legend.position = "top",
                                                                                                                                                       axis.text.x = element_text(angle = 90)) 

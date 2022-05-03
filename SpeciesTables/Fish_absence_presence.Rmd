@@ -21,17 +21,18 @@ library(contentid)
 library(sf)
 ```
 
-```{r}
-# Integrated
-create_fish_db()
-surv <- open_survey()
-fish <- open_fish()
+# Get data
 
+## Lists of species
+```{r}
 # Fish
-species <- c("Menidia beryllina", "Menidia audens", "Morone saxatilis", "Pogonichthys macrolepidotus", "Micropterus salmoides", "Oncorhynchus tshawytscha", "Oncorhynchus mykiss", "Hypomesus transpacificus", "Spirinchus thaleichthys", "Hypomesus nipponensis", "Acipenser medirostris", "Acipenser transmontanus", "Gasterosteus aculeatus", "Cottus asper", "Ptychocheilus grandis", "Catostomus occidentalis", "Lavinia exilicauda", "Orthodon microlepidotus", "Hysterocarpus traskii")
+speciesTaxa <- c("Menidia beryllina", "Menidia audens", "Morone saxatilis", "Pogonichthys macrolepidotus", "Micropterus salmoides", "Oncorhynchus tshawytscha", "Oncorhynchus mykiss", "Hypomesus transpacificus", "Spirinchus thaleichthys", "Hypomesus nipponensis", "Acipenser medirostris", "Acipenser transmontanus", "Gasterosteus aculeatus", "Cottus asper", "Ptychocheilus grandis", "Catostomus occidentalis", "Lavinia exilicauda", "Orthodon microlepidotus", "Hysterocarpus traskii")
 
 yolosubset <- c("Inland Silverside", "Striped Bass", "Splittail", "Largemouth Bass", "Longfin Smelt", "Delta Smelt", "Wakasagi", "Chinook Salmon", "Rainbow / Steelhead Trout", "White Sturgeon", "Green Sturgeon", "Hitch", "Prickly Sculpin", "Sacramento Blackfish", "Sacramento Sucker", "Sacramento Pikeminnow", "Tule Perch", "Threespine Stickleback")
-  
+```
+
+## Download data
+```{r}
 # Yolo
 #yolo_id <- contentid::store("https://portal.edirepository.org/nis/dataviewer?packageid=edi.233.2&entityid=015e494911cf35c90089ced5a3127334")
 yolo_file <- contentid::resolve("hash://sha256/e0dc10d7f36cfc5ac147956abb91f24f2b2df9f914a004bbf1e85e7d9cf52f41")
@@ -40,15 +41,25 @@ yolo_stations_file <- contentid::resolve("hash://sha256/e25498ffc0208c3ae0e31a23
 #yolo_taxonomy_id <- contentid::store("https://portal.edirepository.org/nis/dataviewer?packageid=edi.233.2&entityid=0532048e856d4bd07deea11583b893dd")
 yolo_taxonomy_file <- contentid::resolve("hash://sha256/1473de800f3c5577da077507fb006be816a9194ddd417b1b98836be92eaea49d")
 
+#taxonomy
 yolo_taxonomy <- readr::read_csv(yolo_taxonomy_file) %>%
   mutate(Taxa = paste(Genus, Species)) %>%
   select(CommonName, Taxa) %>%
   mutate(Taxa = replace(Taxa, Taxa == "Menidia beryllina", "Menidia audens"),
          Taxa = replace(Taxa, Taxa == "Hysterocarpus traski", "Hysterocarpus traskii"))
+# add fish
 yolo_fish <- readr::read_csv(yolo_file) %>%
   filter(CommonName %in% yolosubset) %>%
   left_join(yolo_taxonomy)
+# add site
 yolo_sites <- readr::read_csv(yolo_stations_file)
+yolo <- left_join(yolo_fish, yolo_sites, by = "StationCode") %>%
+  mutate(SampleID = paste("YBFMP", 1:nrow(.)),
+         Notes_catch = NA,
+         SampleDate = lubridate::mdy(SampleDate), 
+         Source = "YBFMP")%>%
+  select(SampleID, Source, Date = SampleDate, StationCode, WaterTemperature, Length =  ForkLength,
+         Count, Notes_catch, Taxa, Latitude = LatitudeLocation, Longitude = LongitudeLocation)
 unique(yolo_fish$CommonName)
 
 ## DJFMP
@@ -60,17 +71,20 @@ unique(yolo_fish$CommonName)
 # Salvage - from FTP
 # salvage_id <- contentid::store("SpeciesTables/data_raw/salvage.rds")
 salvage_file <- contentid::resolve("hash://sha256/7e6d32127c22411ca5089d33a6444223302f05983035b5f3966c629a63f1d636")
+
 salvage <- readRDS(salvage_file) %>%
   dplyr::mutate(Taxa = paste(Genus, Species),
                 Source = "Salvage",
                 SampleID = paste(Source, SampleRowID),
-                Region = "South & Central") %>%
-  dplyr::filter(Taxa %in% species,
+                Region = "South & Central",
+                WaterTemperature = (WaterTemperature - 32) * 5/9) %>%
+  dplyr::filter(Taxa %in% speciesTaxa,
                 !is.na(ForkLength)) %>%
   dplyr::select(Source, SampleID,
                 Date = SampleDate,
                 Region,
                 Count, 
+                WaterTemperature,
                 Length=ForkLength,
                 LengthFrequency, Taxa, CommonName) 
 salvageRep <- rbind(salvage, salvage[rep(1:nrow(salvage), 1),])
@@ -101,58 +115,45 @@ sturgeon <- readr::read_csv(sturgeon_file) %>%
                 SampleID = paste(Source, NetSetId),
                 Count = 1)%>%
   dplyr::select(-Vessel, -NetSet, -TaggingLoc, -MeshSize, -RelCond, -NetSetId, -Species)
-
-# Regions shapefile for synthesis
-regions <- st_read(here("RosieRegions", "RosiesRegions2022.shp"))
-regions$Region <- c("Suisun Marsh", "Suisun Bay","Confluence", "North Delta", "Far North", "Central" , "South") 
-st_crs(regions)
 ```
 
-## Filter integrated dataset - all surveys, species list.
-
+## Integrated dataset - all surveys, species list.
 ```{r}
+# Integrated
+create_fish_db()
+surv <- open_survey()
+fish <- open_fish()
+
 # filter for sources and taxa of interest
 surveys <- surv %>% 
     filter(Source %in% c("DJFMP", "Suisun", "BayStudy", "EDSM", "FMWT", "SKT", "TMM", "SLS", "STN")) %>% 
-    select(SampleID, Source, Date, Latitude, Longitude)
+    select(SampleID, Source, Date, Latitude, Longitude, WaterTemperature = Temp_surf)
     
 fish_sp <- fish %>%
-  filter(Taxa %in% species)
+  filter(Taxa %in% speciesTaxa)
 
 df <- left_join(surveys, fish_sp) %>% 
     collect() 
 ```
 
-Turn into spatial and join (slow)
+# Spatial Joins
+Regions shapefile for synthesis
+```{r}
+regions <- st_read(here("RosieRegions", "RosiesRegions2022.shp"))
+regions$Region <- c("Suisun Marsh", "Suisun Bay","Confluence", "North Delta", "Far North", "Central" , "South") 
+st_crs(regions)
+```
 
+## Integrated 
 ```{r}
 df_complete <- filter(df, !is.na(Longitude))%>%
   mutate(Date = lubridate::ymd(Date)) 
 df_sf <- st_as_sf(df_complete, coords = c("Longitude", "Latitude"), crs = 4326)
 
 new_df <- st_join(df_sf, regions, join = st_within) 
-
 ```
 
-```{r}
-saveRDS(new_df, "SpeciesTables/deltafish_regionjoin.rds", compress = "xz")
-new_df <- readRDS("SpeciesTables/deltafish_regionjoin.rds")
-rm(df_complete, df_sf)
-```
-
-## Modify Yolo data
-
-```{r}
-yolo <- left_join(yolo_fish, yolo_sites, by = "StationCode") %>%
-  mutate(SampleID = paste("YBFMP", 1:nrow(.)),
-         Notes_catch = NA,
-         SampleDate = lubridate::mdy(SampleDate), 
-         Source = "YBFMP")%>%
-  select(SampleID, Source, Date = SampleDate, StationCode, Length =  ForkLength,
-         Count, Notes_catch, Taxa, Latitude = LatitudeLocation, Longitude = LongitudeLocation) 
-```
-
-Turn into spatial and join
+## Yolo
 
 ```{r}
 yolo_sf <- st_as_sf(yolo, coords = c("Longitude", "Latitude"), crs = 4326)
@@ -160,7 +161,7 @@ yolo_regions <- st_join(yolo_sf, regions, join = st_within) %>%
   select(-Regions)
 ```
 
-## Join yolo and data from deltafish
+## Join all data sources, add season
 
 ```{r}
 alldata0 <- bind_rows(yolo_regions, sturgeon, salvageF, new_df) 
@@ -176,16 +177,22 @@ alldata <- alldata0 %>%
                             TRUE~as.character(NA)))
 ```
 
+## Write files
 ```{r}
+saveRDS(new_df, "SpeciesTables/deltafish_regionjoin.rds", compress = "xz")
+new_df <- readRDS("SpeciesTables/deltafish_regionjoin.rds")
+
 saveRDS(alldata, "SpeciesTables/fishdata_joined.rds", compress = "xz")
+
+```
+
+## Read files
+```{r}
 alldata <- readRDS("SpeciesTables/fishdata_joined.rds")
 ```
 
-Add lifestage info
-
+# Add lifestage info
 ```{r}
-species <- c("Menidia beryllina", "Menidia audens", "Morone saxatilis", "Pogonichthys macrolepidotus", "Micropterus salmoides", "Oncorhynchus tshawytscha", "Oncorhynchus mykiss", "Hypomesus transpacificus", "Spirinchus thaleichthys", "Hypomesus nipponensis", "Acipenser medirostris", "Acipenser transmontanus")
-
 lifestage <- alldata %>%
   mutate(Taxa = replace(Taxa, Taxa == "Hysterocarpus traski", "Hysterocarpus traskii")) %>%
   mutate(Taxa = replace(Taxa, Taxa == "Menidia beryllina", "Menidia audens")) %>%
@@ -239,11 +246,254 @@ lifestage <- alldata %>%
                                
                                TRUE ~ as.character("Undifferentiated")),
          Season = factor(Season, levels = c("Winter", "Spring", "Summer", "Fall"))) 
+```
 
 
+## Summarized
+
+# Read in thresholds
+```{r}
+thresholds <- readxl::read_excel(here::here("SpeciesTables", "SpeciesThresholds.xlsx")) %>%
+  na_if(.,"NA") 
+```
+
+```{r}
+All_lifestages <- lifestage %>%
+  group_by(Source, Season, Region, Taxa, LifeStage) %>%
+  summarize(n = n(),
+            maxWaterTemp = max(WaterTemperature, na.rm = TRUE))
+
+All_notbysource <- lifestage %>%
+  group_by(Season, Region, Taxa, LifeStage) %>%
+  summarize(n = n(),
+            maxWaterTemp= max(WaterTemperature, na.rm = TRUE))
+
+All_removesingles <- All_notbysource %>%
+  filter(n>1) %>%
+  mutate(Taxa_Lifestage = paste0(Taxa, "_", LifeStage)) %>%
+  mutate(Presence = "Yes")
+
+data_export <- All_removesingles %>%
+  as.data.frame()%>%
+  select(Region, Taxon = Taxa, LifeStage, Season, maxWaterTemp) %>%
+  filter(!is.infinite(maxWaterTemp)) %>%
+  left_join(thresholds %>% select(Species, Taxon)) %>%
+  select(Region, Species, LifeStage, Season, maxWaterTemp) %>%
+  distinct()
+
+# No temps associated with green sturgeon juveniles from CDFW program
+new <- lifestage %>% filter(Region == "Far North" & Season == "Spring" & LifeStage == "Juvenile" & Taxa == "Acipenser medirostris")
+
+write_csv(data_export, "SpeciesTables/exportfishabsence_presence.csv")
+```
 
 
+## Write data
+```{r}
+saveRDS(lifestage, "absencepresence_lifestage.rds", compress = "xz")
+write_csv(All_lifestages, "summed_absence_presence_all_bysource.csv")
+write_csv(All_notbysource, "summed_absence_presence_all_region.csv")
+write_csv(All_removesingles, "species_absence_presence.csv")
+```
 
+## Read data
+```{r}
+absence_presence_all <- readRDS("absencepresence_lifestage.rds")
+summed_source <- read_csv("summed_absence_presence_all_bysource.csv")
+```
+
+Calculate max water temp by region and season
+```{r}
+tempDaily <- readRDS(here::here("Data", "tempDaily_20210811.rds"))%>%
+  mutate(Month = lubridate::month(Date),
+         Season = case_when(Month<=3~ "Winter",
+                            Month %in% c(4, 5, 6)~ "Spring",
+                            Month %in% c(7, 8, 9)~ "Summer", 
+                            Month >=10~ "Fall",
+                            TRUE~as.character(NA))) %>%
+  mutate(Region = replace(Region, Region == "San Joaquin", "Central"),
+         Region = replace(Region, Region == "Sac River", "Confluence"))
+
+# Mean maximum across stations. 
+tempsummary <- tempDaily %>%
+  group_by(Region, Season, Station) %>%
+  summarize(maxTemp = max(maxDaily)) %>%
+  ungroup() %>%
+  group_by(Region, Season) %>%
+            summarize(meanMaxTemp = mean(maxTemp)) %>%
+  ungroup()
+```
+
+# Absence-Presence Plots with Threshold
+
+## Level order
+```{r}
+level_order2 = c("Green Sturgeon_Juvenile", "White Sturgeon_Juvenile", "White Sturgeon_Larvae", "Delta Smelt_Adult", "Delta Smelt_Juvenile", "Delta Smelt_Larvae", "Longfin Smelt_Adult", "Longfin Smelt_Juvenile", "Longfin Smelt_Larvae", "Wakasagi_Juvenile","Chinook Salmon_Adult", "Chinook Salmon_Juvenile", "Chinook Salmon_Larvae", "Steelhead/Rainbow Trout_Adult","Steelhead/Rainbow Trout_Juvenile","Steelhead/Rainbow Trout_Larvae","Sacramento Splittail_Adult","Sacramento Splittail_Juvenile","Sacramento Splittail_Larvae", "Sacramento Pikeminnow_Adult", "Sacramento Sucker_Adult", "Sacramento Blackfish_Adult","Sacramento Blackfish_Juvenile-Larvae", "Hitch_Adult", "Tule Perch_Adult", "Threespine Stickleback_Adult", "Threespine Stickleback_Juvenile-Larvae","Prickly Sculpin_Adult", "Mississippi Silverside_Adult", "Mississippi Silverside_Juvenile","Mississippi Silverside_Larvae", "Striped Bass_Adult", "Striped Bass_Juvenile","Striped Bass_Larvae","Largemouth Bass_Adult","Largemouth Bass_Juvenile", "Giant Reed EAV_Undifferentiated", "Brazilian Waterweed_Undifferentiated", "Water Hyacinth FAV_Undifferentiated", "Microcystis_Undifferentiated", "Asian Clam_Undifferentiated", "Overbite Clam_Undifferentiated")
+```
+
+## Combine with veg, combine with thresholds, include only speciesLS with thresholds available
+```{r}
+vegclams <- readxl::read_excel(here::here("SpeciesTables", "SpeciesTable_Veg_Clams.xlsx")) %>%
+  mutate(maxWaterTemp = NA)
+
+species <- rbind(vegclams, data_export)
+write_csv(species, "SpeciesTables/absence_presence_temp.csv")
+
+species1 <- species %>%
+  mutate(Presence = "Yes") 
+
+speciesComp0 <- complete(species1, nesting(Species, LifeStage), Region, Season, fill = list(Presence = "No")) %>%
+  mutate(SeasonRegion = paste0(Season,Region))%>%
+  mutate(LifeStage = ifelse(is.na(LifeStage), "Undifferentiated", LifeStage)) %>%
+  left_join(thresholds, by = c("Species", "LifeStage")) %>%
+  left_join(tempsummary)
+
+none <- speciesComp0 %>%
+  dplyr::select(Species, LifeStage, Suboptimum, Tolerance) %>%
+  distinct() %>%
+  filter(is.na(Suboptimum) & is.na(Tolerance))
+
+speciesComp <- filter(speciesComp0, !(is.na(Suboptimum) & is.na(Tolerance))) %>%
+  distinct()
+
+speciesComp$SpeciesLS = paste0(speciesComp$Species, "_", speciesComp$LifeStage)
+SpeciesLS <- unique(speciesComp$SpeciesLS)
+```
+
+## Calculate diff tolerance and field temps
+```{r}
+library(RColorBrewer)
+str(speciesComp)
+tiledata <- speciesComp %>%
+  mutate(Tolerance_Upper = as.numeric(Tolerance_Upper),
+         #Max_Field_Temp = as.numeric(Max_Field_Temp),
+         Max_Field_Temp = as.numeric(maxWaterTemp),
+         Tol_Field_Difference = ifelse(Presence == "No", "No", Tolerance_Upper-Max_Field_Temp),
+         Tol_Field_Difference2 = ifelse(is.na(Tol_Field_Difference), Presence, Tol_Field_Difference))
+```
+
+## Make bins for plotting
+```{r}
+num <- tiledata %>% filter(!(Tol_Field_Difference2 %in% c("Yes", "No"))) %>%
+  mutate(Tol_Field_Diff = as.numeric(Tol_Field_Difference2),
+         #col = cut(Tol_Field_Diff, 7),
+         col = cut(Tol_Field_Diff, breaks = c(-4, 0, 3, 10, 26))) %>%
+  dplyr::select(-Tol_Field_Difference)
+
+chr <- tiledata %>% filter((Tol_Field_Difference2 %in% c("Yes", "No")))%>%
+  mutate(Tol_Field_Diff = ifelse(Tol_Field_Difference2 == "Yes", "Present", "Not present"),
+         col = as.character(Tol_Field_Diff)) %>%
+  dplyr::select(-Tol_Field_Difference)
+
+
+tiledataf <- rbind(num, chr) %>%
+  mutate(SpeciesLS = factor(SpeciesLS, levels = level_order2),
+         Region = factor(Region, levels = c("Far North", "North Delta", "Confluence", "Central", "South", "Suisun Bay", "Suisun Marsh")))
+
+check <- unique(tiledata$SpeciesLS)
+print(setdiff(level_order2, check ))
+```
+
+## Make plot
+```{r}
+tilescale <- c("indianred3", "tan1", "gold", "darkolivegreen4", "lightsteelblue3", "snow2")
+(plot_abspresall <- ggplot(tiledataf) + 
+    geom_tile(aes(x = Season, y = SpeciesLS, fill = col), color = "black") + 
+    facet_wrap(~Region,nrow = 2) +
+    scale_fill_manual("Tolerance-Max Field Detection \nTemperature Difference (°C)", values = tilescale)) + 
+  theme_bw() + 
+  theme(axis.text.y = element_text(size = 7),
+        axis.title.x = element_blank(),
+        axis.text.x = element_text(angle = 70, vjust = 0.5),
+        strip.text = element_text(size = 11),
+        legend.position = c(.87, .25))
+```
+
+## Export
+```{r}
+tiff("Figures/Figure_Absence_Presence_pairedRegion.tiff", units="in",type="cairo", bg="white", height=8, width=11, res=300, pointsize=11,compression="lzw")
+(plot_abspresall <- ggplot(tiledataf) + 
+    geom_tile(aes(x = Season, y = SpeciesLS, fill = col), color = "black") + 
+    facet_wrap(~Region,nrow = 2) +
+    scale_fill_manual("Tolerance-Max Field Detection \nTemperature Difference (°C)", values = tilescale)) + 
+  theme_bw() + 
+  theme(axis.text.y = element_text(size = 7),
+        axis.title.x = element_blank(),
+        axis.text.x = element_text(angle = 70, vjust = 0.5),
+        strip.text = element_text(size = 11),
+        legend.position = c(.87, .25))
+dev.off()
+```
+
+
+# Vulnerability Plot by continuous water temp data
+
+```{r}
+vdata <- speciesComp %>%
+  mutate(Tolerance_Upper = as.numeric(Tolerance_Upper),
+         meanMaxTemp = round(as.numeric(meanMaxTemp),1),
+         Tol_Field_Difference = ifelse(Presence == "No", "No", Tolerance_Upper-meanMaxTemp),
+         Tol_Field_Difference2 = ifelse(is.na(Tol_Field_Difference), Presence, Tol_Field_Difference))
+```
+
+```{r}
+vnum <- vdata %>% filter(!(Tol_Field_Difference2 %in% c("Yes", "No"))) %>%
+  mutate(Tol_Field_Diff = as.numeric(Tol_Field_Difference2),
+         #col = cut(Tol_Field_Diff, 7),
+         col = cut(Tol_Field_Diff, breaks = c(-15, 0, 3, 10, 22))) %>%
+  dplyr::select(-Tol_Field_Difference)
+
+vchr <- vdata %>% filter((Tol_Field_Difference2 %in% c("Yes", "No")))%>%
+  mutate(Tol_Field_Diff = ifelse(Tol_Field_Difference2 == "Yes", "Present", "Not present"),
+         col = as.character(Tol_Field_Diff)) %>%
+  dplyr::select(-Tol_Field_Difference)
+
+
+check2 <- unique(vdataf$SpeciesLS)
+print(setdiff(level_order2, check2 ))
+
+
+vdataf <- rbind(vnum, vchr) %>%
+  mutate(SpeciesLS = factor(SpeciesLS, levels = level_order2),
+         Region = factor(Region, levels = c("Far North", "North Delta", "Confluence", "Central", "South", "Suisun Bay", "Suisun Marsh")),
+         Season = factor(Season, levels = c("Winter", "Spring", "Summer", "Fall")))
+```
+
+## Make plot
+```{r}
+vtilescale <- c("indianred3", "tan1", "gold", "darkolivegreen4", "snow2", "lightsteelblue3")
+(plot_vulnerability <- ggplot(vdataf) + 
+    geom_tile(aes(x = Season, y = SpeciesLS, fill = col), color = "black") + 
+    facet_wrap(~Region,nrow = 2) +
+    scale_fill_manual("Tolerance-Max Water \nTemperature Difference (°C)", values = vtilescale)) + 
+  theme_bw() + 
+  theme(axis.text.y = element_text(size = 7),
+        axis.title.x = element_blank(),
+        axis.text.x = element_text(angle = 70, vjust = 0.5),
+        strip.text = element_text(size = 11),
+        legend.position = c(.87, .25))
+```
+
+## Export
+```{r}
+tiff("Figures/Figure_Vulnerability_ContWaterTemp.tiff", units="in",type="cairo", bg="white", height=8, width=11, res=300, pointsize=11,compression="lzw")
+(plot_vulnerability <- ggplot(vdataf) + 
+    geom_tile(aes(x = Season, y = SpeciesLS, fill = col), color = "black") + 
+    facet_wrap(~Region,nrow = 2) +
+    scale_fill_manual("Tolerance-Max Water \nTemperature Difference (°C)", values = vtilescale)) + 
+  theme_bw() + 
+  theme(axis.text.y = element_text(size = 7),
+        axis.title = element_blank(),
+        axis.text.x = element_text(angle = 70, vjust = 0.5),
+        strip.text = element_text(size = 11),
+        legend.position = c(.87, .25))
+dev.off()
+```
+
+
+# Other Plots
+
+```{r}
 Juvenile = lifestage %>%
   filter(LifeStage == "Juvenile") %>%
   group_by(Source, Season, Region, Taxa) %>%
@@ -259,18 +509,6 @@ Larvae = lifestage %>%
   group_by(Source, Season, Region, Taxa) %>%
   summarize(n = n())
 
-All_lifestages <- lifestage %>%
-  group_by(Source, Season, Region, Taxa, LifeStage) %>%
-  summarize(n = n())
-
-All_notbysource <- lifestage %>%
-  group_by(Season, Region, Taxa, LifeStage) %>%
-  summarize(n = n())
-
-All_removesingles <- All_notbysource %>%
-  filter(n>1) %>%
-  mutate(Taxa_Lifestage = paste0(Taxa, "_", LifeStage)) %>%
-  mutate(Presence = "Yes")
 
 Check <- All_removesingles %>%
   filter(Region %in% c("Central", "South"))
@@ -283,14 +521,8 @@ calculate <- lifestage
             max = max(Length, na.rm = TRUE))
 ```
 
-```{r}
-saveRDS(lifestage, "absencepresence_lifestage.rds", compress = "xz")
-write_csv(All_lifestages, "summed_absence_presence_all_bysource.csv")
-write_csv(All_notbysource, "summed_absence_presence_all_region.csv")
-write_csv(All_removesingles, "species_absence_presence.csv")
 ```
 
-## Plots
 
 Plot Region-Season
 
@@ -312,16 +544,12 @@ This is the data for use in DaysExceedance.Rmd
 thresholds <- readxl::read_excel(here::here("SpeciesTables", "SpeciesThresholds.xlsx")) %>%
   na_if(.,"NA") 
 
-data_export <- All_removesingles %>%
-  as.data.frame()%>%
-  select(Region, Taxon = Taxa, LifeStage, Season) %>%
-  left_join(thresholds %>% select(Species, Taxon)) %>%
-  select(Region, Species, LifeStage, Season)
-write_csv(data_export, "SpeciesTables/exportfishabsence_presence.csv")
+
 ```
 
-Adult salmon yolo
+# Random 
 
+Adult salmon yolo
 ```{r}
 yolo_salmon <- yolo_fish %>% 
   filter(CommonName == "Chinook Salmon") %>%
@@ -339,7 +567,6 @@ ggplot(salmon_juv) + geom_histogram(aes(ForkLength))
 ```
 
 Plot min, mean, max FL data
-
 ```{r}
 calculate_clean_long <- tidyr::pivot_longer(calculate_clean, cols = c("min", "max", "mean"), values_to = "FL", names_to = "length_label")
 
@@ -347,7 +574,6 @@ ggplot(calculate_clean_long) + geom_jitter(aes(Season, FL, shape = Source, color
 ```
 
 What are the length/weight cutoffs? Look at djfmp data.
-
 ```{r}
 djfmp_subset <- djfmp %>%
   filter(OrganismCode %in% c("STB", "SPLT", "LMB", "MSS"))
@@ -356,7 +582,6 @@ ggplot(djfmp_subset) + geom_histogram(aes(ForkLength)) + facet_wrap(~OrganismCod
 ```
 
 Length Frequency yolo
-
 ```{r}
 yolo_length_plot <- ggplot(yolo) + geom_histogram(aes(Length)) + facet_wrap(~Taxa, scales = "free")  +  scale_x_continuous(breaks = seq(0, 1000, 50)) + theme_bw() + theme(axis.text.x = element_text(angle = 90))
 ```
