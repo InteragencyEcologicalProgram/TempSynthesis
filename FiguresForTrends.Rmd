@@ -15,6 +15,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(dplyr)
 library(ggplot2)
 library(lubridate)
+library(viridis)
 ```
 
 ```{r}
@@ -23,13 +24,14 @@ theme_fig = theme_bw() +
         strip.text = element_text(size = 14),
         axis.title = element_text(size = 14),
         axis.text.y = element_text(size = 14),
-        legend.text = element_text(size =13),
-        legend.title = element_text(size = 13))
+        legend.text = element_text(size =10),
+        legend.title = element_text(size = 11))
 
 theme_figure <-  theme_bw() + theme(axis.title.y = element_blank(),                                 axis.title.x = element_blank(),legend.position = "right",
                                      axis.text.x = element_text(size = 10, angle= 90),
                                      axis.text.y = element_text(size = 10),
-                                    legend.text = element_text(size = 12),
+                                    legend.text = element_text(size = 10),
+                                    legend.title = element_text(size = 10.5),
                                     plot.title = element_text(hjust = 0.5)) 
 ```
 
@@ -37,9 +39,10 @@ theme_figure <-  theme_bw() + theme(axis.title.y = element_blank(),             
 tempDaily20 <- readRDS("Data/tempDaily20yr_20220125.rds") %>%
   mutate(Region = as.character(Region)) %>%
   mutate(Region = replace(Region, Region == "Sac River", "Confluence"),
-         Region = replace(Region, Region == "San Joaquin", "Central"))
+         Region = replace(Region, Region == "San Joaquin", "Central")) %>%
+  rename(WYType = WYType2_Sac)
 
-tempDaily8 <- readRDS("Data/tempDaily_20210811.rds")%>%
+tempDaily10 <- readRDS("Data/tempDaily_20210811.rds")%>%
   mutate(Region = as.character(Region)) %>%
   mutate(Region = replace(Region, Region == "Sac River", "Confluence"),
          Region = replace(Region, Region == "San Joaquin", "Central"))
@@ -98,13 +101,13 @@ tempDaily20b <- tempDaily20 %>%
   mutate(Region2 = factor(Region2))
 
 tempDaily20Summary <- tempDaily20b %>%
-  group_by(fWY, Region, Region2, Station) %>%
+  group_by(fWY, WYType, Region, Region2, Station) %>%
   summarize(meanMaxTemp = mean(maxDaily),
             meanMinTemp = mean(minDaily)) %>%
   ungroup()
 
 tempSeason20SummaryStation <- tempDaily20b %>%
-  group_by(Season, fWY, WY, Region, Region2,Station) %>%
+  group_by(Season, fWY, WY, WYType, Region, Region2,Station) %>%
   summarize(meanMaxTemp = mean(maxDaily),
             meanMinTemp = mean(minDaily),
             sd = sd(maxDaily),
@@ -112,7 +115,7 @@ tempSeason20SummaryStation <- tempDaily20b %>%
             se = sd/sqrt(n))
 
 tempSeason20Summary <- tempDaily20b %>%
-  group_by(Season, fWY, WY, Region, Region2) %>%
+  group_by(Season, fWY, WY, WYType, Region, Region2) %>%
   summarize(meanMaxTemp = mean(maxDaily),
             meanMinTemp = mean(minDaily),
             sd = sd(maxDaily),
@@ -120,10 +123,33 @@ tempSeason20Summary <- tempDaily20b %>%
             se = sd/sqrt(n))
 ```
 
+Calculate anomalies from mean
+```{r}
+temp20anomaly <- tempDaily20b %>%
+  group_by(Season) %>% 
+  mutate(meanMax = mean(maxDaily),
+         meanMin = mean(minDaily),
+         meanMean = mean(meanDaily)) %>%
+  ungroup() %>%
+  group_by(Season)  %>%
+  mutate(maxDiff = maxDaily-meanMax,
+         minDiff = minDaily-meanMin,
+         meanDiff = meanDaily - meanMean)
+  
+tempAnomaly20Summary <- temp20anomaly %>%
+  group_by(Season, fWY, WY, WYType) %>%
+  summarize(meanmaxAnomaly = mean(maxDiff),
+            meanminAnomaly = mean(minDiff),
+            meanmeanAnomaly = mean(meanDiff),
+            sdMax = sd(maxDiff),
+            nMax = n(),
+            seMax = sdMax/nMax)
+```
+
 
 ## Lines
 ```{r}
-
+# THIS ONE
 (line20yr <- ggplot(tempSeason20Summary) + 
   geom_point(aes(x = WY, y = meanMaxTemp, colour = Region), size = 1.5) +
   geom_line(aes(x = WY, y = meanMaxTemp, colour = Region)) +
@@ -131,9 +157,10 @@ tempSeason20Summary <- tempDaily20b %>%
   facet_grid(Season~., scales = "free_y") +
   scale_x_continuous(breaks = seq(from = 1999, to = 2019, by = 1)) +
   scale_colour_viridis(discrete = TRUE) +
-  labs(x = "Water Year", y = "Mean Maximum Daily Temperature (°C)")+
+  labs(x = "Water Year", y = "Mean Maximum \nDaily Temperature (°C)")+
   theme_fig +
-   theme(legend.position = "top"))
+   theme(legend.position = "right",
+         axis.title.x = element_blank()))
 
 (line20yr_min <- ggplot(tempSeason20Summary) + 
   geom_point(aes(x = WY, y = meanMinTemp, colour = Region), size = 1.5) +
@@ -145,6 +172,19 @@ tempSeason20Summary <- tempDaily20b %>%
   labs(x = "Water Year", y = "Mean Minimum Daily Temperature (°C)")+
   theme_fig +
    theme(legend.position = "top"))
+
+(line20yrAnom <- ggplot(tempAnomaly20Summary) + 
+  geom_point(aes(x = WY, y = meanmaxAnomaly, colour = Region), size = 1.5) +
+  geom_line(aes(x = WY, y = meanmaxAnomaly, colour = Region)) +
+  # geom_errorbar(aes(x = WY, ymin = meanMaxTemp-se, ymax = meanMaxTemp + se, width = 0.2)) +
+  facet_grid(Season~., scales = "free_y") +
+  scale_x_continuous(breaks = seq(from = 1999, to = 2019, by = 1)) +
+  scale_colour_viridis(discrete = TRUE) +
+  labs(x = "Water Year", y = "Mean Maximum Daily Temperature (°C)")+
+  theme_fig +
+   theme(legend.position = "top"))
+
+
 ```
 
 Max
@@ -162,6 +202,72 @@ tiff(filename=file.path("Figures/TrendsMin20Years_line.tiff"), units="in",type="
 line20yr_min
 dev.off()
 ```
+
+## Anomalies
+```{r}
+# THIS ONE
+(line20yrAnomMax <- ggplot(tempAnomaly20Summary) + 
+  geom_col(aes(x = WY, y = meanmaxAnomaly, fill = WYType), size = 1.5) +
+  #geom_errorbar(aes(x = WY, ymin = meanmaxAnomaly-seMax, ymax = meanmaxAnomaly + seMax, width = 0.2)) +
+  facet_grid(Season~., scales = "free_y") +
+  scale_x_continuous(breaks = seq(from = 1999, to = 2019, by = 1)) +
+  scale_fill_viridis(discrete = TRUE) +
+  labs(x = "Water Year", y = "Mean Anomaly of \nMaximum Daily Temperature (°C)", fill = "Water Year\nType")+
+  theme_fig +
+   theme(legend.position = "right"))
+
+(line20yrAnomMin <- ggplot(tempAnomaly20Summary) + 
+  geom_col(aes(x = WY, y = meanminAnomaly, fill = WYType), size = 1.5) +
+ 
+  facet_grid(Season~., scales = "free_y") +
+  scale_x_continuous(breaks = seq(from = 1999, to = 2019, by = 1)) +
+  scale_fill_viridis(discrete = TRUE) +
+  labs(x = "Water Year", y = "Mean Anomaly of Minimum Daily Temperature (°C)", fill = "Water Year Type")+
+  theme_fig +
+   theme(legend.position = "top"))
+
+(line20yrAnomMean <- ggplot(tempAnomaly20Summary) + 
+  geom_col(aes(x = WY, y = meanmeanAnomaly, fill = WYType), size = 1.5) +
+ 
+  facet_grid(Season~., scales = "free_y") +
+  scale_x_continuous(breaks = seq(from = 1999, to = 2019, by = 1)) +
+  scale_fill_viridis(discrete = TRUE) +
+  labs(x = "Water Year", y = "Mean Anomaly of Mean Daily Temperature (°C)", fill = "Water Year Type")+
+  theme_fig +
+   theme(legend.position = "top"))
+```
+
+```{r}
+tiff(filename=file.path("Figures/AnomalyMax20Years_line.tiff"), units="in",type="cairo", bg="white", height=5.5, 
+     width=8, res=300, pointsize=12,compression="lzw")
+line20yrAnomMax
+dev.off()
+
+
+
+tiff(filename=file.path("Figures/AnomalyMean20Years_line.tiff"), units="in",type="cairo", bg="white", height=5.5, 
+     width=8, res=300, pointsize=12,compression="lzw")
+line20yrAnomMean
+dev.off()
+
+
+
+tiff(filename=file.path("Figures/AnomalyMin20Years_line.tiff"), units="in",type="cairo", bg="white", height=5.5, 
+     width=8, res=300, pointsize=12,compression="lzw")
+line20yrAnomMin
+dev.off()
+```
+
+## Combine Line and Anomaly
+```{r}
+library(patchwork)
+
+tiff(filename=file.path("Figures/Figure_20-year-trends.tiff"), units="in",type="cairo", bg="white", height=7, 
+     width=8, res=300, pointsize=10,compression="lzw")
+line20yr + line20yrAnomMax + plot_layout(nrow = 2 ) + plot_annotation(tag_levels = "A")
+dev.off()
+```
+
 
 ## Tile 
 ```{r}
@@ -233,7 +339,7 @@ tempDaily10Summary <- tempDaily10b %>%
   ungroup()
 
 tempSeason10SummaryStation <- tempDaily10b %>%
-  group_by(Season, fWY, WY, Region, Region2,Station) %>%
+  group_by(Season, fWY, WY, WYType2_Sac, Region, Region2,Station) %>%
   summarize(meanMaxTemp = mean(maxDaily),
             sd = sd(maxDaily),
             n = n(),
@@ -245,6 +351,24 @@ tempSeason10Summary <- tempDaily10b %>%
             sd = sd(maxDaily),
             n = n(),
             se = sd/sqrt(n))
+```
+
+
+```{r}
+temp10anomaly <- tempDaily10b %>%
+  group_by(Season) %>% 
+  mutate(meanMax = mean(maxDaily),
+         meanMin = mean(minDaily)) %>%
+  ungroup() %>%
+  group_by(Season)  %>%
+  mutate(maxDiff = maxDaily-meanMax,
+         minDiff = minDaily-meanMin)
+  
+tempAnomaly10Summary <- temp10anomaly %>%
+  group_by(Season, fWY, WY, WYType2_Sac) %>%
+  summarize(meanmaxAnomaly = mean(maxDiff),
+            meanminAnomaly = mean(minDiff),
+            sdMax = sd(maxDiff))
 ```
 
 ## Lines
@@ -268,4 +392,26 @@ line10yr
 dev.off()
 ```
 
+## Anomalies
+```{r}
+(line10yrAnomMax <- ggplot(tempAnomaly10Summary) + 
+  geom_col(aes(x = WY, y = meanmaxAnomaly, fill = WYType2_Sac), size = 1.5) +
+ 
+  facet_grid(Season~., scales = "free_y") +
+  scale_x_continuous(breaks = seq(from = 1999, to = 2019, by = 1)) +
+  scale_fill_viridis(discrete = TRUE) +
+  labs(x = "Water Year", y = "Mean Maximum Daily Temperature (°C)", fill = "Water Year Type")+
+  theme_fig +
+   theme(legend.position = "top"))
+
+(line10yrAnomMin <- ggplot(tempAnomaly10Summary) + 
+  geom_col(aes(x = WY, y = meanminAnomaly), size = 1.5) +
+ 
+  facet_grid(Season~., scales = "free_y") +
+  scale_x_continuous(breaks = seq(from = 1999, to = 2019, by = 1)) +
+  scale_colour_viridis(discrete = TRUE) +
+  labs(x = "Water Year", y = "Mean Minimum Daily Temperature (°C)")+
+  theme_fig +
+   theme(legend.position = "top"))
+```
 
