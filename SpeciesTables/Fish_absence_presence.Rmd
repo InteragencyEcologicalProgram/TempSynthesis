@@ -19,6 +19,7 @@ library(ggplot2)
 library(deltafish)
 library(contentid)
 library(sf)
+library(tidyr)
 ```
 
 # Get data
@@ -290,16 +291,17 @@ write_csv(data_export, "SpeciesTables/exportfishabsence_presence.csv")
 
 ## Write data
 ```{r}
-saveRDS(lifestage, "absencepresence_lifestage.rds", compress = "xz")
-write_csv(All_lifestages, "summed_absence_presence_all_bysource.csv")
-write_csv(All_notbysource, "summed_absence_presence_all_region.csv")
-write_csv(All_removesingles, "species_absence_presence.csv")
+saveRDS(lifestage, "SpeciesTables/absencepresence_lifestage.rds", compress = "xz")
+write_csv(All_lifestages, "SpeciesTables/summed_absence_presence_all_bysource.csv")
+write_csv(All_notbysource, "SpeciesTables/summed_absence_presence_all_region.csv")
+write_csv(All_removesingles, "SpeciesTables/species_absence_presence.csv")
 ```
 
 ## Read data
 ```{r}
-absence_presence_all <- readRDS("absencepresence_lifestage.rds")
-summed_source <- read_csv("summed_absence_presence_all_bysource.csv")
+absence_presence_all <- readRDS("SpeciesTables/absencepresence_lifestage.rds")
+absence_presence_all <- readRDS("SpeciesTables/absencepresence_lifestage.rds")
+summed_source <- readr::read_csv("SpeciesTables/summed_absence_presence_all_bysource.csv")
 ```
 
 Calculate max water temp by region and season
@@ -328,7 +330,7 @@ tempsummary <- tempDaily %>%
 
 ## Level order
 ```{r}
-level_order2 = c("Green Sturgeon_Juvenile", "White Sturgeon_Juvenile", "White Sturgeon_Larvae", "Delta Smelt_Adult", "Delta Smelt_Juvenile", "Delta Smelt_Larvae", "Longfin Smelt_Adult", "Longfin Smelt_Juvenile", "Longfin Smelt_Larvae", "Wakasagi_Juvenile","Chinook Salmon_Adult", "Chinook Salmon_Juvenile", "Chinook Salmon_Larvae", "Steelhead/Rainbow Trout_Adult","Steelhead/Rainbow Trout_Juvenile","Steelhead/Rainbow Trout_Larvae","Sacramento Splittail_Adult","Sacramento Splittail_Juvenile","Sacramento Splittail_Larvae", "Sacramento Pikeminnow_Adult", "Sacramento Sucker_Adult", "Sacramento Blackfish_Adult","Sacramento Blackfish_Juvenile-Larvae", "Hitch_Adult", "Tule Perch_Adult", "Threespine Stickleback_Adult", "Threespine Stickleback_Juvenile-Larvae","Prickly Sculpin_Adult", "Mississippi Silverside_Adult", "Mississippi Silverside_Juvenile","Mississippi Silverside_Larvae", "Striped Bass_Adult", "Striped Bass_Juvenile","Striped Bass_Larvae","Largemouth Bass_Adult","Largemouth Bass_Juvenile", "Giant Reed EAV_Undifferentiated", "Brazilian Waterweed_Undifferentiated", "Water Hyacinth FAV_Undifferentiated", "Microcystis_Undifferentiated", "Asian Clam_Undifferentiated", "Overbite Clam_Undifferentiated")
+level_order2 = c("Green Sturgeon Juvenile", "White Sturgeon Juvenile", "White Sturgeon Larvae", "Delta Smelt Adult", "Delta Smelt Juvenile", "Delta Smelt Larvae", "Longfin Smelt Adult", "Longfin Smelt Juvenile", "Longfin Smelt Larvae", "Wakasagi Juvenile","Chinook Salmon Adult", "Chinook Salmon Juvenile", "Chinook Salmon Larvae", "Steelhead/Rainbow Trout Adult","Steelhead/Rainbow Trout Juvenile","Steelhead/Rainbow Trout Larvae","Sacramento Splittail Adult","Sacramento Splittail Juvenile","Sacramento Splittail Larvae", "Sacramento Pikeminnow Adult", "Sacramento Sucker Adult", "Sacramento Blackfish Adult","Sacramento Blackfish Juvenile-Larvae", "Hitch Adult", "Tule Perch Adult", "Threespine Stickleback Adult", "Threespine Stickleback Juvenile-Larvae","Prickly Sculpin Adult", "Mississippi Silverside Adult", "Mississippi Silverside Juvenile","Mississippi Silverside Larvae", "Striped Bass Adult", "Striped Bass Juvenile","Striped Bass Larvae","Largemouth Bass Adult","Largemouth Bass Juvenile", "Giant Reed EAV Undifferentiated", "Brazilian Waterweed Undifferentiated", "Water Hyacinth FAV Undifferentiated", "Microcystis Undifferentiated", "Asian Clam Undifferentiated", "Overbite Clam Undifferentiated")
 ```
 
 ## Combine with veg, combine with thresholds, include only speciesLS with thresholds available
@@ -337,7 +339,12 @@ vegclams <- readxl::read_excel(here::here("SpeciesTables", "SpeciesTable_Veg_Cla
   mutate(maxWaterTemp = NA)
 
 species <- rbind(vegclams, data_export)
-write_csv(species, "SpeciesTables/absence_presence_temp.csv")
+# write_csv(species, "SpeciesTables/absence_presence_temp.csv")
+```
+
+Read in from here
+```{r}
+species <- read_csv("SpeciesTables/absence_presence_temp.csv")
 
 species1 <- species %>%
   mutate(Presence = "Yes") 
@@ -356,7 +363,7 @@ none <- speciesComp0 %>%
 speciesComp <- filter(speciesComp0, !(is.na(Suboptimum) & is.na(Tolerance))) %>%
   distinct()
 
-speciesComp$SpeciesLS = paste0(speciesComp$Species, "_", speciesComp$LifeStage)
+speciesComp$SpeciesLS = paste0(speciesComp$Species, " ", speciesComp$LifeStage)
 SpeciesLS <- unique(speciesComp$SpeciesLS)
 ```
 
@@ -377,51 +384,76 @@ tiledata <- speciesComp %>%
 num <- tiledata %>% filter(!(Tol_Field_Difference2 %in% c("Yes", "No"))) %>%
   mutate(Tol_Field_Diff = as.numeric(Tol_Field_Difference2),
          #col = cut(Tol_Field_Diff, 7),
-         col = cut(Tol_Field_Diff, breaks = c(-4, 0, 3, 10, 26))) %>%
+         col = cut(Tol_Field_Diff, breaks = c(-4, 0, 3, 6, 26)),
+         category = case_when(Tol_Field_Diff<0 ~ "<0",
+                              Tol_Field_Diff>=0 & Tol_Field_Diff <=3 ~ "0-3",
+                              Tol_Field_Diff >3 & Tol_Field_Diff <=6 ~ "3-6",
+                              Tol_Field_Diff >6 ~ ">6",
+                              TRUE ~ as.character(Tol_Field_Diff))) %>%
   dplyr::select(-Tol_Field_Difference)
 
 chr <- tiledata %>% filter((Tol_Field_Difference2 %in% c("Yes", "No")))%>%
   mutate(Tol_Field_Diff = ifelse(Tol_Field_Difference2 == "Yes", "Present", "Not present"),
-         col = as.character(Tol_Field_Diff)) %>%
+         col = as.character(Tol_Field_Diff),
+         category = as.character(Tol_Field_Diff)) %>%
   dplyr::select(-Tol_Field_Difference)
 
 
 tiledataf <- rbind(num, chr) %>%
+  filter(!is.na(Tolerance)) %>%
   mutate(SpeciesLS = factor(SpeciesLS, levels = level_order2),
-         Region = factor(Region, levels = c("Far North", "North Delta", "Confluence", "Central", "South", "Suisun Bay", "Suisun Marsh")))
+         Region = factor(Region, levels = c("Far North", "North Delta", "Confluence", "Central", "South", "Suisun Bay", "Suisun Marsh")),
+         Season = factor(Season, levels = c("Winter", "Spring", "Summer", "Fall")),
+         category = factor(category, levels = c("<0", "0-3", "3-6", ">6", "Present", "Not present")))
 
 check <- unique(tiledata$SpeciesLS)
 print(setdiff(level_order2, check ))
 ```
 
-## Make plot
+## Read in data for plotting
 ```{r}
-tilescale <- c("indianred3", "tan1", "gold", "darkolivegreen4", "lightsteelblue3", "snow2")
-(plot_abspresall <- ggplot(tiledataf) + 
-    geom_tile(aes(x = Season, y = SpeciesLS, fill = col), color = "black") + 
-    facet_wrap(~Region,nrow = 2) +
-    scale_fill_manual("Tolerance-Max Field Detection \nTemperature Difference (°C)", values = tilescale)) + 
-  theme_bw() + 
-  theme(axis.text.y = element_text(size = 7),
-        axis.title.x = element_blank(),
-        axis.text.x = element_text(angle = 70, vjust = 0.5),
+#write_csv(tiledataf, "SpeciesTables/data_write/vulnerabilityDataDiscrete.csv")
+tiledataf <- read_csv("SpeciesTables/data_write/vulnerabilityDataDiscrete.csv")
+```
+
+## Make plot
+
+### Theme
+```{r}
+theme_tileplot <-  theme_bw() + 
+  theme(panel.grid = element_blank(),
+        axis.text.y = element_text(size = 7, color = "black"),
+        axis.title = element_blank(),
+        axis.text.x = element_text(angle = 70, vjust = 0.5, color = "black"),
         strip.text = element_text(size = 11),
         legend.position = c(.87, .25))
 ```
 
-## Export
+```{r}
+tilescale <- c(viridis::viridis(4, option = "viridis"), "lightcyan3", "white")
+
+(plot_abspresall <- ggplot(tiledataf) + 
+    geom_tile(aes(x = Season, y = SpeciesLS, fill = category), color = "black") + 
+  #  geom_hline(yintercept = 0.5 + seq(1, 42, 1)) +
+  #geom_vline(xintercept = 0.5 + seq(1,4,1)) +
+    facet_wrap(~Region,nrow = 2) +
+    scale_x_discrete(expand = c(0,0)) + 
+    scale_fill_manual("Tolerance-Max Field Detection \nTemperature Difference (°C)", values = tilescale)) + 
+  theme_tileplot
+ 
+```
+
+## Export figure
 ```{r}
 tiff("Figures/Figure_Absence_Presence_pairedRegion.tiff", units="in",type="cairo", bg="white", height=8, width=11, res=300, pointsize=11,compression="lzw")
 (plot_abspresall <- ggplot(tiledataf) + 
-    geom_tile(aes(x = Season, y = SpeciesLS, fill = col), color = "black") + 
+    geom_tile(aes(x = Season, y = SpeciesLS, fill = category), color = "black") + 
+  #  geom_hline(yintercept = 0.5 + seq(1, 42, 1)) +
+  #geom_vline(xintercept = 0.5 + seq(1,4,1)) +
     facet_wrap(~Region,nrow = 2) +
+    scale_x_discrete(expand = c(0,0)) + 
     scale_fill_manual("Tolerance-Max Field Detection \nTemperature Difference (°C)", values = tilescale)) + 
-  theme_bw() + 
-  theme(axis.text.y = element_text(size = 7),
-        axis.title.x = element_blank(),
-        axis.text.x = element_text(angle = 70, vjust = 0.5),
-        strip.text = element_text(size = 11),
-        legend.position = c(.87, .25))
+  theme_tileplot
 dev.off()
 ```
 
@@ -440,12 +472,18 @@ vdata <- speciesComp %>%
 vnum <- vdata %>% filter(!(Tol_Field_Difference2 %in% c("Yes", "No"))) %>%
   mutate(Tol_Field_Diff = as.numeric(Tol_Field_Difference2),
          #col = cut(Tol_Field_Diff, 7),
-         col = cut(Tol_Field_Diff, breaks = c(-15, 0, 3, 10, 22))) %>%
+         col = cut(Tol_Field_Diff, breaks = c(-15, 0, 3, 10, 22)),
+         category = case_when(Tol_Field_Diff<0 ~ "<0",
+                              Tol_Field_Diff>=0 & Tol_Field_Diff <=3 ~ "0-3",
+                              Tol_Field_Diff >3 & Tol_Field_Diff <=6 ~ "3-6",
+                              Tol_Field_Diff >6 ~ ">6",
+                              TRUE ~ as.character(Tol_Field_Diff))) %>%
   dplyr::select(-Tol_Field_Difference)
 
 vchr <- vdata %>% filter((Tol_Field_Difference2 %in% c("Yes", "No")))%>%
   mutate(Tol_Field_Diff = ifelse(Tol_Field_Difference2 == "Yes", "Present", "Not present"),
-         col = as.character(Tol_Field_Diff)) %>%
+         col = as.character(Tol_Field_Diff),
+         category = as.character(Tol_Field_Diff)) %>%
   dplyr::select(-Tol_Field_Difference)
 
 
@@ -453,40 +491,38 @@ check2 <- unique(vdataf$SpeciesLS)
 print(setdiff(level_order2, check2 ))
 
 
-vdataf <- rbind(vnum, vchr) %>%
+vdataf <- rbind(vnum, vchr)  %>%
+  filter(!is.na(Tolerance_Upper)) %>%
   mutate(SpeciesLS = factor(SpeciesLS, levels = level_order2),
          Region = factor(Region, levels = c("Far North", "North Delta", "Confluence", "Central", "South", "Suisun Bay", "Suisun Marsh")),
-         Season = factor(Season, levels = c("Winter", "Spring", "Summer", "Fall")))
+         Season = factor(Season, levels = c("Winter", "Spring", "Summer", "Fall")),
+         category = factor(category, levels = c("<0", "0-3", "3-6", ">6", "Present", "Not present")))
+```
+
+## Read in for plotting
+```{r}
+#write_csv(vdataf, "SpeciesTables/data_write/vulnerabilityDataContinuous.csv")
+vdataf <- read_csv("SpeciesTables/data_write/vulnerabilityDataContinuous.csv")
 ```
 
 ## Make plot
 ```{r}
-vtilescale <- c("indianred3", "tan1", "gold", "darkolivegreen4", "snow2", "lightsteelblue3")
+vtilescale <- c(viridis::viridis(4, option = "viridis"), "white")
 (plot_vulnerability <- ggplot(vdataf) + 
-    geom_tile(aes(x = Season, y = SpeciesLS, fill = col), color = "black") + 
+    geom_tile(aes(x = Season, y = SpeciesLS, fill = category), color = "black") + 
     facet_wrap(~Region,nrow = 2) +
     scale_fill_manual("Tolerance-Max Water \nTemperature Difference (°C)", values = vtilescale)) + 
-  theme_bw() + 
-  theme(axis.text.y = element_text(size = 7),
-        axis.title.x = element_blank(),
-        axis.text.x = element_text(angle = 70, vjust = 0.5),
-        strip.text = element_text(size = 11),
-        legend.position = c(.87, .25))
+  theme_tileplot
 ```
 
 ## Export
 ```{r}
 tiff("Figures/Figure_Vulnerability_ContWaterTemp.tiff", units="in",type="cairo", bg="white", height=8, width=11, res=300, pointsize=11,compression="lzw")
 (plot_vulnerability <- ggplot(vdataf) + 
-    geom_tile(aes(x = Season, y = SpeciesLS, fill = col), color = "black") + 
+    geom_tile(aes(x = Season, y = SpeciesLS, fill = category), color = "black") + 
     facet_wrap(~Region,nrow = 2) +
     scale_fill_manual("Tolerance-Max Water \nTemperature Difference (°C)", values = vtilescale)) + 
-  theme_bw() + 
-  theme(axis.text.y = element_text(size = 7),
-        axis.title = element_blank(),
-        axis.text.x = element_text(angle = 70, vjust = 0.5),
-        strip.text = element_text(size = 11),
-        legend.position = c(.87, .25))
+  theme_tileplot
 dev.off()
 ```
 
