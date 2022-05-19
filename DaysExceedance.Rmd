@@ -92,12 +92,7 @@ level_order = c("Green Sturgeon", "White Sturgeon","Delta Smelt", "Longfin Smelt
 
 ## Boxplot Function for calculating days exceedance, no means or sums for boxplot
 
-* Filter to regions selected
-* For each station-day, compare max daily temp to inputted tolerance and optimum. If in exceedance, assign 1. If not, assign 0.
-* For each date, calculate the average number of stations that exceeded tolerance. 
-* If more than 30% of stations on a particular day exceeded tolerance or optimum, assign 1. 
-* For each WY, sum up the number of days exceeding tolerance
-# Add species name
+
 
 ```{r}
 # funDaysExceedBox <- function(specieslsinput, tolerancecol = "filternewdf$Tolerance", tolerancecol2 = "Tolerance", optcol = "filternewdf$Suboptimum", optcol2 = "Suboptimum") {
@@ -132,6 +127,12 @@ level_order = c("Green Sturgeon", "White Sturgeon","Delta Smelt", "Longfin Smelt
 # }
 ```
 
+* Filter to regions selected
+* For each station-day, compare max daily temp to inputted tolerance and optimum. If in exceedance, assign 1. If not, assign 0.
+* For each date, calculate the average number of stations that exceeded tolerance. 
+* If more than 30% of stations on a particular day exceeded tolerance or optimum, assign 1. 
+* For each WY, sum up the number of days exceeding tolerance
+# Add species name
 ```{r}
 funDaysExceedBox <- function(specieslsinput) {
 filternewdf <- speciesComp %>%
@@ -309,21 +310,32 @@ DaysExceedanceDataUpper <- DaysExceedanceDataUpper0 %>%
   dplyr::mutate(daysExceedanceOpt = replace(daysExceedanceOpt, is.na(Suboptimum_Upper), NA),
          daysExceedanceTol = replace(daysExceedanceTol, is.na(Tolerance_Upper), NA)) %>%
   dplyr::mutate(Species = factor(Species, levels = level_order))
+
+
+
 ```
 
+### Start from here if just editing plot
+```{r}
+#write_csv(DaysExceedanceDataUpper, "SpeciesTables/daysExceedanceUpperDataForPlotting.csv")
+DaysExceedanceDataUpper <- read_csv("SpeciesTables/daysExceedanceUpperDataForPlotting.csv")
+```
+
+### Table
 ```{r}
 daysExceedanceSummary <- DaysExceedanceDataUpper %>%
   group_by(Species, LifeStage) %>%
-  summarize(meanTolerance = round(mean(daysExceedanceTol, na.rm = TRUE),0),
-            minTolerance= min(daysExceedanceTol, na.rm = TRUE),
-            maxTolerance =  max(daysExceedanceTol, na.rm = TRUE),
-            meanSuboptimum = round(mean(daysExceedanceOpt, na.rm = TRUE),0),
-            minSuboptimum= min(daysExceedanceOpt, na.rm = TRUE),
-            maxSuboptimum =  max(daysExceedanceOpt, na.rm = TRUE)) %>%
-  mutate(outputTolerance = paste0(meanTolerance, " (", minTolerance, "-", maxTolerance, ")"),
-         outputSuboptimum = paste0(meanSuboptimum, " (", minSuboptimum, "-", maxSuboptimum, ")"))
+  summarize(meanTolerance = ifelse(is.na(Tolerance_Upper), NA, round(mean(daysExceedanceTol, na.rm = TRUE),0)),
+            minTolerance= ifelse(is.na(Tolerance_Upper), NA, min(daysExceedanceTol, na.rm = TRUE)),
+            maxTolerance =  ifelse(is.na(Tolerance_Upper), NA, max(daysExceedanceTol, na.rm = TRUE)),
+            meanSuboptimum = ifelse(is.na(Suboptimum_Upper), NA, round(mean(daysExceedanceOpt, na.rm = TRUE),0)),
+            minSuboptimum= ifelse(is.na(Suboptimum_Upper), NA, min(daysExceedanceOpt, na.rm = TRUE)),
+            maxSuboptimum =  ifelse(is.na(Suboptimum_Upper), NA, max(daysExceedanceOpt, na.rm = TRUE))) %>%
+  mutate(outputTolerance = ifelse(is.na(meanTolerance), NA, paste0(meanTolerance, " (", minTolerance, "-", maxTolerance, ")")),
+         outputSuboptimum = ifelse(is.na(meanSuboptimum), NA, paste0(meanSuboptimum, " (", minSuboptimum, "-", maxSuboptimum, ")"))) %>%
+  distinct()
 
-write_csv(daysExceedanceSummary, here::here("SpeciesTables","Table_numDaysExceedance.csv"))            
+write_csv(daysExceedanceSummary, here::here("SpeciesTables","Table_numDaysExceedance_v2.csv"))            
 ```
 
 
@@ -351,7 +363,7 @@ legend <- get_legend(FishTolU)
 tiff(filename=file.path("Figures/Figure_Opt_Tol_Upper.tiff"), units="in",type="cairo", bg="white", height=7.5, 
      width=8, res=300, pointsize=12,compression="lzw")
 ggarrange(legend, FishOptU_noleg, FishTolU_noleg, ncol=1, nrow=3,
-             heights = c(0.75,2.5,4), labels = c("", "A","B"))
+             heights = c(0.75,2.35,4), labels = c("", "A","B"))
 dev.off()
 ```
 
