@@ -50,7 +50,7 @@ tempDaily10 <- readRDS("Data/tempDaily_20210811.rds")%>%
 LatLon <- read.csv("Data/StationsMetadata.csv")
 
 Regions <- read.csv("Data/Stations_wRosiesReg.csv") %>%
-  select(-Latitude, -Longitude) %>%
+  dplyr::select(-Latitude, -Longitude) %>%
   mutate(Region = as.character(Region)) %>%
   mutate(Region = replace(Region, Region == "Sac River", "Confluence"),
          Region = replace(Region, Region == "San Joaquin", "Central"))
@@ -74,9 +74,9 @@ summary20 <- tempDaily20 %>%
   group_by(Station) %>%
   summarize(StartDateAnalysis = first(Date),
             EndDateAnalysis = last(Date)) %>%
-  left_join(LatLon %>% select(Station, StationName, Agency, Latitude, Longitude, HabitatType)) %>%
-  left_join(Regions %>% select(Station, Region)) %>%
-  select(Station, StationName, Region, Latitude, Longitude, StartDateAnalysis, EndDateAnalysis, Agency, HabitatType)
+  left_join(LatLon %>% dplyr::select(Station, StationName, Agency, Latitude, Longitude, HabitatType)) %>%
+  left_join(Regions %>% dplyr::select(Station, Region)) %>%
+  dplyr::select(Station, StationName, Region, Latitude, Longitude, StartDateAnalysis, EndDateAnalysis, Agency, HabitatType)
 
 #write_csv(summary20, "Tables/Stations_included_20year.csv")
 summary10 <- tempDaily10 %>%
@@ -101,7 +101,7 @@ tempDaily20b <- tempDaily20 %>%
   mutate(Region2 = factor(Region2))
 
 tempDaily20Summary <- tempDaily20b %>%
-  group_by(fWY, WYType, Region, Region2, Station) %>%
+  group_by(fWY, WY, WYType, Region, Region2, Station) %>%
   summarize(meanMaxTemp = mean(maxDaily),
             meanMinTemp = mean(minDaily)) %>%
   ungroup()
@@ -116,12 +116,51 @@ tempSeason20SummaryStation <- tempDaily20b %>%
 
 tempSeason20Summary <- tempDaily20b %>%
   group_by(Season, fWY, WY, WYType, Region, Region2) %>%
-  summarize(meanMaxTemp = mean(maxDaily),
-            meanMinTemp = mean(minDaily),
-            sd = sd(maxDaily),
+  summarize(meanMaxTemp = mean(maxDaily, na.rm = TRUE),
+            meanMinTemp = mean(minDaily, na.rm = TRUE),
+            sd = sd(maxDaily, na.rm = TRUE),
             n = n(),
             se = sd/sqrt(n))
 ```
+
+# Models
+```{r}
+
+South <- tempDaily20b %>%
+  filter(Region == "South",
+         Season == "Dry Season", fWY == "2017")
+
+South <- tempSeason20SummaryStation %>%
+  filter(Region == "South",
+         Season == "Dry Season")
+
+ggplot(South) + geom_point(aes(Date, maxDaily, color = Station)) + geom_line(aes(x =Date, y = maxDaily, color = Station))
+
+
+
+
+```
+
+```{r}
+m1 <- lm(meanMaxTemp ~ Region * fWY, data = tempDaily20Summary)
+anova(m1)
+summary(m1)
+plot(m1)
+
+
+m2 <- lm(meanMaxTemp ~ Region2* fWY, data = tempDaily10Summary)
+anova(m2)
+summary(m2)
+plot(m2)
+
+# Variability 
+m3 <- lm(cv ~ Region2*Season, data = tempTotalVariability)
+anova(m3)
+summary(m3)
+par(mfrow = c(2,2))
+plot(m3)
+```
+
 
 Calculate anomalies from mean
 ```{r}
@@ -330,17 +369,19 @@ tempDaily10b <- tempDaily10 %>%
   mutate(Region2 = ifelse(Region == "Far North", "North Delta", Region),
          Month = month(Date),
          fWY = factor(WY),
-         Season = ifelse(Month >4 & Month <10, "Dry", "Wet")) %>%
+         Season = ifelse(Month >4 & Month <10, "Dry Season", "Wet Season")) %>%
   mutate(Region2 = factor(Region2))
 
 tempDaily10Summary <- tempDaily10b %>%
-  group_by(fWY, Region, Region2, Station) %>%
-  summarize(meanMaxTemp = mean(maxDaily)) %>%
+  group_by(fWY, WY, Region, Region2, Station) %>%
+  summarize(meanMaxTemp = mean(maxDaily),
+            meanMinTemp = mean(minDaily)) %>%
   ungroup()
 
 tempSeason10SummaryStation <- tempDaily10b %>%
   group_by(Season, fWY, WY, WYType2_Sac, Region, Region2,Station) %>%
   summarize(meanMaxTemp = mean(maxDaily),
+            meanMinTemp = mean(minDaily),
             sd = sd(maxDaily),
             n = n(),
             se = sd/sqrt(n))
@@ -351,6 +392,25 @@ tempSeason10Summary <- tempDaily10b %>%
             sd = sd(maxDaily),
             n = n(),
             se = sd/sqrt(n))
+
+tempMonth10SummaryStation <- tempDaily10b %>%
+  group_by(Season, Month, fWY, WY, WYType2_Sac, Region, Region2,Station) %>%
+  summarize(meanMaxTemp = mean(maxDaily),
+            meanMinTemp = mean(minDaily),
+            sd = sd(maxDaily),
+            n = n(),
+            se = sd/sqrt(n))
+
+# variability ---------------------------------------------
+tempTotalVariability <- tempDaily10b %>%
+  group_by(Station, Season, Region2) %>%
+  summarize(sd = sd(maxDaily),
+            mean = mean(maxDaily),
+            cv = sd/mean)
+
+meanVariabilityBySeasonRegion <- tempTotalVariability %>%
+  group_by(Region2, Season) %>%
+  summarize(meancv = mean(cv))
 ```
 
 
@@ -413,5 +473,37 @@ dev.off()
   labs(x = "Water Year", y = "Mean Minimum Daily Temperature (°C)")+
   theme_fig +
    theme(legend.position = "top"))
+```
+
+## Plot for interannual variance
+```{r}
+(varianceplot <-ggplot(tempTotalVariability) + geom_boxplot(aes(Region2, cv, fill = Region2)) + facet_wrap(~Season) + scale_fill_viridis(option = "plasma", discrete = TRUE) + labs(y = "Coefficient of Variation (CV)", fill = "Region") + theme_fig + 
+  theme(axis.title.x = element_blank(),                    
+        axis.text.x = element_text(angle = 90)))
+```
+
+```{r}
+tiff(filename=file.path("Figures/Figure_Regional_interannual_variance.tiff"), units="in",type="cairo", bg="white", height=5, 
+     width=8, res=300, pointsize=10,compression="lzw")
+varianceplot
+dev.off()
+```
+
+## Plot for minimum temps
+```{r}
+tempMonth10SummaryStation %>%
+  filter(Season == "Dry Season") %>%
+  ggplot() + 
+  geom_boxplot(aes(x = Region, y = meanMinTemp, fill = factor(Month)))+ 
+   scale_fill_viridis(discrete = TRUE) + 
+  theme_fig + 
+  theme(axis.title.x = element_blank(),                    
+        axis.text.x = element_text(angle = 90))
+
+(minplot <- ggplot(tempMonth10SummaryStation) + geom_point(aes(x = Region, y = meanMinTemp, color = factor(Month))) + facet_wrap(~Season) + 
+   scale_color_viridis(discrete = TRUE) + 
+  theme_fig + 
+  theme(axis.title.x = element_blank(),                    
+        axis.text.x = element_text(angle = 90)))
 ```
 
