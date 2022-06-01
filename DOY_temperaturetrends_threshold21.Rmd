@@ -101,7 +101,8 @@ ggplot(temp_filt) +
   labs(fill = "Difference between \nregional mean maximum \ntemperature and 21°C", x = "Day of year") + 
   theme_fig + theme(axis.title.y = element_blank(),
                     legend.position = "top",
-                    legend.text = element_text(size = 11)) +
+                    legend.text = element_text(size = 11),
+                    plot.margin = margin(0,0.2,0.5,0.2, "in")) +
   guides(fill = guide_colourbar( barwidth = 15)))
 
 
@@ -109,7 +110,7 @@ ggplot(temp_filt) +
 ```
 
 ```{r}
-tiff(filename=file.path("Figures/Supp_MaxTempComparisonYears.tiff"), units="in",type="cairo", bg="white", height=6, 
+tiff(filename=file.path("Figures/MaxTempComparisonYears.tiff"), units="in",type="cairo", bg="white", height=6, 
      width=9, res=300, pointsize=10,compression="lzw")
 maxplot
 dev.off()
