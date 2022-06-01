@@ -53,7 +53,7 @@ dev.off()
 
 
 # Long version --------------------------------------
-thresholds_long <- thresholds %>% select(-Tolerance, -Suboptimum) %>% 
+thresholds_long <- thresholds %>% dplyr::select(-Tolerance, -Suboptimum) %>% 
   rename(Tolerance = Tolerance_Upper, Suboptimum = Suboptimum_Upper) %>%
   tidyr::pivot_longer(cols = c(Suboptimum, Tolerance), names_to = "Threshold", values_to = "Temperature")
 
@@ -64,8 +64,8 @@ thresholds_long$Threshold <- factor(thresholds_long$Threshold, levels = c("Toler
     geom_hline(yintercept = 21, color = "orange", linetype = "dashed") + 
     geom_hline(yintercept = 25, color = "red", linetype = "dotted") +
     facet_grid(Threshold~., scales = "free") + 
-    scale_color_manual(values = viridis::viridis(10, option = "turbo")[c(1,3,5,7, 9)]) +   
-    scale_size_manual(values = c(2,3)) + 
+    scale_color_manual(values = viridis::viridis(10, option = "turbo")[c(1,3,4,8, 10)]) +   
+    scale_size_manual(values = c(2.5,3.3)) + 
     labs(y = "Temperature Threshold (◦C)", color = "Life Stage") + 
     theme_bw() +
     theme(axis.text.x = element_blank(),                                                      axis.ticks.x = element_blank(),
@@ -74,6 +74,6 @@ thresholds_long$Threshold <- factor(thresholds_long$Threshold, levels = c("Toler
           strip.text = element_text(size = 12)))
 
 
-png("Figures/ThresholdsSpecies.png", width = 8.5, height = 6.5, units = "in", pointsize = 12, res = 300, family = "sans")
+tiff("Figures/ThresholdsSpecies.png", width = 8.5, height = 6.5, units = "in", pointsize = 12, res = 300, family = "sans", compression = "lzw")
 plot_both
 dev.off()
