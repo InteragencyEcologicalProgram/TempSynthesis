@@ -39,6 +39,7 @@ regions <- st_read("RosieRegions/RosiesRegions2022.shp")
 regions$Region <- c("Suisun Marsh", "Suisun Bay","Confluence", "North Delta", "Far North", "Central" , "South") 
 #regions <- filter(regions, Region!="Far North")
 
+Rivers <- data.frame(River = c("Sacramento River", "San Joaquin River"), Latitude = c(38.343140, 37.952146), Longitude = c(-121.501082, -121.339187))
 ```
 
 ```{r}
@@ -74,6 +75,10 @@ stations_sf_4269 <- st_transform(stations_sf, crs = st_crs(California)) %>%
 regions_4269 <- st_transform(regions, crs = st_crs(California))
 centroids <- (st_centroid(regions_4269)) 
 centroid_coords <- cbind(centroids, as.data.frame(st_coordinates(centroids)))
+rivers_sf <- st_as_sf(Rivers, coords = c("Longitude", "Latitude"), crs = 4326)
+rivers_4269 <- st_transform(rivers_sf, crs = st_crs(California)) %>%
+  mutate(Longitude = unlist(map(geometry, 1)),
+         Latitude = unlist(map(geometry, 2)))
 
 # Redefine your boundaries
 buffer = 0.1
@@ -116,14 +121,21 @@ inset
 
 Main map
 ```{r}
+library(ggrepel)
 map_final <- ggmap(map_obj) + 
+  #ggplot() +
   geom_sf(data = regions_4269, aes(fill = Region), inherit.aes = FALSE, alpha = 0.3)+
   geom_sf(data = WW_Delta, fill = "steelblue", colour = "steelblue", alpha = 0.6, inherit.aes = FALSE) + 
+
+  geom_sf(data = filter(WW_Delta,HNAME == "SACRAMENTO RIVER"), fill = "navyblue", colour = "navyblue", alpha = 0.6, inherit.aes = FALSE) + 
+  geom_sf(data = filter(WW_Delta,HNAME == "SAN JOAQUIN RIVER"), fill = "cadetblue1", colour = "cadetblue1", alpha = 0.6, inherit.aes = FALSE) +  
   geom_sf(data = stations_sf_4269, size = 2, shape = 21, 
           aes(fill = Region), inherit.aes = FALSE)+
   geom_label(data = centroid_coords, aes(label = Region, x = X, y = Y), inherit.aes = FALSE, 
              nudge_y = ifelse(centroid_coords$Region %in% c("Suisun Marsh"), 0.15, ifelse(centroid_coords$Region == "Suisun Bay", -0.1, ifelse(centroid_coords$Region == "South", 0.05, ifelse(centroid_coords$Region == "Central", 0.08, 0)))), 
              nudge_x = ifelse(centroid_coords$Region %in% c("North Delta", "Central"), 0.3,ifelse(centroid_coords$Region == "Far North", 0.25, ifelse(centroid_coords$Region == "South", 0.2, ifelse(centroid_coords$Region == "Confluence", 0.35, 0)))))+
+  #geom_label_repel(data = rivers_4269, aes(x = Longitude, y = Latitude, label = River), arrow = arrow(length = unit(0.03, "npc"), type = "closed", ends = "last"), nudge_x = 0.15,  inherit.aes = FALSE, color = c("navyblue", "darkslategray4") ) +
+  geom_text(data = rivers_4269, aes(x = Longitude, y = Latitude, label = River), color = c("navyblue", "paleturquoise1"),fontface = c("bold.italic"), nudge_x = c(0.11, -0.21), nudge_y = -0.03) + 
   annotation_north_arrow(location = "tr", which_north = "true", 
         pad_x = unit(.2, "in"), pad_y = unit(0.2, "in"),
         style = north_arrow_fancy_orienteering,
@@ -159,7 +171,7 @@ gg_inset_map1
 
 ```{r}
 gg_inset_map1
-ggsave("Figures/StationMapInset2.tiff", width = 8, height = 8, device = 'tiff', dpi = 300, bg = "transparent")
+ggsave("Figures/StationMapInset3.tiff", width = 8, height = 8, device = 'tiff', dpi = 300, bg = "transparent")
 
 ```
 
