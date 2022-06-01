@@ -1164,14 +1164,24 @@ ggplot(noRecov25) + geom_point(aes(x = Longitude, y = Latitude, color = propDays
 ```
 
 ```{r}
+viridis::mako(6)
 Info25 <- noRecov25 %>%
-  mutate(AnomalyGrp = ifelse(Anomaly>0.4, "High", "Low"))
+  mutate(AnomalyGrp = ifelse(Anomaly>0.4, "High", "Low"),
+         Region = replace(Region, Region == "San Joaquin", "Central"),
+         Region = replace(Region, Region == "Sac River", "Confluence")) %>%
+  mutate(Region = factor(Region, levels = c("Far North", "North Delta", "Confluence", "Central", "South", "Suisun Bay", "Suisun Marsh")))
 
 Range <- Info25 %>%
   group_by(AnomalyGrp) %>%
   summarize(min = min(nDaysAdj),
             max = max(nDaysAdj))
-Anomaly25NRPlot <- ggplot(Info25) + geom_boxplot(aes(x = Region, y = nDays, fill = AnomalyGrp)) + labs(y = "Number of Days", fill = "Anomaly") + scale_fill_viridis(discrete = TRUE, option = "cividis") + theme_bw() + theme(axis.text.x = element_text(angle = 90)) 
+(Anomaly25NRPlot <- ggplot(Info25) + 
+  geom_boxplot(aes(x = Region, y = nDays, fill = AnomalyGrp)) + 
+  labs(y = "Number of Days of Heat Stress at 25°C", fill = "Anomaly") + 
+  scale_fill_manual(values = c("#3497A9FF", "#DEF5E5FF")) +
+  #scale_fill_viridis(discrete = TRUE, option = "cividis") + 
+  theme_bw() + theme(axis.text.x = element_text(angle = 60,vjust = 0.5),
+                     axis.title.x = element_blank()) )
 ```
 
 ```{r}
