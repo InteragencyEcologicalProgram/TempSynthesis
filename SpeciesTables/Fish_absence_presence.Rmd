@@ -300,7 +300,6 @@ write_csv(All_removesingles, "SpeciesTables/species_absence_presence.csv")
 ## Read data
 ```{r}
 absence_presence_all <- readRDS("SpeciesTables/absencepresence_lifestage.rds")
-absence_presence_all <- readRDS("SpeciesTables/absencepresence_lifestage.rds")
 summed_source <- readr::read_csv("SpeciesTables/summed_absence_presence_all_bysource.csv")
 ```
 
@@ -338,7 +337,7 @@ level_order2 = c("Green Sturgeon Juvenile", "White Sturgeon Juvenile", "White St
 vegclams <- readxl::read_excel(here::here("SpeciesTables", "SpeciesTable_Veg_Clams.xlsx")) %>%
   mutate(maxWaterTemp = NA)
 
-species <- rbind(vegclams, data_export)
+species <- rbind(vegclams, absence_presence_all)
 # write_csv(species, "SpeciesTables/absence_presence_temp.csv")
 ```
 
@@ -452,7 +451,7 @@ tiff("Figures/Figure_Absence_Presence_pairedRegion.tiff", units="in",type="cairo
   #geom_vline(xintercept = 0.5 + seq(1,4,1)) +
     facet_wrap(~Region,nrow = 2) +
     scale_x_discrete(expand = c(0,0)) + 
-    scale_fill_manual("Tolerance-Max Field Detection \nTemperature Difference (°C)", values = tilescale)) + 
+    scale_fill_manual("Temperature Margin(°C) \n(Tolerance-Field) ", values = tilescale)) + 
   theme_tileplot
 dev.off()
 ```
@@ -511,7 +510,7 @@ vtilescale <- c(viridis::viridis(4, option = "viridis"), "white")
 (plot_vulnerability <- ggplot(vdataf) + 
     geom_tile(aes(x = Season, y = SpeciesLS, fill = category), color = "black") + 
     facet_wrap(~Region,nrow = 2) +
-    scale_fill_manual("Tolerance-Max Water \nTemperature Difference (°C)", values = vtilescale)) + 
+    scale_fill_manual("Temperature Margin (°C)\n(Tolerance-Field) ", values = vtilescale)) + 
   theme_tileplot
 ```
 
@@ -521,7 +520,7 @@ tiff("Figures/Figure_Vulnerability_ContWaterTemp.tiff", units="in",type="cairo",
 (plot_vulnerability <- ggplot(vdataf) + 
     geom_tile(aes(x = Season, y = SpeciesLS, fill = category), color = "black") + 
     facet_wrap(~Region,nrow = 2) +
-    scale_fill_manual("Tolerance-Max Water \nTemperature Difference (°C)", values = vtilescale)) + 
+    scale_fill_manual("Temperature Margin (°C)\n(Tolerance-Field)", values = vtilescale)) + 
   theme_tileplot
 dev.off()
 ```
@@ -555,8 +554,6 @@ calculate <- lifestage
             min = min(Length, na.rm = TRUE),
             mean = mean(Length, na.rm = TRUE),
             max = max(Length, na.rm = TRUE))
-```
-
 ```
 
 
