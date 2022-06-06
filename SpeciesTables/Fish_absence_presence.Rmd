@@ -128,7 +128,7 @@ fish <- open_fish()
 # filter for sources and taxa of interest
 surveys <- surv %>% 
     filter(Source %in% c("DJFMP", "Suisun", "BayStudy", "EDSM", "FMWT", "SKT", "TMM", "SLS", "STN")) %>% 
-    select(SampleID, Source, Date, Latitude, Longitude, WaterTemperature = Temp_surf)
+    dplyr::select(SampleID, Source, Date, Latitude, Longitude, WaterTemperature = Temp_surf)
     
 fish_sp <- fish %>%
   filter(Taxa %in% speciesTaxa)
