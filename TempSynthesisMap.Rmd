@@ -22,20 +22,22 @@ library(lattice)
 library(cowplot)
 library(rcartocolor)
 library(sf)
+library(here)
+library(spData)
 ```
 
 Read in 
 ```{r}
-setwd("C:/Users/cpien/OneDrive - California Department of Water Resources/Work/ClimateChange/R_code/TempSynthesis/")
+#setwd("C:/Users/cpien/OneDrive - California Department of Water Resources/Work/ClimateChange/R_code/TempSynthesis/")
 
 #tempFilt <- readRDS("Data/tempFilt.rds") 
 #tempToUse <- readRDS("Data/temp10years_20200922.rds")
 #tempAn <- readRDS("Data/tempAnnual.rds")
 #tempMon <- readRDS("Data/tempMonthly.rds")
 #tempDaily <- readRDS("Data/tempDaily.rds")
-tempDailyM <- readRDS("Data/tempDaily_20210811.rds")
-LatLon <- read.csv("Data/StationsMetadata.csv")
-regions <- st_read("RosieRegions/RosiesRegions2022.shp")
+tempDailyM <- readRDS(here("Data", "tempDaily_20210811.rds"))
+LatLon <- read.csv(here("Data", "StationsMetadata.csv"))
+regions <- st_read(here("RosieRegions", "RosiesRegions2022.shp"))
 regions$Region <- c("Suisun Marsh", "Suisun Bay","Confluence", "North Delta", "Far North", "Central" , "South") 
 #regions <- filter(regions, Region!="Far North")
 
@@ -52,7 +54,6 @@ tempInfo <- tempDailyM %>%
 
 California map
 ```{r}
-library(spData)
 data("us_states", package = "spData")
 California = filter(us_states, NAME == "California")
 st_crs(California)
@@ -79,6 +80,7 @@ rivers_sf <- st_as_sf(Rivers, coords = c("Longitude", "Latitude"), crs = 4326)
 rivers_4269 <- st_transform(rivers_sf, crs = st_crs(California)) %>%
   mutate(Longitude = unlist(map(geometry, 1)),
          Latitude = unlist(map(geometry, 2)))
+WW_4269 <- st_transform(WW_Delta, crs = st_crs(California))
 
 # Redefine your boundaries
 buffer = 0.1
@@ -105,30 +107,44 @@ map_obj <- get_stamenmap(
 
 
 insetbbox0 = st_as_sfc(st_bbox(stations_sf))
-insetbbox = st_buffer(insetbbox0, dist = 55500)
+#insetbbox = st_buffer(insetbbox0, dist = 55500)
+
+insetbbox_4269 <- st_transform(insetbbox0, crs = st_crs(California))
 ```
 
+```{r}
+add_bbox_buffer(insetbbox0, 0.1, distance_unit = "degrees", error_crs = NULL)
+```
 
 Inset map
 ```{r}
 inset <- ggplot() + 
   geom_sf(data = California, fill = "white") +
-  geom_sf(data = insetbbox0, fill = NA, color = "red", size = 1.1) +
+  geom_sf(data = insetbbox_4269, fill = NA, color = "red", size = 0.9) +
   theme_void()
 
 inset
 ```
 
 Main map
+
+Crop shapefile
+```{r}
+sf::sf_use_s2(FALSE)
+WW_Delta_crop <- st_crop(WW_4269, insetbbox_4269)
+plot(WW_Delta_crop)
+```
+
 ```{r}
 library(ggrepel)
-map_final <- ggmap(map_obj) + 
-  #ggplot() +
+map_final <- 
+  #ggmap(map_obj) + 
+  ggplot() +
   geom_sf(data = regions_4269, aes(fill = Region), inherit.aes = FALSE, alpha = 0.3)+
-  geom_sf(data = WW_Delta, fill = "steelblue", colour = "steelblue", alpha = 0.6, inherit.aes = FALSE) + 
+  geom_sf(data = WW_Delta_crop, fill = "steelblue", colour = "steelblue", alpha = 0.6, inherit.aes = FALSE) + 
 
   geom_sf(data = filter(WW_Delta,HNAME == "SACRAMENTO RIVER"), fill = "navyblue", colour = "navyblue", alpha = 0.6, inherit.aes = FALSE) + 
-  geom_sf(data = filter(WW_Delta,HNAME == "SAN JOAQUIN RIVER"), fill = "cadetblue1", colour = "cadetblue1", alpha = 0.6, inherit.aes = FALSE) +  
+  geom_sf(data = filter(WW_Delta,HNAME == "SAN JOAQUIN RIVER"), fill = "cadetblue1", colour = "cadetblue1", alpha = 0.8, inherit.aes = FALSE) +  
   geom_sf(data = stations_sf_4269, size = 2, shape = 21, 
           aes(fill = Region), inherit.aes = FALSE)+
   geom_label(data = centroid_coords, aes(label = Region, x = X, y = Y), inherit.aes = FALSE, 
@@ -163,7 +179,7 @@ Merge maps - inset
 ```{r}
 gg_inset_map1 = ggdraw() +
   draw_plot(map_final) +
-  draw_plot(inset, x = 0.21, y = 0.68, width = 0.3, height = 0.3)
+  draw_plot(inset, x = 0.23, y = 0.68, width = 0.3, height = 0.28)
 
 gg_inset_map1
 ```
@@ -171,7 +187,7 @@ gg_inset_map1
 
 ```{r}
 gg_inset_map1
-ggsave("Figures/StationMapInset3.tiff", width = 8, height = 8, device = 'tiff', dpi = 300, bg = "transparent")
+ggsave("Figures/StationMapInset4.tiff", width = 8, height = 8, device = 'tiff', dpi = 300, bg = "transparent")
 
 ```
 
