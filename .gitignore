@@ -13,5 +13,7 @@ RasteredPreds*
 Figures/Archive/
 Figures/
 TimeSeriesCat.Rmd
-
+SpeciesTables/Salvage_data_FTP*
+SpeciesTables/ReadSalvageData*
+SpeciesTables/data_raw
 

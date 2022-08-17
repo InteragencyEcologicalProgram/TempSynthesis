@@ -1,0 +1,22 @@
+---
+title: "Depth_Workflow"
+author: "Catarina Pien"
+date: "2/2/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+1. depthdataintegration.Rmd: Read in bottom data, QA/QC, combine with filtered surface dataset. 
+
+2. heatcategories.Rmd: Assign heat categories (stress level)
+
+3. DepthDataVisualization_MNedits.Rmd: exploration of max hours, calculate relative temp diff (Bottom - Surface)
+    - RelativeTempDiff2.rds
+    - This file gets fed in to below.
+    
+4. RelTempDiff_GAM.Rmd: Most of figures come from here. 
+
+5. ThresholdExceedanceFigure.Rmd: Threshold exceedance figure. 

@@ -1,0 +1,304 @@
+---
+title: "model_native_nonnative"
+author: "NCEAS"
+date: '2022-08-11'
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(readr)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+
+library(lme4)
+library(lmerTest)
+
+library(sjPlot)
+```
+
+# Read data
+```{r}
+data_exceedance0 <- read_csv("SpeciesTables/daysExceedanceUpperDataForPlotting.csv") 
+```
+
+# Categorize data
+```{r}
+native <- c("Green Sturgeon", "White Sturgeon","Delta Smelt", "Longfin Smelt", "Wakasagi","Chinook Salmon", "Steelhead/Rainbow Trout","Sacramento Splittail", "Sacramento Pikeminnow", "Sacramento Sucker", "Sacramento Blackfish", "Hitch", "Tule Perch", "Threespine Stickleback", "Prickly Sculpin")
+
+nonnative <- c("Mississippi Silverside", "Striped Bass", "Largemouth Bass", "Giant Reed EAV", "Brazilian Waterweed", "Water Hyacinth FAV", "Microcystis", "Asian Clam", "Overbite Clam")
+
+listed <- c("Green Sturgeon","Delta Smelt", "Longfin Smelt","Chinook Salmon", "Steelhead/Rainbow Trout")
+
+#level_order = c("Green Sturgeon", "White Sturgeon","Delta Smelt", "Longfin Smelt", "Wakasagi","Chinook Salmon", "Steelhead/Rainbow Trout","Sacramento Splittail", "Sacramento Pikeminnow", "Sacramento Sucker", "Sacramento Blackfish", "Hitch", "Tule Perch", "Threespine Stickleback", "Prickly Sculpin", "Mississippi Silverside", "Striped Bass", "Largemouth Bass", "Giant Reed EAV", "Brazilian Waterweed", "Water Hyacinth FAV", "Microcystis", "Asian Clam", "Overbite Clam")
+```
+
+```{r}
+data_exceedance <- data_exceedance0 %>%
+  mutate(fWY = factor(WY),
+         Status = ifelse(Species %in% native, "Native", "NonNativePest"),
+         Status = as.factor(Status),
+         Status2 = ifelse(Status == "Native", 0, 1),
+         Lstatus = ifelse(Species %in% listed, "Listed", "Unlisted"),
+         Lstatus = as.factor(Lstatus),
+         Lstatus2 = ifelse(Status == "Native", 0, 1),
+         daysTotal = ifelse(WY%%4 ==0, 366, 365))
+```
+
+# Adult days tolerance
+## dataset
+```{r}
+data_adult_tol <- data_exceedance%>%
+  mutate(log_daysTol = log(daysExceedanceTol + 1)) %>%
+  filter(LifeStage == "Adult" | LifeStage == "Undifferentiated", 
+         !is.na(daysExceedanceTol)) %>%
+  select(Status, Lstatus, fWY, Species, daysExceedanceTol, log_daysTol, daysTotal, Status2, Lstatus2) %>%
+  unique()
+
+str(data_adult_tol)
+```
+
+## normality
+```{r}
+hist(data_adult_tol$daysExceedanceTol)
+hist(data_adult_tol$log_daysTol)
+```
+
+## plot categories
+```{r}
+ggplot(data_adult_tol, aes(x = Status, y = daysExceedanceTol)) + geom_boxplot()
+ggplot(data_adult_tol, aes(x = Lstatus, y = daysExceedanceTol)) + geom_boxplot()
+
+ggplot(data_adult_tol, aes(y = daysExceedanceTol)) + geom_histogram() + facet_wrap(~Lstatus)
+ggplot(data_adult_tol, aes(y = log_daysTol)) + geom_histogram() + facet_wrap(~Lstatus)
+```
+
+## t-test: significant
+```{r}
+t.test(data_adult_tol$Status2, data_adult_tol$log_daysTol)
+t.test(data_adult_tol$Lstatus2, data_adult_tol$daysExceedanceTol)
+t.test(data_adult_tol$Lstatus2, data_adult_tol$log_daysTol)
+```
+
+## lm
+### by native status
+```{r}
+mAdult1 <- lm(log_daysTol ~ Status, data = data_adult_tol)
+summary(mAdult1)
+anova(mAdult1)
+par(mfrow = c(2,2))
+plot(mAdult1)
+```
+
+binomial
+```{r}
+mAdult1 <- glm(cbind(daysExceedanceTol, daysTotal) ~ Status, data = data_adult_tol, family = "binomial")
+summary(mAdult1)
+anova(mAdult1)
+par(mfrow = c(2,2))
+plot(mAdult1)
+```
+
+
+
+### by listed status
+```{r}
+mAdult2 <- lm(log_daysTol ~ Lstatus, data = data_adult_tol)
+summary(mAdult2)
+anova(mAdult2)
+par(mfrow = c(2,2))
+plot(mAdult2)
+```
+
+binomial
+```{r}
+mAdult2b <- glm(cbind(daysExceedanceTol, daysTotal) ~ Lstatus, data = data_adult_tol, family = binomial)
+summary(mAdult2b)
+anova(mAdult2b)
+par(mfrow = c(2,2))
+plot(mAdult2b)
+```
+
+## lmer
+
+### by native status
+```{r}
+mAdultStat <- lmer(log_daysTol ~ Status + (1|fWY), data = data_adult_tol)
+summary(mAdultStat)
+```
+
+### by listed status
+```{r}
+mAdultList <- lmer(log_daysTol ~ Lstatus + (1|fWY), data = data_adult_tol)
+summary(mAdultList)
+```
+
+```{r}
+mAdultListb <- glmer(cbind(daysExceedanceTol,daysTotal) ~ Lstatus + (1|fWY), data = data_adult_tol, family = "binomial")
+summary(mAdultListb)
+```
+
+# Adult days optimum
+## dataset
+```{r}
+data_adult_opt <- data_exceedance %>%
+  filter(LifeStage == "Adult" | LifeStage == "Undifferentiated",  
+         !is.na(daysExceedanceOpt)) %>%
+  select(Status, Lstatus, Status2, Lstatus2, fWY, Species, daysExceedanceOpt, daysTotal) %>%
+  unique()
+
+str(data_adult_opt)
+```
+
+## normality
+```{r}
+hist(data_adult_opt$daysExceedanceOpt)
+```
+
+## plot categories
+```{r}
+ggplot(data_adult_opt, aes(x = Status, y = daysExceedanceOpt)) + geom_boxplot()
+ggplot(data_adult_opt, aes(x = Lstatus, y = daysExceedanceOpt)) + geom_boxplot()
+
+ggplot(data_adult_opt, aes(y = daysExceedanceOpt)) + geom_histogram() + facet_wrap(~Lstatus)
+```
+
+## t-test: significant
+```{r}
+t.test(data_adult_opt$Status2, data_adult_opt$daysExceedanceOpt)
+t.test(data_adult_opt$Lstatus2, data_adult_opt$daysExceedanceOpt)
+```
+
+## lm
+### by native status
+```{r}
+mAdult1_o <- lm(daysExceedanceOpt ~ Status, data = data_adult_opt)
+summary(mAdult1_o)
+anova(mAdult1_o)
+par(mfrow = c(2,2))
+plot(mAdult1_o)
+```
+
+
+### by listed status
+```{r}
+mAdult2_o <- lm(daysExceedanceOpt ~ Lstatus, data = data_adult_opt)
+summary(mAdult2_o)
+anova(mAdult2_o)
+par(mfrow = c(2,2))
+plot(mAdult2_o)
+```
+
+```{r}
+mAdult2b_o <- glm(cbind(daysExceedanceOpt, daysTotal) ~ Lstatus, data = data_adult_opt, family = binomial)
+summary(mAdult2b_o)
+anova(mAdult2b_o)
+par(mfrow = c(2,2))
+plot(mAdult2b_o)
+```
+
+## lmer
+
+### by native status
+```{r}
+mAdultStat_o <- lmer(daysExceedanceOpt ~ Status + (1|fWY), data = data_adult_opt)
+summary(mAdultStat_o)
+```
+
+### by listed status
+```{r}
+mAdultList_o <- lmer(daysExceedanceOpt ~ Lstatus + (1|fWY), data = data_adult_opt)
+summary(mAdultList_o)
+```
+
+binomial
+```{r}
+mAdultListb_o <- glmer(cbind(daysExceedanceOpt,daysTotal) ~ Lstatus +  (1|fWY), data = data_adult_opt, family = "binomial")
+summary(mAdultListb_o)
+```
+
+# Tolerance
+```{r}
+tol <- data_exceedance %>%
+  filter(LifeStage == "Adult" | LifeStage == "Undifferentiated", 
+         !is.na(Tolerance_Upper)) %>%
+  select(Status,Status2,  Lstatus, Lstatus2, Species, Tolerance_Upper) %>%
+  unique()
+```
+
+Not normally distributed...
+```{r}
+hist(tol$Tolerance_Upper)
+```
+
+## t-test
+```{r}
+t.test(tol$Status2, tol$Tolerance_Upper)
+t.test(tol$Lstatus2, tol$Tolerance_Upper)
+```
+
+## lm
+
+### Native status: non-significant
+```{r}
+mTol <- lm(Tolerance_Upper ~ Status, data = tol)
+summary(mTol)
+anova(mTol)
+par(mfrow = c(2,2))
+plot(mTol)
+```
+
+### Listed status: significant
+```{r}
+mTol2 <- lm(Tolerance_Upper ~ Lstatus, data = tol)
+summary(mTol2)
+anova(mTol2)
+par(mfrow = c(2,2))
+plot(mTol2)
+```
+
+
+# Optimum - only 17 values
+```{r}
+opt <- data_exceedance %>%
+  filter(LifeStage == "Adult" | LifeStage == "Undifferentiated", 
+         !is.na(Suboptimum_Upper)) %>%
+  select(Status,Status2,  Lstatus, Lstatus2, Species, Suboptimum_Upper) %>%
+  unique()
+```
+
+Not normally distributed...
+```{r}
+hist(opt$Suboptimum_Upper)
+```
+
+## t-test: Significant
+```{r}
+t.test(opt$Status2, opt$Suboptimum_Upper)
+t.test(opt$Lstatus2, opt$Suboptimum_Upper)
+```
+
+## lm
+### Native status: significant
+```{r}
+mOpt <- lm(Suboptimum_Upper ~ Status, data = opt)
+summary(mOpt)
+anova(mOpt)
+par(mfrow = c(2,2))
+plot(mOpt)
+```
+
+### Listed status: significant
+```{r}
+mOpt2 <- lm(Suboptimum_Upper ~ Lstatus, data = opt)
+summary(mOpt2)
+anova(mOpt2)
+par(mfrow = c(2,2))
+plot(mOpt2)
+```
