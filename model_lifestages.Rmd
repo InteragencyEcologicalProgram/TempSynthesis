@@ -1,0 +1,252 @@
+---
+title: "model_lifestage"
+author: "NCEAS"
+date: '2022-08-17'
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(readr)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(readxl)
+
+library(lme4)
+library(lmerTest)
+
+library(sjPlot)
+```
+
+# Read data
+
+```{r}
+thresholds <- read_excel("SpeciesTables/SpeciesThresholds.xlsx")
+daysExceedance <- read_csv("SpeciesTables/daysExceedanceUpperDataForPlotting.csv")
+```
+
+# Organize data
+
+## Tolerance
+```{r}
+tolerance <- thresholds %>%
+  select(-Suboptimum, -Suboptimum_Upper) %>%
+  mutate(Tolerance = as.numeric(Tolerance),
+         Tolerance_Upper = as.numeric(Tolerance_Upper)) %>%
+  filter(!is.na(Tolerance),
+         LifeStage != "Undifferentiated") %>%
+  mutate(LS = ifelse(LifeStage == "Adult", "Adult", "EarlyLS")) %>%
+  distinct()
+
+tol0 <- tolerance %>%
+  group_by(Species, LS) %>%
+  summarize(Tol_upper = max(Tolerance_Upper),
+            Tol_lower = min(Tolerance_Upper)) %>%
+  filter(!(Species %in% c("Hitch", "Sacramento Pikeminnow", "Sacramento Sucker", "Tule Perch", "Wakasagi", "White Sturgeon", "Green Sturgeon")))
+```
+
+Based on days exceedance 
+```{r}
+tol_days0 <- daysExceedance %>%
+  select(-Suboptimum_Upper, -daysExceedanceOpt) %>%
+  mutate(Tolerance_Upper = as.numeric(Tolerance_Upper)) %>%
+  filter(!is.na(Tolerance_Upper),
+         LifeStage != "Undifferentiated") %>%
+  mutate(LS = ifelse(LifeStage == "Adult", "Adult", "EarlyLS")) %>%
+  distinct()
+
+tol_days1 <- tol_days0 %>%
+  group_by(Species, LS, WY) %>%
+  summarize(days_upper = max(daysExceedanceTol),
+            days_lower = min(daysExceedanceTol)) %>%
+  filter(!(Species %in% c("Hitch", "Sacramento Pikeminnow", "Sacramento Sucker", "Tule Perch", "Wakasagi", "White Sturgeon", "Green Sturgeon")))
+```
+
+## Opt 
+
+Only 7 species left, probably not worth the analysis! 
+```{r}
+suboptimum <- thresholds %>%
+  select(-Tolerance, -Tolerance_Upper) %>%
+  mutate(Suboptimum = as.numeric(Suboptimum),
+         Suboptimum_Upper = as.numeric(Suboptimum_Upper)) %>%
+  filter(!is.na(Suboptimum),
+         LifeStage != "Undifferentiated") %>%
+  mutate(LS = ifelse(LifeStage == "Adult", "Adult", "EarlyLS")) %>%
+  distinct()
+
+opt0 <- suboptimum %>%
+  group_by(Species, LS) %>%
+  summarize(Opt_upper = max(Suboptimum_Upper),
+            Opt_lower = min(Suboptimum_Upper)) %>%
+  filter(!(Species %in% c("Hitch", "Sacramento Pikeminnow", "Sacramento Sucker", "Tule Perch", "White Sturgeon", "Largemouth Bass", "Mississippi Silverside", "Prickly Sculpin", "Sacramento Blackfish")))
+```
+
+
+# Categorize data
+```{r}
+native <- c("Green Sturgeon", "White Sturgeon","Delta Smelt", "Longfin Smelt", "Wakasagi","Chinook Salmon", "Steelhead/Rainbow Trout","Sacramento Splittail", "Sacramento Pikeminnow", "Sacramento Sucker", "Sacramento Blackfish", "Hitch", "Tule Perch", "Threespine Stickleback", "Prickly Sculpin")
+
+nonnative <- c("Mississippi Silverside", "Striped Bass", "Largemouth Bass", "Giant Reed EAV", "Brazilian Waterweed", "Water Hyacinth FAV", "Microcystis", "Asian Clam", "Overbite Clam")
+
+listed <- c("Green Sturgeon","Delta Smelt", "Longfin Smelt","Chinook Salmon", "Steelhead/Rainbow Trout")
+
+#level_order = c("Green Sturgeon", "White Sturgeon","Delta Smelt", "Longfin Smelt", "Wakasagi","Chinook Salmon", "Steelhead/Rainbow Trout","Sacramento Splittail", "Sacramento Pikeminnow", "Sacramento Sucker", "Sacramento Blackfish", "Hitch", "Tule Perch", "Threespine Stickleback", "Prickly Sculpin", "Mississippi Silverside", "Striped Bass", "Largemouth Bass", "Giant Reed EAV", "Brazilian Waterweed", "Water Hyacinth FAV", "Microcystis", "Asian Clam", "Overbite Clam")
+```
+
+## Add a few categories
+```{r}
+tol <- tol0 %>%
+  mutate(Status = ifelse(Species %in% native, "Native", "NonNativePest"),
+         Status = as.factor(Status),
+         LS2 = ifelse(LS == "Adult", 0, 1),
+         Lstatus = ifelse(Species %in% listed, "Listed", "Unlisted"),
+         Lstatus = as.factor(Lstatus),
+         Lstatus2 = ifelse(Status == "Native", 0, 1))
+
+
+tol_days <- tol_days1 %>%
+  mutate(fWY = factor(WY),
+         logdays = log(days_lower+1),
+         Status = ifelse(Species %in% native, "Native", "NonNativePest"),
+         Status = as.factor(Status),
+         LS2 = ifelse(LS == "Adult", 0, 1),
+         Lstatus = ifelse(Species %in% listed, "Listed", "Unlisted"),
+         Lstatus = as.factor(Lstatus),
+         Lstatus2 = ifelse(Status == "Native", 0, 1),
+         daysTotal = ifelse(WY%%4 ==0, 366, 365))
+```
+
+# Model Tolerance
+
+## normality
+```{r}
+hist(tol$Tol_upper)
+hist(log(tol$Tol_upper))
+hist(tol$Tol_lower)
+hist(log(tol$Tol_lower))
+```
+
+## plot categories
+```{r}
+ggplot(tol, aes(x = LS, y = Tol_upper)) + geom_boxplot()
+ggplot(tol, aes(x = LS, y = Tol_lower)) + geom_boxplot()
+
+ggplot(tol, aes(y = Tol_upper)) + geom_histogram(binwidth = 5) + facet_wrap(~LS)
+ggplot(tol, aes(y = Tol_lower)) + geom_histogram(binwidth = 5) + facet_wrap(~LS)
+```
+
+## t-test: significant
+```{r}
+t.test(tol$LS2, tol$Tol_upper)
+t.test(tol$LS2, tol$Tol_lower)
+```
+
+```{r}
+kruskal.test(tol$LS2, tol$Tol_upper)
+kruskal.test(tol$LS2, tol$Tol_lower)
+```
+
+
+## lm
+```{r}
+mLS1 <- lm(Tol_upper ~ LS, data = tol)
+summary(mLS1)
+anova(mLS1)
+par(mfrow = c(2,2))
+plot(mLS1)
+```
+
+```{r}
+mLS2 <- lm(Tol_lower ~ LS, data = tol)
+summary(mLS2)
+anova(mLS2)
+par(mfrow = c(2,2))
+plot(mLS2)
+```
+
+
+# Model Days Exceeding Tolerance
+
+## plot categories
+```{r}
+ggplot(tol_days, aes(x = LS, y = days_upper)) + geom_boxplot()
+ggplot(tol_days, aes(x = LS, y = days_lower)) + geom_boxplot()
+
+ggplot(tol_days, aes(y = days_upper)) + geom_histogram(binwidth = 5) + facet_wrap(~LS)
+ggplot(tol_days, aes(y = days_lower)) + geom_histogram(binwdith = 5) + facet_wrap(~LS)
+ggplot(tol_days, aes(y = logdays)) + geom_histogram(binwidth = 2) + facet_wrap(~LS)
+```
+
+## t-test: significant
+```{r}
+t.test(tol_days$LS2, tol_days$days_upper)
+t.test(tol_days$LS2, tol_days$days_lower)
+```
+
+## kruskal wallis: ns
+```{r}
+kruskal.test(tol_days$LS2, tol_days$days_upper)
+kruskal.test(tol_days$LS2, tol_days$days_lower)
+```
+
+## lm
+```{r}
+mLSd1 <- lm(days_upper ~ LS, data = tol_days)
+summary(mLSd1)
+anova(mLSd1)
+par(mfrow = c(2,2))
+plot(mLSd1)
+
+
+mLSd2 <- lm(days_lower ~ LS, data = tol_days)
+summary(mLSd2)
+anova(mLSd2)
+par(mfrow = c(2,2))
+plot(mLSd2)
+```
+
+binomial
+```{r}
+mLSd1b <- glm(cbind(days_upper, daysTotal) ~ LS, data = tol_days, family = "binomial")
+summary(mLSd1b)
+anova(mLSd1b)
+par(mfrow = c(2,2))
+plot(resid(mLSd1b))
+
+
+
+mLSd2b <- glm(cbind(days_lower, daysTotal) ~ LS, data = tol_days, family = "binomial")
+summary(mLSd2b)
+anova(mLSd2b)
+par(mfrow = c(2,2))
+plot(resid(mLSd2b))
+
+
+```
+
+
+## lmer by species
+```{r}
+mLSd3 <- lmer(days_upper ~ LS + (1|Species), data = tol_days)
+summary(mLSd3)
+
+mLSd4 <- lmer(days_lower ~ LS + (1|Species), data = tol_days)
+summary(mLSd4)
+```
+
+binomial
+```{r}
+mLSd5<- glmer(cbind(days_upper,daysTotal) ~ LS + (1|Species), data = tol_days, family = "binomial")
+summary(mLSd5)
+
+mLSd6<- glmer(cbind(days_lower,daysTotal) ~ LS + (1|Species), data = tol_days, family = "binomial")
+summary(mLSd6)
+```
+
