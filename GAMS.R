@@ -66,6 +66,8 @@ tempmean = temps %>%
              TempMin = min(Temp, na.rm = T), Temprange = TempMax-TempMin, n = length(Temp))
 
 
+summary(tempmean)
+
 #read in shapefile of the delta
 delta = read_sf("DeltaShapefile/hydro_delta_marsh.shp")
 
@@ -280,6 +282,12 @@ newdatamin<-newdata_year%>%
 save(g5.1, g5ave, g5min, newdata, newdata_year, newdataave,
      newdatamin, file = "GAMresults12AUG2021.RData")
 
+load("GAMresults12AUG2021.RData")
+summary(g5.1)
+g5.1sum = tidy(g5.1)
+summary(g5ave)
+summary(g5min)
+
 # Function to rasterize all dates. Creates a 3D raster Latitude x Longitude x Date 
 Rasterize_all <- function(data, var, out_crs=4326, n=100){
   var<-rlang::enquo(var)
@@ -305,9 +313,10 @@ rastered_predsrange = rastered_preds - rastered_predsmin
 save(rastered_preds, rastered_predsave, rastered_predsmin, 
      rastered_predsrange, file = "RasteredPreds12AUG2021.RData")
 
+load("RasteredPreds12AUG2021.RData")
 
 
-
+summary(rastered_preds$Prediction)
 
 
 
