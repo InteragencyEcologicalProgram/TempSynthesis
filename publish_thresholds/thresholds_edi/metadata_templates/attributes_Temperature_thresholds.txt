@@ -1,0 +1,17 @@
+attributeName	attributeDefinition	class	unit	dateTimeFormatString	missingValueCode	missingValueCodeExplanation
+Common_name	Species common name	character				
+Taxon	Species scientific name	character				
+Assigned_life_stage	Life stage from reference	categorical				
+Status	Native or non-native	categorical				
+Field_detection_temp_mean	Mean field detection temperature	numeric	celsius		NA	Information not found/available
+Field_detection_temp_75Q	75th quartile field detection temperature	numeric	celsius		NA	Information not found/available
+Field_detection_temp_max	Max field detection temperature	numeric	celsius		NA	Information not found/available
+n	Number of samples used in mean, 75Q and maximum, with each sample generally referring to one fish	numeric	dimensionless		NA	Information not found/available
+Threshold_suboptimum	Range of suboptimum temperature thresholds	character			NA	Information not found/available
+Threshold_tolerance	Range of tolerance temperature thresholds	character			NA	Information not found/available
+Spawning_growth_temp_range	Spawning and growth temperature ranges	character			NA	Information not found/available
+Metric_suboptimum	Suboptimum metric	character			NA	Information not found/available
+Metric_tolerance	Tolerance metric	character			NA	Information not found/available
+Reference_suboptimum	Reference for suboptimum information	character			NA	Information not found/available
+Reference_tolerance	Reference for tolerance information	character			NA	Information not found/available
+Reference_spawning	Reference for spawning and growth information	character			NA	Information not found/available

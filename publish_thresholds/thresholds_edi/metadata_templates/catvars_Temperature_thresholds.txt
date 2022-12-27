@@ -1,0 +1,8 @@
+attributeName	code	definition
+Assigned_life_stage	Adult	adult
+Assigned_life_stage	Juvenile	juvenile
+Assigned_life_stage	Juvenile/Larvae	either juvenile or larvae
+Assigned_life_stage	Larvae	larvae
+Assigned_life_stage	Undifferentiated	undifferentiated
+Status	Native	native
+Status	Non-native	non-native

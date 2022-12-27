@@ -1,0 +1,8 @@
+attributeName	attributeDefinition	class	unit	dateTimeFormatString	missingValueCode	missingValueCodeExplanation
+Common_name	Species common name	character				
+Taxon	Species scientific name	character				
+Assigned_life_stage	Life stage assigned based on length	categorical				
+Length_mm	Length in millimeters	character				
+Length_type	Type of length	categorical	millimeter			
+Notes_life_stage_designation	Additional notes	character				
+Reference	Source	character			NA	Did not find a reference, range is based on ranges for other life stages

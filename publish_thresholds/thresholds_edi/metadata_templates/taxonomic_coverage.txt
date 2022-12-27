@@ -1,0 +1,26 @@
+name	name_type	name_resolved	authority_system	authority_id
+Oncorhynchus tshawytscha	scientific	Oncorhynchus tshawytscha	ITIS	161980
+Oncorhynchus mykiss	scientific	Oncorhynchus mykiss	ITIS	161989
+Hypomesus transpacificus	scientific	Hypomesus transpacificus	ITIS	162032
+Spirinchus thaleichthys	scientific	Spirinchus thaleichthys	ITIS	162049
+Pogonichthys macrolepidotus	scientific	Pogonichthys macrolepidotus	ITIS	163603
+Acipenser medirostris	scientific	Acipenser medirostris	ITIS	161067
+Acipenser transmontanus	scientific	Acipenser transmontanus	ITIS	161068
+Morone saxatilis	scientific	Morone saxatilis	ITIS	167680
+Micropterus salmoides	scientific	Micropterus salmoides	ITIS	168160
+Menidia spp. (audens/beryllina)	scientific	Menidia spp. (audens/beryllina)	ITIS	NA
+Hypomesus nipponensis	scientific	Hypomesus nipponensis	ITIS	162033
+Orthodon microlepidotus	scientific	Orthodon microlepidotus	ITIS	163589
+Lavinia exilicauda	scientific	Lavinia exilicauda	ITIS	163569
+Hysterocarpus traskii	scientific	Hysterocarpus traskii	ITIS	553322
+Ptychocheilus grandis	scientific	Ptychocheilus grandis	ITIS	163524
+Catostomus occidentalis	scientific	Catostomus occidentalis	ITIS	163908
+Gasterosteus aculeatus	scientific	Gasterosteus aculeatus	ITIS	166365
+Cottus asper	scientific	Cottus asper	ITIS	167233
+Egeria densa	scientific	Egeria densa	ITIS	38972
+Microcystis spp.	scientific	Microcystis	ITIS	747
+Corbicula spp. (manilensis; fluminea)	scientific	Corbicula spp. (manilensis; fluminea)	ITIS	NA
+Potamocorbula amurensis	scientific	Potamocorbula amurensis	ITIS	81746
+Arundo donax	scientific	Arundo donax	ITIS	41450
+Eichhornia crassipes	scientific	Eichhornia crassipes	ITIS	42623
+Potamogeton crispus	scientific	Potamogeton crispus	ITIS	39007

@@ -1,0 +1,9 @@
+givenName	middleInitial	surName	organizationName	electronicMailAddress	userId	role	projectTitle	fundingAgency	fundingNumber
+Brittany		Davis	California Department of Water Resources	Brittany.E.Davis@water.ca.gov	0000-0003-3752-1830	Creator			
+Brittany		Davis	California Department of Water Resources	Brittany.E.Davis@water.ca.gov	0000-0003-3752-1830	Contact			
+Eva		Bush	Delta Stewardship Council	Eva.Bush@deltacouncil.ca.gov	0000-0003-2376-4735	Creator			
+Peggy		Lehman				Creator			
+Catarina		Pien	Bureau of Reclamation and California Department of Water Resources	cpien@usbr.gov	0000-0003-4427-6300	Creator			
+Catarina		Pien	Bureau of Reclamation and California Department of Water Resources	cpien@usbr.gov	0000-0003-4427-6300	PI	Temperature Thresholds	DWR	Not applicable
+Catarina		Pien	Bureau of Reclamation and California Department of Water Resources	cpien@usbr.gov	0000-0003-4427-6300	Contact			
+Rosemary		Hartman	California Department of Water Resources	Rosemary.Hartman@water.ca.gov	0000-0002-0642-183X	Associate			

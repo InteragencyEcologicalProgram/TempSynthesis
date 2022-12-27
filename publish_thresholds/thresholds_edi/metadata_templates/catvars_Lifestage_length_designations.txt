@@ -1,0 +1,12 @@
+attributeName	code	definition
+Assigned_life_stage	Adult	adult
+Assigned_life_stage	Juvenile	juvenile
+Assigned_life_stage	Juvenile/Larvae	either juvenile or larvae
+Assigned_life_stage	Larvae	larvae
+Length_type	FL	fork length
+Length_type	FL/TL	fork length (first value); total length (second value)
+Length_type	SL	standard length
+Length_type	SL/FL	standard length (first value); fork length (second value)
+Length_type	SL/TL	standard length (first value); total length (second value)
+Length_type	TL	total length
+Length_type	TL/FL	total length (first value); fork length (second value)
