@@ -23,16 +23,16 @@ library(lme4) # glmm
 library(lmerTest) #glmm p values
 library(plotly)
 library(ggeffects)
+library(here)
 ```
 
 Read in data
 ```{r read}
-setwd("C:/Users/cpien/OneDrive - California Department of Water Resources/Work/ClimateChange/R_code/TempSynthesis/")
-
+#setwd("C:/Users/cpien/OneDrive - California Department of Water Resources/Work/ClimateChange/R_code/TempSynthesis/")
 # tempFilt <- readRDS("Data/tempFilt.rds") 
 # tempToUse <- readRDS("Data/temp10years_20200922.rds")
 # tempAn <- readRDS("Data/tempAnnual.rds")
-tempMon <- readRDS("Data/tempMonthly.rds")
+tempMon <- readRDS(here("Data", "tempMonthly.rds"))
 # tempDaily <- readRDS("Data/tempDaily.rds")
 # tempHeat <- readRDS("Data/heatstressDaily.rds")
 ```

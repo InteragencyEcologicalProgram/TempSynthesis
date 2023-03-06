@@ -18,13 +18,13 @@ library(tidyverse)
 library(lubridate)
 library(viridis) # color palette
 library(plotly)
-setwd("C:/Users/cpien/OneDrive - California Department of Water Resources/Work/ClimateChange/R_code/TempSynthesis/")
-tempFilt0 <- readRDS("Data/Temp_filtered.rds")
-RegionsEDSM <- read.csv("Data/Station_groupings_5AUG2020.csv")
-Regions <- read.csv("Data/Stations_wRosiesReg.csv")
-staInfo <- read.csv("Data/StationsMetadata.csv") %>%
+#setwd("C:/Users/cpien/OneDrive - California Department of Water Resources/Work/ClimateChange/R_code/TempSynthesis/")
+tempFilt0 <- readRDS("../Data/Temp_filtered.rds")
+RegionsEDSM <- read.csv("../Data/Station_groupings_5AUG2020.csv")
+Regions <- read.csv("../Data/Stations_wRosiesReg.csv")
+staInfo <- read.csv("../Data/StationsMetadata.csv") %>%
   select(-c(StationName))
-WYType <- read.csv("Data/WYType.csv")
+WYType <- read.csv("../Data/WYType.csv")
 
 str(tempFilt0)
 ```

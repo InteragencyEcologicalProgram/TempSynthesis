@@ -25,19 +25,19 @@ library(lattice)
 ## Data Prep and Exploration
 Data import
 ```{r import, include = FALSE, message = FALSE, warning = FALSE}
-setwd("C:/Users/cpien/OneDrive - California Department of Water Resources/Work/ClimateChange/R_code/TempSynthesis/")
+#setwd("C:/Users/cpien/OneDrive - California Department of Water Resources/Work/ClimateChange/R_code/TempSynthesis/")
 
-tempFilt0 <- readRDS("Data/Temp_filtered.rds") %>%
+tempFilt0 <- readRDS(here("Data", "Temp_filtered.rds")) %>%
   select(-StationName) # temperature data 
 
-Regions <- read.csv("Data/Stations_wRosiesReg.csv") %>%
+Regions <- read.csv(here("Data", "Stations_wRosiesReg.csv")) %>%
   select(-c(Latitude, Longitude)) # Rosie's Regions
 
-staInfo <- read.csv("Data/StationsMetadata.csv") # Get habitat type here
+staInfo <- read.csv(here("Data", "StationsMetadata.csv")) # Get habitat type here
 
 LatLon <- select(staInfo, c("Station", "StationName", "Latitude", "Longitude"))
 
-WYType <- read.csv("Data/WYType.csv") %>% # Get WY, WY type, Index 
+WYType <- read.csv(here("Data", "WYType.csv")) %>% # Get WY, WY type, Index 
   select(-c(starts_with("Runoff"))) %>%
    mutate(Index_c = Index_Sac + Index_SJ) 
 
@@ -94,7 +94,7 @@ StationNyears <- StationYearCombo %>%
 ```
 
 New filtering code by days then months then years
-8 years of data
+10 years of data
 ```{r}
 StationYearCombo <- tempFilt %>%
   filter(WY>2009) %>%
@@ -120,8 +120,7 @@ StationMonthFilter <- StationDayFilter %>%
   mutate(nYear = n())
 
 StationYearFilter <- StationMonthFilter %>%
-  filter(nYear>7) %>%
-  filter(Station!="FLT")
+  filter(nYear>7) 
 
 ListOfSta <- StationYearFilter %>%
   select(-c(WY, totalDays, nMonth))%>%
@@ -348,7 +347,7 @@ tempMon <- left_join(tempMon0, tempAvMon0) %>%
   select(Region, Station, HabitatType,Year,  WY, WYType2_Sac, Index_c, Month, maxTemp, maxAvTemp, minAvTemp, everything())
 
 
-#saveRDS(tempMon, "Data/tempMonthly.rds")
+#saveRDS(tempMon, here("Data","tempMonthly_20220801.rds"))
 ```
 
 ########### Written files from above ###############
