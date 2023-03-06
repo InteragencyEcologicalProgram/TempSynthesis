@@ -47,7 +47,7 @@ data_exceedance <- data_exceedance0 %>%
          Status2 = ifelse(Status == "Native", 0, 1),
          Lstatus = ifelse(Species %in% listed, "Listed", "Unlisted"),
          Lstatus = as.factor(Lstatus),
-         Lstatus2 = ifelse(Status == "Native", 0, 1),
+         Lstatus2 = ifelse(Lstatus == "Unlisted", 0, 1),
          daysTotal = ifelse(WY%%4 ==0, 366, 365))
 ```
 
@@ -55,10 +55,11 @@ data_exceedance <- data_exceedance0 %>%
 ## dataset
 ```{r}
 data_adult_tol <- data_exceedance%>%
-  mutate(log_daysTol = log(daysExceedanceTol + 1)) %>%
+  mutate(log_daysTol = log(daysExceedanceTol + 1),
+         sqrt_daysTol = sqrt(daysExceedanceTol)) %>%
   filter(LifeStage == "Adult" | LifeStage == "Undifferentiated", 
          !is.na(daysExceedanceTol)) %>%
-  select(Status, Lstatus, fWY, Species, daysExceedanceTol, log_daysTol, daysTotal, Status2, Lstatus2) %>%
+  select(Status, Lstatus, fWY, Species, daysExceedanceTol, log_daysTol, sqrt_daysTol, daysTotal, Status2, Lstatus2) %>%
   unique()
 
 str(data_adult_tol)
@@ -67,29 +68,37 @@ str(data_adult_tol)
 ## normality
 ```{r}
 hist(data_adult_tol$daysExceedanceTol)
+hist(data_adult_tol$sqrt_daysTol)
 hist(data_adult_tol$log_daysTol)
 ```
 
 ## plot categories
 ```{r}
-ggplot(data_adult_tol, aes(x = Status, y = daysExceedanceTol)) + geom_boxplot()
+ggplot(data_adult_tol, aes(x = Status, y = daysExceedanceTol)) + geom_boxplot() + theme(axis.text = element_text(size = 12))
 ggplot(data_adult_tol, aes(x = Lstatus, y = daysExceedanceTol)) + geom_boxplot()
 
-ggplot(data_adult_tol, aes(y = daysExceedanceTol)) + geom_histogram() + facet_wrap(~Lstatus)
-ggplot(data_adult_tol, aes(y = log_daysTol)) + geom_histogram() + facet_wrap(~Lstatus)
+ggplot(data_adult_tol, aes(y = daysExceedanceTol)) + geom_histogram() + facet_wrap(~Lstatus, scales = "free")
+ggplot(data_adult_tol, aes(y = sr_daysTol)) + geom_histogram() + facet_wrap(~Lstatus)
 ```
 
 ## t-test: significant
 ```{r}
-t.test(data_adult_tol$Status2, data_adult_tol$log_daysTol)
+t.test(data_adult_tol$Status2, data_adult_tol$sqrt_daysTol)
 t.test(data_adult_tol$Lstatus2, data_adult_tol$daysExceedanceTol)
-t.test(data_adult_tol$Lstatus2, data_adult_tol$log_daysTol)
+t.test(data_adult_tol$Lstatus2, data_adult_tol$sqrt_daysTol)
 ```
+
+## kruskal wallis test
+```{r}
+kruskal.test(data_adult_tol$Status2, data_adult_tol$daysExceedanceTol)
+kruskal.test(data_adult_tol$Lstatus2, data_adult_tol$daysExceedanceTol)
+```
+
 
 ## lm
 ### by native status
 ```{r}
-mAdult1 <- lm(log_daysTol ~ Status, data = data_adult_tol)
+mAdult1 <- lm(sqrt_daysTol ~ Status, data = data_adult_tol)
 summary(mAdult1)
 anova(mAdult1)
 par(mfrow = c(2,2))
@@ -103,13 +112,14 @@ summary(mAdult1)
 anova(mAdult1)
 par(mfrow = c(2,2))
 plot(mAdult1)
+
 ```
 
 
 
 ### by listed status
 ```{r}
-mAdult2 <- lm(log_daysTol ~ Lstatus, data = data_adult_tol)
+mAdult2 <- lm(sqrt_daysTol ~ Lstatus, data = data_adult_tol)
 summary(mAdult2)
 anova(mAdult2)
 par(mfrow = c(2,2))
@@ -129,42 +139,95 @@ plot(mAdult2b)
 
 ### by native status
 ```{r}
-mAdultStat <- lmer(log_daysTol ~ Status + (1|fWY), data = data_adult_tol)
+mAdultStat <- lmer(log_daysTol ~ Status + (1|Species), data = data_adult_tol)
 summary(mAdultStat)
+```
+
+```{r}
+mAdultStatusb <- glmer(cbind(daysExceedanceTol,daysTotal) ~ Status + (1|Species), data = data_adult_tol, family = "binomial")
+summary(mAdultStatusb)
+
+par(mfrow = c(2,3))
+resid.tolb = resid(mAdultStatusb, type = "pearson")
+lev2a = hatvalues(mAdultStatusb)
+plot(mAdultStatusb)
+qqnorm(resid(mAdultStatusb))
+qqline(resid(mAdultStatusb))
+plot(lev2a, y = resid.tolb)
+hist(resid.tolb)
+plot(resid.tolb)
+plot(data_adult_tol$Status, resid.tolb)
+acf(resid.tolb)
+
+re_m_tolb <- as.data.frame(ranef(mAdultStatusb))
+
+ggplot(re_m_tolb) + 
+  geom_point(aes(grp, condval)) +
+  geom_errorbar(aes(x = grp, ymin = condval-condsd, ymax = condval+condsd), width = 0.3) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 0.95),
+      axis.title = element_blank())
 ```
 
 ### by listed status
 ```{r}
-mAdultList <- lmer(log_daysTol ~ Lstatus + (1|fWY), data = data_adult_tol)
+mAdultList <- lmer(sqrt_daysTol ~ Lstatus + (1|Species), data = data_adult_tol)
 summary(mAdultList)
 ```
 
+binomial
 ```{r}
-mAdultListb <- glmer(cbind(daysExceedanceTol,daysTotal) ~ Lstatus + (1|fWY), data = data_adult_tol, family = "binomial")
+mAdultListb <- glmer(cbind(daysExceedanceTol,daysTotal) ~ Lstatus + (1|Species), data = data_adult_tol, family = "binomial")
 summary(mAdultListb)
+
+par(mfrow = c(2,3))
+resid.tolb = resid(mAdultListb, type = "pearson")
+lev2a = hatvalues(mAdultListb)
+plot(mAdultListb)
+qqnorm(resid(mAdultListb))
+qqline(resid(mAdultListb))
+plot(lev2a, y = resid.tolb)
+hist(resid.tolb)
+plot(resid.tolb)
+plot(data_adult_tol$Lstatus, resid.tolb)
+acf(resid.tolb)
+
+re_m_tolb <- as.data.frame(ranef(mAdultListb))
+
+ggplot(re_m_tolb) + 
+  geom_point(aes(grp, condval)) +
+  geom_errorbar(aes(x = grp, ymin = condval-condsd, ymax = condval+condsd), width = 0.3) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 0.95),
+      axis.title = element_blank())
 ```
 
 # Adult days optimum
 ## dataset
 ```{r}
 data_adult_opt <- data_exceedance %>%
+  mutate(log_daysOpt = log(daysExceedanceOpt + 1),
+         sqrt_daysOpt = sqrt(daysExceedanceOpt)) %>%
   filter(LifeStage == "Adult" | LifeStage == "Undifferentiated",  
          !is.na(daysExceedanceOpt)) %>%
-  select(Status, Lstatus, Status2, Lstatus2, fWY, Species, daysExceedanceOpt, daysTotal) %>%
-  unique()
+  select(Status, Lstatus, Status2, Lstatus2, fWY, Species, daysExceedanceOpt, log_daysOpt, sqrt_daysOpt, daysTotal) %>%
+  unique() 
 
 str(data_adult_opt)
 ```
 
 ## normality
 ```{r}
+par(mfrow = c(1,1))
 hist(data_adult_opt$daysExceedanceOpt)
+hist(data_adult_opt$sqrt_daysOpt)
+hist(data_adult_opt$log_daysOpt)
 ```
 
 ## plot categories
 ```{r}
-ggplot(data_adult_opt, aes(x = Status, y = daysExceedanceOpt)) + geom_boxplot()
-ggplot(data_adult_opt, aes(x = Lstatus, y = daysExceedanceOpt)) + geom_boxplot()
+ggplot(data_adult_opt, aes(x = Status, y = daysExceedanceOpt)) + geom_boxplot() + theme(axis.text = element_text(size = 12))
+ggplot(data_adult_opt, aes(x = Lstatus, y = daysExceedanceOpt)) + geom_boxplot()+ theme(axis.text = element_text(size = 12))
 
 ggplot(data_adult_opt, aes(y = daysExceedanceOpt)) + geom_histogram() + facet_wrap(~Lstatus)
 ```
@@ -175,6 +238,13 @@ t.test(data_adult_opt$Status2, data_adult_opt$daysExceedanceOpt)
 t.test(data_adult_opt$Lstatus2, data_adult_opt$daysExceedanceOpt)
 ```
 
+## kruskal wallis: significant
+```{r}
+kruskal.test(data_adult_opt$Status2, data_adult_opt$daysExceedanceOpt)
+kruskal.test(data_adult_opt$Lstatus2, data_adult_opt$daysExceedanceOpt)
+```
+
+
 ## lm
 ### by native status
 ```{r}
@@ -183,6 +253,14 @@ summary(mAdult1_o)
 anova(mAdult1_o)
 par(mfrow = c(2,2))
 plot(mAdult1_o)
+```
+
+```{r}
+mAdult1b_o <- glm(cbind(daysExceedanceOpt, daysTotal) ~ Status, data = data_adult_opt, family = binomial)
+summary(mAdult1b_o)
+anova(mAdult1b_o)
+par(mfrow = c(2,2))
+plot(mAdult1b_o)
 ```
 
 
@@ -207,23 +285,101 @@ plot(mAdult2b_o)
 
 ### by native status
 ```{r}
-mAdultStat_o <- lmer(daysExceedanceOpt ~ Status + (1|fWY), data = data_adult_opt)
+mAdultStat_o <- lmer(daysExceedanceOpt ~ Status + (1|Species), data = data_adult_opt)
 summary(mAdultStat_o)
-```
 
-### by listed status
-```{r}
-mAdultList_o <- lmer(daysExceedanceOpt ~ Lstatus + (1|fWY), data = data_adult_opt)
-summary(mAdultList_o)
+
+par(mfrow = c(2,3))
+resid.opt = resid(mAdultStat_o, type = "pearson")
+lev2a = hatvalues(mAdultStat_o)
+plot(mAdultStat_o)
+qqnorm(resid(mAdultStat_o))
+qqline(resid(mAdultStat_o))
+plot(lev2a, y = resid.opt)
+hist(resid.opt)
+plot(resid.opt)
+plot(data_adult_opt$Status, resid.opt)
+acf(resid.opt)
 ```
 
 binomial
 ```{r}
-mAdultListb_o <- glmer(cbind(daysExceedanceOpt,daysTotal) ~ Lstatus +  (1|fWY), data = data_adult_opt, family = "binomial")
-summary(mAdultListb_o)
+mAdultStat_ob <- glmer(cbind(daysExceedanceOpt,daysTotal) ~ Status +  (1|Species), data = data_adult_opt, family = "binomial")
+summary(mAdultStat_ob)
+
+par(mfrow = c(2,3))
+resid.optb = resid(mAdultStat_ob, type = "pearson")
+lev2a = hatvalues(mAdultStat_ob)
+plot(mAdultStat_ob)
+qqnorm(resid(mAdultStat_ob))
+qqline(resid(mAdultStat_ob))
+plot(lev2a, y = resid.optb)
+hist(resid.optb)
+plot(resid.optb)
+plot(data_adult_opt$Status, resid.optb)
+acf(resid.optb)
+
+re_m_ob <- as.data.frame(ranef(mAdultStat_ob))
+
+ggplot(re_m_ob) + 
+  geom_point(aes(grp, condval)) +
+  geom_errorbar(aes(x = grp, ymin = condval-condsd, ymax = condval+condsd), width = 0.3) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 0.95),
+      axis.title = element_blank())
 ```
 
-# Tolerance
+
+### by listed status
+```{r}
+mAdultList_o <- lmer(daysExceedanceOpt ~ Lstatus + (1|Species), data = data_adult_opt)
+summary(mAdultList_o)
+
+par(mfrow = c(2,3))
+resid.opt = resid(mAdultList_o, type = "pearson")
+lev2a = hatvalues(mAdultList_o)
+plot(mAdultList_o)
+qqnorm(resid(mAdultList_o))
+qqline(resid(mAdultList_o))
+plot(lev2a, y = resid.opt)
+hist(resid.opt)
+plot(resid.opt)
+plot(data_adult_opt$Lstatus, resid.opt)
+acf(resid.opt)
+```
+
+binomial
+```{r}
+mAdultList_ob <- glmer(cbind(daysExceedanceOpt,daysTotal) ~ Lstatus +  (1|Species), data = data_adult_opt, family = "binomial")
+summary(mAdultList_ob)
+
+par(mfrow = c(2,3))
+resid.optb = resid(mAdultList_ob, type = "pearson")
+lev2a = hatvalues(mAdultList_ob)
+plot(mAdultList_ob)
+qqnorm(resid(mAdultList_ob))
+qqline(resid(mAdultList_ob))
+plot(lev2a, y = resid.optb)
+hist(resid.optb)
+plot(resid.optb)
+plot(data_adult_opt$Lstatus, resid.optb)
+acf(resid.optb)
+
+re_m_ob <- as.data.frame(ranef(mAdultList_ob))
+
+ggplot(re_m_ob) + 
+  geom_point(aes(grp, condval)) +
+  geom_errorbar(aes(x = grp, ymin = condval-condsd, ymax = condval+condsd), width = 0.3) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 0.95),
+      axis.title = element_blank())
+```
+
+
+
+
+
+# Tolerance Values
 ```{r}
 tol <- data_exceedance %>%
   filter(LifeStage == "Adult" | LifeStage == "Undifferentiated", 
@@ -234,13 +390,21 @@ tol <- data_exceedance %>%
 
 Not normally distributed...
 ```{r}
+par(mfrow = c(1,1))
 hist(tol$Tolerance_Upper)
+hist(sqrt(tol$Tolerance_Upper))
 ```
 
 ## t-test
 ```{r}
 t.test(tol$Status2, tol$Tolerance_Upper)
 t.test(tol$Lstatus2, tol$Tolerance_Upper)
+```
+
+## kruskal wallis: ns
+```{r}
+kruskal.test(tol$Status2, tol$Tolerance_Upper)
+kruskal.test(tol$Lstatus2, tol$Tolerance_Upper)
 ```
 
 ## lm
@@ -261,10 +425,12 @@ summary(mTol2)
 anova(mTol2)
 par(mfrow = c(2,2))
 plot(mTol2)
+par(mfrow = c(1,1))
+hist(resid(mTol2, "pearson"))
 ```
 
 
-# Optimum - only 17 values
+# Optimum Values - only 17 values
 ```{r}
 opt <- data_exceedance %>%
   filter(LifeStage == "Adult" | LifeStage == "Undifferentiated", 
@@ -276,12 +442,19 @@ opt <- data_exceedance %>%
 Not normally distributed...
 ```{r}
 hist(opt$Suboptimum_Upper)
+hist(sqrt(opt$Suboptimum_Upper))
 ```
 
 ## t-test: Significant
 ```{r}
 t.test(opt$Status2, opt$Suboptimum_Upper)
 t.test(opt$Lstatus2, opt$Suboptimum_Upper)
+```
+
+## kruskal wallis: ns
+```{r}
+kruskal.test(opt$Status2, opt$Suboptimum_Upper)
+kruskal.test(opt$Lstatus2, opt$Suboptimum_Upper)
 ```
 
 ## lm
@@ -292,6 +465,7 @@ summary(mOpt)
 anova(mOpt)
 par(mfrow = c(2,2))
 plot(mOpt)
+hist(resid(mOpt, "pearson"))
 ```
 
 ### Listed status: significant
@@ -301,4 +475,6 @@ summary(mOpt2)
 anova(mOpt2)
 par(mfrow = c(2,2))
 plot(mOpt2)
+par(mfrow = c(1,1))
+hist(resid(mOpt2, "pearson"))
 ```

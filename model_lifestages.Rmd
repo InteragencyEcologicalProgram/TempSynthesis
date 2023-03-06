@@ -127,16 +127,18 @@ tol_days <- tol_days1 %>%
 
 ## normality
 ```{r}
+par(mfrow = c(1,1))
 hist(tol$Tol_upper)
 hist(log(tol$Tol_upper))
+hist(sqrt(tol$Tol_upper))
 hist(tol$Tol_lower)
 hist(log(tol$Tol_lower))
 ```
 
 ## plot categories
 ```{r}
-ggplot(tol, aes(x = LS, y = Tol_upper)) + geom_boxplot()
-ggplot(tol, aes(x = LS, y = Tol_lower)) + geom_boxplot()
+ggplot(tol, aes(x = LS, y = Tol_upper)) + geom_boxplot() + theme(axis.text = element_text(size = 12))
+ggplot(tol, aes(x = LS, y = Tol_lower)) + geom_boxplot() + theme(axis.text = element_text(size = 12))
 
 ggplot(tol, aes(y = Tol_upper)) + geom_histogram(binwidth = 5) + facet_wrap(~LS)
 ggplot(tol, aes(y = Tol_lower)) + geom_histogram(binwidth = 5) + facet_wrap(~LS)
@@ -176,18 +178,26 @@ plot(mLS2)
 
 ## plot categories
 ```{r}
-ggplot(tol_days, aes(x = LS, y = days_upper)) + geom_boxplot()
-ggplot(tol_days, aes(x = LS, y = days_lower)) + geom_boxplot()
+ggplot(tol_days, aes(x = LS, y = days_upper)) + geom_boxplot() + theme(axis.text = element_text(size = 12))
+ggplot(tol_days, aes(x = LS, y = days_lower)) + geom_boxplot()+ theme(axis.text = element_text(size = 12))
 
 ggplot(tol_days, aes(y = days_upper)) + geom_histogram(binwidth = 5) + facet_wrap(~LS)
 ggplot(tol_days, aes(y = days_lower)) + geom_histogram(binwdith = 5) + facet_wrap(~LS)
 ggplot(tol_days, aes(y = logdays)) + geom_histogram(binwidth = 2) + facet_wrap(~LS)
+
+par(mfrow = c(1,1))
+hist(tol_days$days_upper)
+hist(log(tol_days$days_upper))
+hist(sqrt(tol_days$days_upper))
+hist(tol_days$days_lower)
+hist(log(tol_days$days_lower))
+hist(sqrt(tol_days$days_lower))
 ```
 
 ## t-test: significant
 ```{r}
-t.test(tol_days$LS2, tol_days$days_upper)
-t.test(tol_days$LS2, tol_days$days_lower)
+t.test(tol_days$LS2, log(tol_days$days_upper +1))
+t.test(tol_days$LS2, log(tol_days$days_lower +1))
 ```
 
 ## kruskal wallis: ns
@@ -198,14 +208,14 @@ kruskal.test(tol_days$LS2, tol_days$days_lower)
 
 ## lm
 ```{r}
-mLSd1 <- lm(days_upper ~ LS, data = tol_days)
+mLSd1 <- lm(log(days_upper+1) ~ LS, data = tol_days)
 summary(mLSd1)
 anova(mLSd1)
 par(mfrow = c(2,2))
 plot(mLSd1)
 
 
-mLSd2 <- lm(days_lower ~ LS, data = tol_days)
+mLSd2 <- lm(sqrt(days_lower) ~ LS, data = tol_days)
 summary(mLSd2)
 anova(mLSd2)
 par(mfrow = c(2,2))
@@ -234,10 +244,10 @@ plot(resid(mLSd2b))
 
 ## lmer by species
 ```{r}
-mLSd3 <- lmer(days_upper ~ LS + (1|Species), data = tol_days)
+mLSd3 <- lmer(log(days_upper+1) ~ LS + (1|Species), data = tol_days)
 summary(mLSd3)
 
-mLSd4 <- lmer(days_lower ~ LS + (1|Species), data = tol_days)
+mLSd4 <- lmer(sqrt(days_lower) ~ LS + (1|Species), data = tol_days)
 summary(mLSd4)
 ```
 
