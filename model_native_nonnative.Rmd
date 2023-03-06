@@ -19,6 +19,7 @@ library(tidyr)
 
 library(lme4)
 library(lmerTest)
+library(emmeans)
 
 library(sjPlot)
 ```
@@ -200,7 +201,22 @@ ggplot(re_m_tolb) +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 90, hjust = 0.95),
       axis.title = element_blank())
+
 ```
+
+```{r}
+library(effects)
+mem_eff=Effect(focal.predictors = "Temperature", mod=mem,
+xlevels=list(Temperature=temp_seq))
+```
+
+#### post hoc
+```{r}
+mtol.emm <- emmeans(mAdultListb , "Lstatus", data=data_adult_tol)
+pairs(mtol.emm, adjust = "tukey")
+plot(mtol.emm, comparisons = TRUE, type = "response") + theme_bw()
+```
+
 
 # Adult days optimum
 ## dataset
@@ -375,6 +391,12 @@ ggplot(re_m_ob) +
       axis.title = element_blank())
 ```
 
+#### post hoc
+```{r}
+mopt.emm <- emmeans(mAdultList_ob , "Lstatus", data=data_adult_opt)
+pairs(mopt.emm, adjust = "tukey")
+plot(mopt.emm, comparisons = TRUE, type = "response") + theme_bw()
+```
 
 
 
