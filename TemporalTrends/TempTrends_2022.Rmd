@@ -1,0 +1,1181 @@
+---
+title: "TempTrends_2022"
+author: "Cat"
+date: '2022-08-01'
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+# Temperature Trends Code
+
+* Models looking at year and region 
+* Random effect of Station and Month
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(here)
+library(tidyverse)
+library(readr)
+library(lubridate)
+library(lme4) # glmm
+library(lmerTest) #glmm p values
+library(effects)
+library(wateRshedTools)
+library(mgcv)
+library(visreg)
+library(emmeans)
+```
+
+## Read in data
+```{r}
+tempMonthly <- readRDS(here("Data", "tempMonthly_20220801.rds"))
+tempDaily <- readRDS(here("Data", "tempDaily_20210811.rds"))
+temp20 <- readRDS(here("Data", "temp20years_20220125.rds"))
+```
+
+## Manipulations
+
+### 20 year
+```{r}
+temp20Mon0 <- temp20 %>% 
+  group_by(Region, Station, HabitatType, WY, WYType2_Sac, Index_c, Month) %>%
+  summarize(maxTemp = max(Temp),
+            minTemp = min(Temp),
+            meanTemp = round(mean(Temp),1),
+            rangeTemp = maxTemp-minTemp) %>%
+  ungroup()
+
+temp20Av <- temp20 %>%
+  group_by(Region, Station, Year, WY, WYType2_Sac, Month, Date) %>%
+  summarize(maxTemp = max(Temp),
+            minTemp = min(Temp)) %>%
+  ungroup() %>%
+  group_by(Region, Station, Year, WY, WYType2_Sac,Month) %>%
+  summarize(maxAvTemp = round(mean(maxTemp),1),
+            minAvTemp = round(mean(minTemp),1))
+
+
+temp20Mon <- left_join(temp20Mon0, temp20Av) %>%
+  select(Region, Station, HabitatType,Year,  WY, WYType2_Sac, Index_c, Month, maxTemp, maxAvTemp, minAvTemp, everything())%>%
+  mutate(fWY = factor(WY),
+         fMonth = factor(Month),
+         Season = ifelse(Month %in% c(5,6,7,8,9), "Dry", "Wet"),
+         Season = factor(Season, levels = c("Wet", "Dry"))) %>%
+  mutate(Region2 = case_when(Region == "Sac River" ~ "SacRiver",
+                            Region == "Suisun Bay" ~ "SuisunBay",
+                            Region == "San Joaquin" ~ "SanJoaquin",
+                            Region == "Suisun Marsh" ~ "SuisunMarsh",
+                            Region == "North Delta" ~ "NorthDelta",
+                            TRUE~ Region))
+```
+
+### 9 year
+```{r}
+temp <- tempMonthly  %>%
+  select(Region, Station, HabitatType,Year,  WY, WYType2_Sac, Index_c, Month, maxTemp, maxAvTemp, minAvTemp, everything())%>%
+  mutate(fWY = factor(WY),
+         fMonth = factor(Month),
+         Season = ifelse(Month %in% c(5,6,7,8,9), "Dry", "Wet"),
+         Season = factor(Season, levels = c("Wet", "Dry"))) %>%
+  mutate(Region = case_when(Region == "Far North" ~ "North Delta",
+                            TRUE ~ Region)) %>%
+  mutate(Region2 = case_when(Region == "Sac River" ~ "SacRiver",
+                            Region == "Suisun Bay" ~ "SuisunBay",
+                            Region == "San Joaquin" ~ "SanJoaquin",
+                            Region == "Suisun Marsh" ~ "SuisunMarsh",
+                            Region == "North Delta" ~ "NorthDelta",
+                            TRUE~ Region))
+```
+
+## Plots
+```{r}
+ggplot(temp, aes(WY, maxAvTemp, color = fMonth)) + geom_jitter() + geom_smooth(aes(color = fMonth)) + facet_wrap(~Region)
+ggplot(temp20Mon, aes(WY, maxAvTemp, color = fMonth)) + geom_jitter() + geom_smooth(aes(color = fMonth)) +facet_wrap(~Region)
+ggplot(temp, aes(WY, meanTemp, color = fMonth)) + geom_jitter() + geom_smooth(aes(color = fMonth)) +facet_wrap(~Region)
+ggplot(temp20Mon, aes(WY, meanTemp, color = fMonth)) + geom_jitter() + geom_smooth(aes(color = fMonth)) +facet_wrap(~Region)
+ggplot(temp, aes(WY, minAvTemp, color = fMonth)) + geom_jitter() + geom_smooth(aes(color = fMonth)) +facet_wrap(~Region)
+ggplot(temp20Mon, aes(WY, minAvTemp, color = fMonth)) + geom_jitter() + geom_smooth(aes(color = fMonth)) +facet_wrap(~Region)
+```
+
+
+## Models
+
+* Models as of 3/5/2023
+
+### Run models
+```{r}
+summary(m.max <- lmer(maxAvTemp ~ fWY + Region2 + (1|Station) + (1|fMonth), data = temp20Mon))
+
+summary(m.min <- lmer(minAvTemp ~ fWY + Region2 + (1|Station) + (1|fMonth), data = temp20Mon))
+
+summary(m.mean <- lmer(meanTemp ~ fWY + Region2 + (1|Station) + (1|fMonth), data = temp20Mon))
+
+
+summary(m.max10 <- lmer(maxAvTemp ~ fWY + Region2 + (1|Station) + (1|fMonth), data = temp))
+
+summary(m.min10 <- lmer(minAvTemp ~ fWY + Region2 + (1|Station) + (1|fMonth), data = temp))
+
+summary(m.mean10 <- lmer(meanTemp ~ fWY + Region2 + (1|Station) + (1|fMonth), data = temp))
+
+```
+
+### CI
+
+#### max
+```{r}
+t_ci_m.max <- as.data.frame(confint(m.max))[-c(1:3),]
+
+fixed_m.max <- as.data.frame(fixef(m.max)) %>%
+  rename(Estimate0 = `fixef(m.max)`)%>%
+  mutate(Var = rownames(.))
+
+fixedest = fixed_m.max[1,1]
+est1 = t_ci_m.max[1,1]
+est2 = t_ci_m.max[1,2]
+
+ci_mmax <- t_ci_m.max %>%
+  mutate(Var = rownames(.)) %>%
+  left_join(fixed_m.max, by = "Var") %>%
+  janitor::clean_names() %>%
+  mutate(ci_25 = ifelse(x2_5_percent == est1, est1, est1 + x2_5_percent),
+         ci_975 = ifelse(x97_5_percent == est2, est2, est2 + x97_5_percent),
+         estimate = ifelse(estimate0 == fixedest, fixedest, fixedest + estimate0))
+
+ci_mmax_region <- ci_mmax %>% filter(grepl("Intercept", var) | grepl("Region", var)) %>%
+  mutate(Region = case_when(grepl("Intercept",var) ~ "NorthDelta",
+                            TRUE ~ var)) %>%
+  mutate(Region = gsub("Region2", "", Region))
+
+ci_mmax_wy <- ci_mmax %>% filter(grepl("Intercept", var) | grepl("fWY", var))%>%
+  mutate(WY = case_when(grepl("Intercept",var) ~ "fWY2000",
+                            TRUE ~ var))%>%
+  mutate(WY = gsub("f", "", WY))
+```
+
+```{r}
+ggplot(ci_mmax_region) + 
+   geom_errorbar(aes(y = Region, xmin = ci_25, xmax = ci_975), size = 2, color = "darkslategray4", width = 0.1) +
+  geom_point(aes(estimate, Region), size = 2.5) + 
+ 
+  labs(x = "Water Temperature with 95% Confidence Intervals") +
+  theme_bw() +
+  theme(axis.title.y = element_blank())
+
+
+ggplot(ci_mmax_wy) + 
+   geom_errorbar(aes(y = WY, xmin = ci_25, xmax = ci_975), size = 2, color = "darkslategray4", width = 0.1) +
+  geom_point(aes(estimate, WY), size = 2.5) + 
+ 
+  labs(x = "Water Temperature with 95% Confidence Intervals") +
+  theme_bw() +
+  theme(axis.title.y = element_blank())
+```
+
+#### min
+
+```{r}
+t_ci_m.min <- as.data.frame(confint(m.min))[-c(1:3),]
+
+fixed_m.min <- as.data.frame(fixef(m.min)) %>%
+  rename(Estimate0 = `fixef(m.min)`)%>%
+  mutate(Var = rownames(.))
+         
+fixedest_min = fixed_m.min[1,1]
+est1_min = t_ci_m.min[1,1]
+est2_min = t_ci_m.min[1,2]
+
+
+ci_mmin <- t_ci_m.min %>%
+  mutate(Var = rownames(.)) %>%
+  left_join(fixed_m.min, by = "Var") %>%
+  janitor::clean_names() %>%
+  mutate(ci_25 = ifelse(x2_5_percent == est1_min, est1_min, est1_min + x2_5_percent),
+         ci_975 = ifelse(x97_5_percent == est2_min, est2_min, est2_min + x97_5_percent),
+         estimate = ifelse(estimate0 == fixedest_min, fixedest_min, fixedest_min + estimate0))
+
+ci_mmin_region <- ci_mmin %>% filter(grepl("Intercept", var) | grepl("Region", var)) %>%
+  mutate(Region = case_when(grepl("Intercept",var) ~ "NorthDelta",
+                            TRUE ~ var)) %>%
+  mutate(Region = gsub("Region2", "", Region))
+
+ci_mmin_wy <- ci_mmin %>% filter(grepl("Intercept", var) | grepl("fWY", var))%>%
+  mutate(WY = case_when(grepl("Intercept",var) ~ "fWY2000",
+                            TRUE ~ var))%>%
+  mutate(WY = gsub("f", "", WY))
+```
+
+```{r}
+ggplot(ci_mmin_region) + 
+   geom_errorbar(aes(y = Region, xmin = ci_25, xmax = ci_975), size = 2, color = "darkslategray4", width = 0.1) +
+  geom_point(aes(estimate, Region), size = 2.5) + 
+ 
+  labs(x = "Water Temperature with 95% Confidence Intervals") +
+  theme_bw() +
+  theme(axis.title.y = element_blank())
+
+ggplot(ci_mmin_wy) + 
+   geom_errorbar(aes(y = WY, xmin = ci_25, xmax = ci_975), size = 2, color = "darkslategray4", width = 0.1) +
+  geom_point(aes(estimate, WY), size = 2.5) + 
+ 
+  labs(x = "Water Temperature with 95% Confidence Intervals") +
+  theme_bw() +
+  theme(axis.title.y = element_blank())
+```
+
+#### mean
+```{r}
+t_ci_m.mean <- as.data.frame(confint(m.mean))[-c(1:3),]
+
+fixed_m.mean <- as.data.frame(fixef(m.mean)) %>%
+  rename(Estimate0 = `fixef(m.mean)`)%>%
+  mutate(Var = rownames(.))
+
+fixedest_mean = fixed_m.mean[1,1]
+est1_mean = t_ci_m.mean[1,1]
+est2_mean = t_ci_m.mean[1,2]
+
+ci_mmean <- t_ci_m.mean %>%
+  mutate(Var = rownames(.)) %>%
+  left_join(fixed_m.mean, by = "Var") %>%
+  janitor::clean_names() %>%
+  mutate(ci_25 = ifelse(x2_5_percent == est1_mean, est1_mean, est1_mean + x2_5_percent),
+         ci_975 = ifelse(x97_5_percent == est2_mean, est2_mean, est2_mean + x97_5_percent),
+         estimate = ifelse(estimate0 == fixedest_mean, fixedest_mean, fixedest_mean + estimate0))
+
+ci_mmean_region <- ci_mmean %>% filter(grepl("Intercept", var) | grepl("Region", var)) %>%
+  mutate(Region = case_when(grepl("Intercept",var) ~ "NorthDelta",
+                            TRUE ~ var)) %>%
+  mutate(Region = gsub("Region2", "", Region))
+
+ci_mmean_wy <- ci_mmean %>% filter(grepl("Intercept", var) | grepl("fWY", var))%>%
+  mutate(WY = case_when(grepl("Intercept",var) ~ "fWY2000",
+                            TRUE ~ var))%>%
+  mutate(WY = gsub("f", "", WY))
+```
+
+```{r}
+ggplot(ci_mmean_region) + 
+   geom_errorbar(aes(y = Region, xmin = ci_25, xmax = ci_975), size = 2, color = "darkslategray4", width = 0.1) +
+  geom_point(aes(estimate, Region), size = 2.5) + 
+ 
+  labs(x = "Water Temperature with 95% Confidence Intervals") +
+  theme_bw() +
+  theme(axis.title.y = element_blank())
+
+ggplot(ci_mmean_wy) + 
+   geom_errorbar(aes(y = WY, xmin = ci_25, xmax = ci_975), size = 2, color = "darkslategray4", width = 0.1) +
+  geom_point(aes(estimate, WY), size = 2.5) + 
+ 
+  labs(x = "Water Temperature with 95% Confididence Intervals") +
+  theme_bw() +
+  theme(axis.title.y = element_blank())
+```
+
+
+
+### RE
+
+#### max
+```{r}
+re_m.max <- as.data.frame(ranef(m.max))
+
+ggplot(re_m.max) + 
+  geom_point(aes(grp, condval)) +
+  geom_errorbar(aes(x = grp, ymin = condval-condsd, ymax = condval+condsd), width = 0.3) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 0.95),
+        axis.title = element_blank())
+```
+
+#### min
+```{r}
+re_m.min <- as.data.frame(ranef(m.min))
+
+ggplot(re_m.min) + 
+  geom_point(aes(grp, condval)) +
+  geom_errorbar(aes(x = grp, ymin = condval-condsd, ymax = condval+condsd), width = 0.3) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 0.95),
+        axis.title = element_blank())
+```
+
+### Diagnostics
+```{r}
+par(mfrow = c(2,4))
+resid.max1 = resid(m.max, type = "pearson")
+lev1a = hatvalues(m.max)
+plot(m.max)
+qqnorm(resid(m.max))
+qqline(resid(m.max))
+plot(lev1a, y = resid.max1)
+hist(resid.max1)
+plot(resid.max1)
+plot(temp20Mon$Region, resid.max1)
+plot(temp20Mon$fWY, resid.max1)
+acf(resid.max1)
+
+par(mfrow = c(2,4))
+resid.min1 = resid(m.min, type = "pearson")
+lev2a = hatvalues(m.min)
+plot(m.min)
+qqnorm(resid(m.min))
+qqline(resid(m.min))
+plot(lev2a, y = resid.min1)
+hist(resid.min1)
+plot(resid.min1)
+plot(temp20Mon$Month, resid.min1)
+plot(temp20Mon$fWY, resid.min1)
+acf(resid.min1)
+
+par(mfrow = c(2,4))
+resid.mean1 = resid(m.mean, type = "pearson")
+lev3a = hatvalues(m.mean)
+plot(m.mean)
+qqnorm(resid(m.mean))
+qqline(resid(m.mean))
+plot(lev3a, y = resid.mean1)
+hist(resid.mean1)
+plot(resid.mean1)
+plot(temp20Mon$Month, resid.mean1)
+plot(temp20Mon$fWY, resid.mean1)
+acf(resid.mean1)
+```
+
+### Post hoc
+#### max
+```{r}
+emmaxFit1 <- emmeans(m.max, "fWY", data=temp20Mon)
+pairs_mmax_wy <- as.data.frame(pairs(emmaxFit1, adjust="tukey")) %>%
+  mutate(Sig = ifelse(p.value<0.05, "yes", "no")) %>%
+  arrange(Sig)
+plot(emmaxFit1, comparisons = TRUE)
+
+emmaxFit2 <- emmeans(m.max, "Region2", data=temp20Mon)
+pairs_mmax_region <- as.data.frame(pairs(emmaxFit2, adjust="tukey")) %>%
+  mutate(Sig = ifelse(p.value<0.05, "yes", "no"))%>%
+  arrange(Sig)
+plot(emmaxFit2, comparisons = TRUE)
+```
+
+#### min
+```{r}
+emminFit1 <- emmeans(m.min, "fWY", data=temp20Mon)
+pairs_mmin_wy <- as.data.frame(pairs(emminFit1, adjust="tukey")) %>%
+  mutate(Sig = ifelse(p.value<0.05, "yes", "no"))%>%
+  arrange(Sig)
+plot(emminFit1, comparisons = TRUE)
+
+emminFit2 <- emmeans(m.min, "Region2", data=temp20Mon)
+pairs_mmin_region <- as.data.frame(pairs(emminFit2, adjust="tukey")) %>%
+  mutate(Sig = ifelse(p.value<0.05, "yes", "no"))%>%
+  arrange(Sig)
+plot(emminFit2, comparisons = TRUE)
+```
+
+#### mean
+```{r}
+emmeanFit1 <- emmeans(m.mean, "fWY", data=temp20Mon)
+pairs_mmean_wy <- as.data.frame(pairs(emmeanFit1, adjust="tukey")) %>%
+  mutate(Sig = ifelse(p.value<0.05, "yes", "no"))%>%
+  arrange(Sig)
+plot(emmeanFit1, comparisons = TRUE)
+
+emmeanFit2 <- emmeans(m.mean, "Region2", data=temp20Mon)
+pairs_mmean_region <- as.data.frame(pairs(emmeanFit2, adjust="tukey")) %>%
+  mutate(Sig = ifelse(p.value<0.05, "yes", "no"))%>%
+  arrange(Sig)
+plot(emmeanFit2, comparisons = TRUE)
+```
+
+### Write out emmeans results
+```{r}
+pairs_mmax <- rbind(pairs_mmax_region, pairs_mmax_wy)
+pairs_mmin <- rbind(pairs_mmin_region, pairs_mmin_wy)
+pairs_mmean <- rbind(pairs_mmean_region, pairs_mmean_wy)
+write_csv(pairs_mmax, "TemporalTrends/emmeans_results/emmeans_m.max.csv")
+write_csv(pairs_mmean, "TemporalTrends/emmeans_results/emmeans_m.mean.csv")
+write_csv(pairs_mmin, "TemporalTrends/emmeans_results/emmeans_m.min.csv")
+```
+
+### Post hoc 10 year
+#### max
+```{r}
+emmaxFit1 <- emmeans(m.max10, "fWY", data=temp)
+pairs_mmax_wy10 <- as.data.frame(pairs(emmaxFit1, adjust="tukey")) %>%
+  mutate(Sig = ifelse(p.value<0.05, "yes", "no")) %>%
+  arrange(Sig)
+plot(emmaxFit1, comparisons = TRUE)+
+  labs(title = "Max")
+
+emmaxFit2 <- emmeans(m.max10, "Region2", data=temp)
+pairs_mmax_region10 <- as.data.frame(pairs(emmaxFit2, adjust="tukey")) %>%
+  mutate(Sig = ifelse(p.value<0.05, "yes", "no"))%>%
+  arrange(Sig)
+plot(emmaxFit2, comparisons = TRUE)+
+  labs(title = "Max")
+```
+
+#### min
+```{r}
+emminFit1 <- emmeans(m.min10, "fWY", data=temp)
+pairs_mmin_wy10 <- as.data.frame(pairs(emminFit1, adjust="tukey")) %>%
+  mutate(Sig = ifelse(p.value<0.05, "yes", "no"))%>%
+  arrange(Sig)
+plot(emminFit1, comparisons = TRUE) +
+  labs(title = "Min")
+
+emminFit2 <- emmeans(m.min10, "Region2", data=temp)
+pairs_mmin_region10 <- as.data.frame(pairs(emminFit2, adjust="tukey")) %>%
+  mutate(Sig = ifelse(p.value<0.05, "yes", "no"))%>%
+  arrange(Sig)
+plot(emminFit2, comparisons = TRUE)+
+  labs(title = "Min")
+```
+
+#### mean
+```{r}
+emmeanFit1 <- emmeans(m.mean10, "fWY", data=temp)
+pairs_mmean_wy10 <- as.data.frame(pairs(emmeanFit1, adjust="tukey")) %>%
+  mutate(Sig = ifelse(p.value<0.05, "yes", "no"))%>%
+  arrange(Sig)
+plot(emmeanFit1, comparisons = TRUE)+
+  labs(title = "Mean")
+
+emmeanFit2 <- emmeans(m.mean10, "Region2", data=temp)
+pairs_mmean_region10 <- as.data.frame(pairs(emmeanFit2, adjust="tukey")) %>%
+  mutate(Sig = ifelse(p.value<0.05, "yes", "no"))%>%
+  arrange(Sig)
+plot(emmeanFit2, comparisons = TRUE)+
+  labs(title = "Mean")
+```
+
+
+```{r}
+pairs_mmax10 <- rbind(pairs_mmax_region10, pairs_mmax_wy10)
+pairs_mmin10 <- rbind(pairs_mmin_region10, pairs_mmin_wy10)
+pairs_mmean10 <- rbind(pairs_mmean_region10, pairs_mmean_wy10)
+
+write_csv(pairs_mmax, "TemporalTrends/emmeans_results/emmeans_m.max10.csv")
+write_csv(pairs_mmean, "TemporalTrends/emmeans_results/emmeans_m.mean10.csv")
+write_csv(pairs_mmin, "TemporalTrends/emmeans_results/emmeans_m.min10.csv")
+```
+
+
+# Seasonal Model
+## Run model
+```{r}
+summary(m.maxs <- lmer(maxAvTemp ~ fWY + Season * Region2 + (1|Station) +(1|fMonth), data = temp20Mon))
+
+summary(m.mins <- lmer(minAvTemp ~ fWY + Season * Region2 + (1|Station) +(1|fMonth), data = temp20Mon))
+
+summary(m.means <- lmer(meanTemp ~ fWY + Season * Region2 + (1|Station) +(1|fMonth), data = temp20Mon))
+
+```
+
+## Plot results
+```{r}
+library(sjPlot)
+plot_model(m.maxs, type = "int") + labs(title = "Max") + theme_bw()
+plot_model(m.maxs)
+plot_model(m.mins, type = "int") + labs(title = "Min")+ theme_bw()
+plot_model(m.mins)
+plot_model(m.means, type = "int") + labs(title = "Mean")+ theme_bw()
+plot_model(m.means)
+```
+
+## Diagnostics
+
+```{r}
+par(mfrow = c(2,4))
+resid.maxs = resid(m.maxs, type = "pearson")
+lev2a = hatvalues(m.maxs)
+plot(m.maxs)
+qqnorm(resid(m.maxs))
+qqline(resid(m.maxs))
+plot(lev2a, y = resid.maxs)
+hist(resid.maxs)
+plot(resid.maxs)
+plot(temp20Mon$Region, resid.maxs)
+plot(temp20Mon$fWY, resid.maxs)
+plot(temp20Mon$Season, resid.maxs)
+acf(resid.maxs)
+
+par(mfrow = c(2,4))
+resid.mins = resid(m.mins, type = "pearson")
+lev2a = hatvalues(m.mins)
+plot(m.mins)
+qqnorm(resid(m.mins))
+qqline(resid(m.mins))
+plot(lev2a, y = resid.mins)
+hist(resid.mins)
+plot(resid.mins)
+plot(temp20Mon$Region, resid.mins)
+plot(temp20Mon$fWY, resid.mins)
+plot(temp20Mon$Season, resid.mins)
+acf(resid.mins)
+
+par(mfrow = c(2,4))
+resid.means = resid(m.means, type = "pearson")
+lev3a = hatvalues(m.means)
+plot(m.means)
+qqnorm(resid(m.means))
+qqline(resid(m.means))
+plot(lev3a, y = resid.means)
+hist(resid.means)
+plot(resid.means)
+plot(temp20Mon$Region, resid.means)
+plot(temp20Mon$fWY, resid.means)
+plot(factor(temp20Mon$Season), resid.means)
+acf(resid.means)
+```
+
+## RE
+#### max
+```{r}
+re_m.maxs <- as.data.frame(ranef(m.maxs))
+
+ggplot(re_m.maxs) + 
+  geom_point(aes(grp, condval)) +
+  geom_errorbar(aes(x = grp, ymin = condval-condsd, ymax = condval+condsd), width = 0.3) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 0.95),
+        axis.title = element_blank())
+```
+
+#### min
+```{r}
+re_m.mins <- as.data.frame(ranef(m.mins))
+
+ggplot(re_m.mins) + 
+  geom_point(aes(grp, condval)) +
+  geom_errorbar(aes(x = grp, ymin = condval-condsd, ymax = condval+condsd), width = 0.3) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 0.95),
+        axis.title = element_blank())
+```
+
+#### mean
+```{r}
+re_m.means <- as.data.frame(ranef(m.means))
+
+ggplot(re_m.means) + 
+  geom_point(aes(grp, condval)) +
+  geom_errorbar(aes(x = grp, ymin = condval-condsd, ymax = condval+condsd), width = 0.3) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 0.95),
+        axis.title = element_blank())
+```
+
+
+
+## Post hoc seasonal model 
+
+```{r}
+emm_options(pbkrtest.limit = 5384)
+```
+
+### max
+```{r}
+emmaxFit1 <- emmeans(m.maxs, "fWY", data=temp20Mon)
+(pairs_mmaxs_wy <- as.data.frame(pairs(emmaxFit1, adjust="tukey")) %>%
+  mutate(Sig = ifelse(p.value<0.05, "yes", "no")) %>%
+  arrange(Sig))
+plot(emmaxFit1, comparisons = TRUE)+
+  labs(title = "Max")
+
+# emmaxFit2 <- emmeans(m.maxs, "Region2", data=temp20Mon)
+# pairs_mmax_regions <- as.data.frame(pairs(emmaxFit2, adjust="tukey")) %>%
+#   mutate(Sig = ifelse(p.value<0.05, "yes", "no"))%>%
+#   arrange(Sig)
+
+emmaxFit2 <- emmeans(m.maxs, pairwise ~ Region2 | Season, adjust = "tukey", data = temp20Mon)
+emmip(m.maxs, fWY~ Region2|Season) + 
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle = 90))
+
+pairs_mmaxs_rs <- as.data.frame(emmeans(m.maxs, pairwise ~ Region2 | Season, data = temp20Mon))
+```
+
+#### min
+```{r}
+emminFit1 <- emmeans(m.mins, "fWY", data=temp20Mon)
+pairs_mmins_wy <- as.data.frame(pairs(emminFit1, adjust="tukey")) %>%
+  mutate(Sig = ifelse(p.value<0.05, "yes", "no"))%>%
+  arrange(Sig)
+plot(emminFit1, comparisons = TRUE) +
+  labs(title = "Min")
+
+emminFit2 <- emmeans(m.mins, pairwise ~ Region2 | Season, adjust = "tukey", data = temp20Mon)
+emmip(m.mins, fWY~ Region2|Season) + 
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle = 90))
+
+pairs_mmins_rs <- as.data.frame(emmeans(m.mins, pairwise ~ Region2 | Season, data = temp20Mon))
+```
+
+#### mean
+```{r}
+emmeanFit1 <- emmeans(m.means, "fWY", data=temp20Mon)
+pairs_mmeans_wy <- as.data.frame(pairs(emmeanFit1, adjust="tukey")) %>%
+  mutate(Sig = ifelse(p.value<0.05, "yes", "no"))%>%
+  arrange(Sig)
+plot(emmeanFit1, comparisons = TRUE)+
+  labs(title = "Mean")
+
+emmeanFit2 <- emmeans(m.means, pairwise ~ Region2 | Season, adjust = "tukey", data = temp20Mon)
+emmip(m.means, fWY~ Region2|Season) + 
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle = 90))
+
+pairs_mmeans_rs <- as.data.frame(emmeans(m.means, pairwise ~ Region2 | Season, data = temp20Mon))
+```
+
+## Write emmeans results
+```{r}
+write_csv(pairs_mmaxs_rs, "TemporalTrends/emmeans_results/seasonal_emmeans_m.maxrs.csv")
+write_csv(pairs_mmeans_rs, "TemporalTrends/emmeans_results/seasonal_emmeans_m.meanrs.csv")
+write_csv(pairs_mmins_rs, "TemporalTrends/emmeans_results/seasonal_emmeans_m.minrs.csv")
+write_csv(pairs_mmaxs_wy, "TemporalTrends/emmeans_results/seasonal_emmeans_m.maxwy.csv")
+write_csv(pairs_mmeans_wy, "TemporalTrends/emmeans_results/seasonal_emmeans_m.meanwy.csv")
+write_csv(pairs_mmins_wy, "TemporalTrends/emmeans_results/seasonal_emmeans_m.minwy.csv")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+###########################
+# Old code
+
+## Create baseline for comparison
+```{r}
+baseline <- temp20Mon %>%
+  group_by(Season, Region, Station, Month) %>%
+  summarize(maxAvTemp = mean(maxAvTemp),
+            meanTemp = mean(meanTemp),
+            minAvTemp = mean(minAvTemp)) %>%
+  ungroup() %>%
+  mutate(WY = NA,
+         fWY = "1000",
+         fMonth = factor(Month))
+
+
+temp20MonB <- rbind(baseline,temp20Mon %>% select(Season, Region, Station, Month, maxAvTemp, meanTemp, minAvTemp, WY, fWY, fMonth))
+```
+
+
+#### Just looking at year: 
+
+* 2011 sig colder, 2015 sig warmer than 20-year average
+* Significant trend over 20 years ~0.011 (max), 0.016 (mean), 0.017 (min) in lmer.
+
+```{r}
+summary(M.max <- glm(maxAvTemp~WY, data = temp20MonB))# ns
+summary(M.maxb <- glm(maxAvTemp~fWY, data = temp20MonB)) # 2011 cool and 2015 warm
+#### THIS ONE FOR YEAR COMPS
+summary(M.xlmermax1 <- lmer(maxAvTemp ~ fWY + (1|Station) + (1|Month), data = temp20MonB))
+
+summary(M.xlmermax1 <- lmer(maxAvTemp ~ fWY + (1|Station) + (1|Month), data = temp20MonB))
+
+#### THIS ONE FOR TREND
+summary(M.xlmermax2 <- lmer(maxAvTemp ~ WY + (1|Station) + (1|Month), data = temp20MonB)) # 0.011
+summary(M.xlmermax3 <- lmer(maxAvTemp ~ fWY * fMonth + (1|Station), data = temp20MonB))
+summary(M.xlmermax4 <- lmer(maxAvTemp ~ WY * fMonth + (1|Station), data = temp20MonB))
+
+summary(M.mean <- glm(meanTemp~WY, data = temp20MonB)) # ns
+summary(M.meanb <- glm(meanTemp~fWY, data = temp20MonB)) # 2011 cool and 2015 warm
+summary(M.xlmermean1 <- lmer(meanTemp ~ fWY + (1|Station) + (1|Month), data = temp20MonB))
+summary(M.xlmermean2 <- lmer(meanTemp ~ WY + (1|Station) + (1|Month), data = temp20MonB)) #0.016
+summary(M.xlmermean3 <- lmer(meanTemp ~ fWY * fMonth + (1|Station), data = temp))
+summary(M.xlmermean4 <- lmer(meanTemp ~ WY * fMonth + (1|Station), data = temp))
+
+summary(M.min1 <- glm(minAvTemp~WY, data = temp20MonB))
+summary(M.min1 <- glm(minAvTemp~fWY, data = temp20MonB))# 2011 cool and 2015 warm
+summary(M.xlmermin1 <- lmer(minAvTemp ~ fWY + (1|Station) + (1|Month), data = temp20MonB))
+summary(M.xlmermin2 <- lmer(minAvTemp ~ WY + (1|Station) + (1|Month), data = temp20MonB)) #0.017
+summary(M.xlmermin3 <- lmer(minAvTemp ~ fWY * fMonth + (1|Station), data = temp))
+summary(M.xlmermin4 <- lmer(minAvTemp ~ WY * fMonth + (1|Station), data = temp))
+```
+
+#### Diagnostics
+```{r}
+par(mfrow = c(2,3))
+resid.max1 = resid(M.xlmermax2, type = "pearson")
+lev1a = hatvalues(M.xlmermax2)
+plot(M.xlmermax2)
+qqnorm(resid(M.xlmermax2))
+qqline(resid(M.xlmermax2))
+plot(lev1a, y = resid.max1)
+plot(resid.max1)
+plot(temp20Mon$Month, resid.max1)
+plot(temp20Mon$fWY, resid.max1)
+acf(resid.max1)
+
+par(mfrow = c(1,1))
+visreg::visreg(M.xlmermax1, "fWY")
+```
+
+### What I was supposed to do
+
+#### Temperature Trends
+
+* Do we really need region if we have a regional model below? 
+```{r}
+# Mean
+summary(M.lmermean1 <- lmer(meanTemp ~ WY + Season + Region + (1|Station), data = temp20Mon))# San Joaquin Warmer, wet season cooler, trend 0.016
+
+summary(M.lmermean2 <- lmer(meanTemp ~ WY * Season + Region + (1|Station), data = temp20Mon)) # San Joaquin Warmer, wet season cooler no trend
+
+summary(M.lmermean3 <- lmer(meanTemp ~ WY + Region + (1|Station) + (1|Season), data = temp20Mon)) # San Joaquin Warmer, trend 0.017
+
+summary(M.lmermean4 <- lmer(meanTemp ~ WY * Region + (1|Station) + (1|Season), data = temp20Mon)) #ns
+
+summary(M.lmermean5 <- lmer(meanTemp ~ WY + Region + (1|Station) + (1|Month), data = temp20Mon)) # San Joaquin Warmer, 0.016 trend
+
+summary(M.lmermean7 <- lmer(meanTemp ~ WY * Region + (1|Station) + (1|Month), data = temp20Mon)) # none
+
+
+# Max
+summary(M.lmermax1 <- lmer(maxAvTemp ~ WY + Season + Region + (1|Station), data = temp20Mon))
+
+summary(M.lmermax2 <- lmer(maxAvTemp ~ WY * Season + Region + (1|Station), data = temp20Mon)) # San Joaquin Warmer, South Warmer, SM warmer, no trend
+
+summary(M.lmermax3 <- lmer(maxAvTemp ~ WY + Region + (1|Station) + (1|Season), data = temp20Mon)) 
+
+summary(M.lmermax4 <- lmer(maxAvTemp ~ WY * Region + (1|Station) + (1|Season), data = temp20Mon)) #ns
+
+### THIS ONE
+summary(M.lmermax5 <- lmer(maxAvTemp ~ WY + Region + (1|Station) + (1|Month), data = temp20Mon)) # San Joaquin Warmer, 0.011 trend
+
+summary(M.lmermax6 <- lmer(maxAvTemp ~ WY * Region + (1|Station) + (1|Month), data = temp20Mon)) # none
+
+
+
+# Min
+summary(M.lmermin1 <- lmer(minAvTemp ~ WY + Season + Region + (1|Station), data = temp20Mon))
+
+summary(M.lmermin2 <- lmer(minAvTemp ~ WY * Season + Region + (1|Station), data = temp20Mon)) # San Joaquin Warmer, South Warmer, SM warmer, no trend
+
+summary(M.lmermin3 <- lmer(minAvTemp ~ WY + Region + (1|Station) + (1|Season), data = temp20Mon)) # no trend
+
+summary(M.lmermin4 <- lmer(minAvTemp ~ WY * Region + (1|Station) + (1|Season), data = temp20Mon)) #ns
+
+summary(M.lmermin5 <- lmer(minAvTemp ~ WY + Region + (1|Station) + (1|Month), data = temp20Mon)) # San Joaquin Warmer, 0.018 trend
+
+summary(M.lmermin6 <- lmer(minAvTemp ~ WY * Region + (1|Station) + (1|Month), data = temp20Mon)) # none
+
+
+```
+
+##### Diagnostics
+```{r}
+#### Maximum
+par(mfrow = c(2,4))
+resid.max1 = resid(M.lmermax5, type = "pearson")
+lev1a = hatvalues(M.lmermax5)
+plot(M.lmermax5)
+qqnorm(resid(M.lmermax5))
+qqline(resid(M.lmermax5))
+plot(lev1a, y = resid.max1)
+plot(resid.max1)
+plot(temp20Mon$Month, resid.max1)
+plot(temp20Mon$WY, resid.max1)
+plot(temp20Mon$Region, resid.max1)
+acf(resid.max1)
+
+par(mfrow = c(1,1))
+visreg::visreg(M.lmermax5, "WY", by = "Region")
+visreg::visreg(M.lmermax5, "Region")
+visreg::visreg(M.lmermax5, "WY")
+
+visreg::visreg(M.lmermax6, "WY", by = "Region")
+visreg::visreg(M.lmermax5, "Region")
+visreg::visreg(M.lmermax5, "WY")
+
+#### Mean
+par(mfrow = c(2,4))
+resid.mean1 = resid(M.lmermean5, type = "pearson")
+lev1a = hatvalues(M.lmermean5)
+plot(M.lmermean5)
+qqnorm(resid(M.lmermean5))
+qqline(resid(M.lmermean5))
+plot(lev1a, y = resid.mean1)
+plot(resid.mean1)
+plot(temp20Mon$Month, resid.mean1)
+plot(temp20Mon$WY, resid.mean1)
+plot(temp20Mon$Region, resid.mean1)
+acf(resid.mean1)
+
+par(mfrow = c(1,1))
+visreg::visreg(M.lmermean5, "WY", by = "Region")
+visreg::visreg(M.lmermean5, "Region")
+visreg::visreg(M.lmermean5, "WY")
+
+
+#### Minimum
+par(mfrow = c(2,4))
+resid.min1 = resid(M.lmermin5, type = "pearson")
+lev1a = hatvalues(M.lmermin5)
+plot(M.lmermin5)
+qqnorm(resid(M.lmermin5))
+qqline(resid(M.lmermin5))
+plot(lev1a, y = resid.min1)
+plot(resid.min1)
+plot(temp20Mon$Month, resid.min1)
+plot(temp20Mon$WY, resid.min1)
+plot(temp20Mon$Region, resid.min1)
+acf(resid.min1)
+
+par(mfrow = c(1,1))
+visreg::visreg(M.lmermin5, "WY", by = "Region")
+visreg::visreg(M.lmermin5, "Region")
+visreg::visreg(M.lmermin5, "WY")
+```
+
+
+#### Regional model
+```{r}
+
+# Max
+summary(M.Rlmermax1 <- lmer(maxAvTemp ~ Region *Season +  (1|Station) + (1|WY), data = temp20Mon))
+summary(M.Rlmermax2 <- lmer(maxAvTemp ~ fWY + Region + (1|Station) + (1|fMonth), data = temp20Mon))
+
+# Min
+summary(M.Rlmermin1 <- lmer(minAvTemp ~ Region *Season +  (1|Station) + (1|WY), data = temp20Mon))
+summary(M.Rlmermin2 <- lmer(minAvTemp ~ Region + (1|Station) + (1|WY), data = temp20Mon))
+
+# Mean
+summary(M.Rlmermean1 <- lmer(meanTemp ~ Region *Season +  (1|Station) + (1|WY), data = temp20Mon))
+summary(M.Rlmermin2 <- lmer(meanTemp ~ Region + (1|Station) + (1|WY) , data = temp20Mon))
+summary(M.Rlmermin2 <- lmer(meanTemp ~ Region + (1|Station) + (1|WY)  , data = temp20Mon))
+```
+
+
+
+
+
+### Seasons (wet vs dry)
+
+#### Max
+```{r}
+temp20MonB_dry <- temp20MonB %>% filter(Season == "Dry")
+temp20MonB_wet <- temp20MonB %>% filter(Season == "Wet")
+
+# Dry Season May-Sept
+summary(M.max <- glm(maxAvTemp~WY, data = temp20MonB_dry))# ns
+summary(M.maxb <- glm(maxAvTemp~fWY, data = temp20MonB_dry)) # 2014, 2015 warm/2010-2011 cool
+summary(M.lmermax1 <- lmer(maxAvTemp ~ fWY + (1|Station) + (1|Month), data = temp20MonB_dry))
+summary(M.lmermax2 <- lmer(maxAvTemp ~ WY + (1|Station) + (1|Month), data = temp20MonB_dry)) # ns
+summary(M.lmermax3 <- lmer(maxAvTemp ~ fWY * fMonth + (1|Station), data = temp20MonB_dry))
+summary(M.lmermax4 <- lmer(maxAvTemp ~ WY * fMonth + (1|Station), data = temp20MonB_dry))
+
+# Wet Season Oct-Apr
+summary(M.max <- glm(maxAvTemp~WY, data = temp20MonB_wet))# 0.022
+summary(M.maxb <- glm(maxAvTemp~fWY, data = temp20MonB_wet)) # 2015 hot
+summary(M.lmermax1 <- lmer(maxAvTemp ~ fWY + (1|Station) + (1|Month), data = temp20MonB_wet))
+summary(M.lmermax2 <- lmer(maxAvTemp ~ WY + (1|Station) + (1|Month), data = temp20MonB_wet)) # 0.021
+summary(M.lmermax3 <- lmer(maxAvTemp ~ fWY * fMonth + (1|Station), data = temp20MonB_wet))
+summary(M.lmermax4 <- lmer(maxAvTemp ~ WY * fMonth + (1|Station), data = temp20MonB_wet))
+```
+
+```{r}
+# Dry Season May-Sept
+summary(M.min <- glm(minAvTemp~WY, data = temp20MonB_dry))# ns
+summary(M.minb <- glm(minAvTemp~fWY, data = temp20MonB_dry)) # 2014, 2015 warm/2010-2011 cool
+summary(M.lmermin1 <- lmer(minAvTemp ~ fWY + (1|Station) + (1|Month), data = temp20MonB_dry))
+summary(M.lmermin2 <- lmer(minAvTemp ~ WY + (1|Station) + (1|Month), data = temp20MonB_dry)) # ns
+summary(M.lmermin3 <- lmer(minAvTemp ~ fWY * fMonth + (1|Station), data = temp20MonB_dry))
+summary(M.lmermin4 <- lmer(minAvTemp ~ WY * fMonth + (1|Station), data = temp20MonB_dry))
+
+# Wet Season Oct-Apr
+summary(M.min <- glm(minAvTemp~WY, data = temp20MonB_wet))# 0.029
+summary(M.minb <- glm(minAvTemp~fWY, data = temp20MonB_wet)) # 2015/2016 hot
+summary(M.lmermin1 <- lmer(minAvTemp ~ fWY + (1|Station) + (1|Month), data = temp20MonB_wet))
+summary(M.lmermin2 <- lmer(minAvTemp ~ WY + (1|Station) + (1|Month), data = temp20MonB_wet)) # 0.028
+summary(M.lmermin3 <- lmer(minAvTemp ~ fWY * fMonth + (1|Station), data = temp20MonB_wet))
+summary(M.lmermin4 <- lmer(minAvTemp ~ WY * fMonth + (1|Station), data = temp20MonB_wet))
+```
+
+### Break into regions
+```{r}
+unique(temp20MonB$Region)
+SacR <- temp20MonB %>%
+  filter(Region == "Sac River")
+SanJR <- temp20MonB %>%
+  filter(Region == "San Joaquin")
+South <- temp20MonB %>%
+  filter(Region == "South")
+SB <- temp20MonB %>%
+  filter(Region == "Suisun Bay")
+SM <- temp20MonB %>%
+  filter(Region == "Suisun Marsh")
+ND <- temp20MonB %>%
+  filter(Region == "North Delta")
+```
+
+#### Max
+
+```{r}
+# Monthly Mean of maximum temperature (9 year dataset)
+summary(M.max1 <- glm(maxAvTemp ~ WY, data = temp))# 0.069 degrees
+
+summary(M.max20 <- glm(maxAvTemp ~ WY, data = temp))
+summary(M.lmer20max1 <- lmer(maxAvTemp ~ WY + (1|Station) + (1|Month), data = temp))
+summary(M.lmer20max2 <- lmer(maxAvTemp ~ WY * fMonth + (1|Station), data = temp))
+# 0.011 degrees
+```
+
+```{r}
+summary(M.max1a <- glm(maxAvTemp ~ fWY, data = SacR))
+summary(M.max1b <- glm(maxAvTemp ~ WY, data = SacR)) #0.022 but ns
+summary(M.lmermax1 <- lmer(maxAvTemp ~ fWY + (1|Station) + (1|Month), data = SacR))
+summary(M.lmermax1b <- lmer(maxAvTemp ~ WY + (1|Station) + (1|Month), data = SacR)) # +0.023
+summary(M.lmermax2 <- lmer(maxAvTemp ~ fWY * fMonth + (1|Station), data = SacR))
+summary(M.lmermax2b <- lmer(maxAvTemp ~ WY * fMonth + (1|Station), data = SacR))
+
+summary(M.max1 <- glm(maxAvTemp ~ fWY, data = SanJR))
+summary(M.max1b <- glm(maxAvTemp ~ WY, data = SanJR)) #0.028 but ns
+summary(M.lmermax1 <- lmer(maxAvTemp ~ fWY + (1|Station) + (1|Month), data = SanJR))
+summary(M.lmermax1b <- lmer(maxAvTemp ~ WY + (1|Station) + (1|Month), data = SanJR)) # +0.027
+summary(M.lmermax2 <- lmer(maxAvTemp ~ fWY * fMonth + (1|Station), data = SanJR))
+summary(M.lmermax2b <- lmer(maxAvTemp ~ WY * fMonth + (1|Station), data = SanJR))
+
+summary(M.max1 <- glm(maxAvTemp ~ fWY, data = South))
+summary(M.max1b <- glm(maxAvTemp ~ WY, data = South)) 
+summary(M.lmermax1 <- lmer(maxAvTemp ~ fWY + (1|Station) + (1|Month), data = South))
+summary(M.lmermax1b <- lmer(maxAvTemp ~ WY + (1|Station) + (1|Month), data = South)) #ns
+summary(M.lmermax2 <- lmer(maxAvTemp ~ fWY * fMonth + (1|Station), data = South))
+summary(M.lmermax2b <- lmer(maxAvTemp ~ WY * fMonth + (1|Station), data = South))
+
+summary(M.max1 <- glm(maxAvTemp ~ fWY, data = SB))
+summary(M.max1b <- glm(maxAvTemp ~ WY, data = SB)) #ns
+summary(M.lmermax1 <- lmer(maxAvTemp ~ fWY + (1|Station) + (1|Month), data = SB))
+summary(M.lmermax1b <- lmer(maxAvTemp ~ WY + (1|Station) + (1|Month), data = SB)) #ns
+summary(M.lmermax2 <- lmer(maxAvTemp ~ fWY * fMonth + (1|Station), data = SB))
+summary(M.lmermax2b <- lmer(maxAvTemp ~ WY * fMonth + (1|Station), data = SB))
+
+summary(M.max1 <- glm(maxAvTemp ~ fWY, data = SM))
+summary(M.max1b <- glm(maxAvTemp ~ WY, data = SM)) #ns
+
+summary(M.max1 <- glm(maxAvTemp ~ fWY, data = ND))
+summary(M.max1b <- glm(maxAvTemp ~ WY, data = ND)) #ns
+summary(M.lmermax1 <- lmer(maxAvTemp ~ fWY + (1|Station) + (1|Month), data = SB))
+summary(M.lmermax1b <- lmer(maxAvTemp ~ WY + (1|Station) + (1|Month), data = SB))
+summary(M.lmermax2 <- lmer(maxAvTemp ~ fWY * fMonth + (1|Station), data = SB))
+summary(M.lmermax2b <- lmer(maxAvTemp ~ WY * fMonth + (1|Station), data = SB))
+```
+
+
+#### Mean
+```{r}
+summary(M.mean1a <- glm(meanTemp ~ fWY, data = SacR))
+summary(M.mean1b <- glm(meanTemp ~ WY, data = SacR)) #0.022 but ns
+summary(M.lmermean1 <- lmer(meanTemp ~ fWY + (1|Station) + (1|Month), data = SacR))
+summary(M.lmermean1b <- lmer(meanTemp ~ WY + (1|Station) + (1|Month), data = SacR)) # +0.025
+summary(M.lmermean2 <- lmer(meanTemp ~ fWY * fMonth + (1|Station), data = SacR))
+summary(M.lmermean2b <- lmer(meanTemp ~ WY * fMonth + (1|Station), data = SacR))
+
+summary(M.mean1 <- glm(meanTemp ~ fWY, data = SanJR))
+summary(M.mean1b <- glm(meanTemp ~ WY, data = SanJR)) #0.028 but ns
+summary(M.lmermean1 <- lmer(meanTemp ~ fWY + (1|Station) + (1|Month), data = SanJR))
+summary(M.lmermean1b <- lmer(meanTemp ~ WY + (1|Station) + (1|Month), data = SanJR)) # +0.025
+summary(M.lmermean2 <- lmer(meanTemp ~ fWY * fMonth + (1|Station), data = SanJR))
+summary(M.lmermean2b <- lmer(meanTemp ~ WY * fMonth + (1|Station), data = SanJR))
+
+summary(M.mean1 <- glm(meanTemp ~ fWY, data = South))
+summary(M.mean1b <- glm(meanTemp ~ WY, data = South)) 
+summary(M.lmermean1 <- lmer(meanTemp ~ fWY + (1|Station) + (1|Month), data = South))
+summary(M.lmermean1b <- lmer(meanTemp ~ WY + (1|Station) + (1|Month), data = South)) #ns
+summary(M.lmermean2 <- lmer(meanTemp ~ fWY * fMonth + (1|Station), data = South))
+summary(M.lmermean2b <- lmer(meanTemp ~ WY * fMonth + (1|Station), data = South))
+
+summary(M.mean1 <- glm(meanTemp ~ fWY, data = SB))
+summary(M.mean1b <- glm(meanTemp ~ WY, data = SB)) #ns
+summary(M.lmermean1 <- lmer(meanTemp ~ fWY + (1|Station) + (1|Month), data = SB))
+summary(M.lmermean1b <- lmer(meanTemp ~ WY + (1|Station) + (1|Month), data = SB)) # +0.018
+summary(M.lmermean2 <- lmer(meanTemp ~ fWY * fMonth + (1|Station), data = SB))
+summary(M.lmermean2b <- lmer(meanTemp ~ WY * fMonth + (1|Station), data = SB))
+
+summary(M.mean1 <- glm(meanTemp ~ fWY, data = SM))
+summary(M.mean1b <- glm(meanTemp ~ WY, data = SM)) #ns
+
+summary(M.mean1 <- glm(meanTemp ~ fWY, data = ND))
+summary(M.mean1b <- glm(meanTemp ~ WY, data = ND)) #ns
+summary(M.lmermean1 <- lmer(meanTemp ~ fWY + (1|Station) + (1|Month), data = SB))
+summary(M.lmermean1b <- lmer(meanTemp ~ WY + (1|Station) + (1|Month), data = SB)) # 0.018
+summary(M.lmermean2 <- lmer(meanTemp ~ fWY * fMonth + (1|Station), data = SB))
+summary(M.lmermean2b <- lmer(meanTemp ~ WY * fMonth + (1|Station), data = SB))
+```
+
+#### Min 
+```{r}
+summary(M.min1a <- glm(minAvTemp ~ fWY, data = SacR))
+summary(M.min1b <- glm(minAvTemp ~ WY, data = SacR))
+summary(M.lmermin1 <- lmer(minAvTemp ~ fWY + (1|Station) + (1|Month), data = SacR))
+summary(M.lmermin1b <- lmer(minAvTemp ~ WY + (1|Station) + (1|Month), data = SacR))  # 0.026
+summary(M.lmermin2 <- lmer(minAvTemp ~ fWY * fMonth + (1|Station), data = SacR))
+summary(M.lmermin2b <- lmer(minAvTemp ~ WY * fMonth + (1|Station), data = SacR))
+
+summary(M.min1 <- glm(minAvTemp ~ fWY, data = SanJR))
+summary(M.min1b <- glm(minAvTemp ~ WY, data = SanJR)) 
+summary(M.lmermin1 <- lmer(minAvTemp ~ fWY + (1|Station) + (1|Month), data = SanJR))
+summary(M.lmermin1b <- lmer(minAvTemp ~ WY + (1|Station) + (1|Month), data = SanJR)) # 0.024
+summary(M.lmermin2 <- lmer(minAvTemp ~ fWY * fMonth + (1|Station), data = SanJR))
+summary(M.lmermin2b <- lmer(minAvTemp ~ WY * fMonth + (1|Station), data = SanJR))
+
+summary(M.min1 <- glm(minAvTemp ~ fWY, data = South))
+summary(M.min1b <- glm(minAvTemp ~ WY, data = South)) 
+summary(M.lmermin1 <- lmer(minAvTemp ~ fWY + (1|Station) + (1|Month), data = South))
+summary(M.lmermin1b <- lmer(minAvTemp ~ WY + (1|Station) + (1|Month), data = South))  #-0.019
+summary(M.lmermin2 <- lmer(minAvTemp ~ fWY * fMonth + (1|Station), data = South))
+summary(M.lmermin2b <- lmer(minAvTemp ~ WY * fMonth + (1|Station), data = South))
+
+summary(M.min1 <- glm(minAvTemp ~ fWY, data = SB))
+summary(M.min1b <- glm(minAvTemp ~ WY, data = SB)) #ns
+summary(M.lmermin1 <- lmer(minAvTemp ~ fWY + (1|Station) + (1|Month), data = SB))
+summary(M.lmermin1b <- lmer(minAvTemp ~ WY + (1|Station) + (1|Month), data = SB)) # 0.026
+summary(M.lmermin2 <- lmer(minAvTemp ~ fWY * fMonth + (1|Station), data = SB))
+summary(M.lmermin2b <- lmer(minAvTemp ~ WY * fMonth + (1|Station), data = SB))
+
+summary(M.min1 <- glm(minAvTemp ~ fWY, data = SM))
+summary(M.min1b <- glm(minAvTemp ~ WY, data = SM))  #ns 
+
+summary(M.min1 <- glm(minAvTemp ~ fWY, data = ND))
+summary(M.min1b <- glm(minAvTemp ~ WY, data = ND)) 
+summary(M.lmermin1 <- lmer(minAvTemp ~ fWY + (1|Station) + (1|Month), data = SB))
+summary(M.lmermin1b <- lmer(minAvTemp ~ WY + (1|Station) + (1|Month), data = SB)) # 0.026
+summary(M.lmermin2 <- lmer(minAvTemp ~ fWY * fMonth + (1|Station), data = SB))
+summary(M.lmermin2b <- lmer(minAvTemp ~ WY * fMonth + (1|Station), data = SB))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Interested in:
+
+* Region
+* Time (maybe)
+* take into effect seasonality and station effects
+
+## Plot 
+```{r}
+ggplot(tempM) + geom_boxplot(aes(x = Region, y = maxAvTemp, fill = Region)) + facet_wrap(~fWY)
+ggplot(tempM) + geom_boxplot(aes(x = Region, y = maxAvTemp, fill = Region)) + facet_wrap(~fMonth)
+
+ggplot(tempM) + geom_point(aes(x = Region,y = maxAvTemp)) + facet_wrap(~fMonth)
+```
+
+## Model
+```{r}
+hist(temp$maxAvTemp)
+hist(sqrt(tempM$maxAvTemp))
+```
+
+```{r}
+monthly_ts <- select(tempM, Station, WY, Month, maxAvTemp) %>%
+  ts(tempM, frequency = 12, start = c("BKS", 2010, 1))
+plot(monthly_ts)
+
+  # Make some time series objects and examine
+  ## Mean weekly water temp at Rio Vista
+  max_ts <- ts(tempM$maxAvTemp, start = decimal_date(as.Date("2012-01-01")), frequency = 365)
+  #plot.ts(wtemp_RIV_ts, ylab = "Daily max Water T", xlab = "Year")
+  #lag.plot(wtemp_RIV_ts, set.lags = c(1, 10, 100, 180, 360))
+
+  # decompose water temp time series using stl
+  wtemp_RIV_decomp <- stl(wtemp_RIV_ts, s.window = "periodic")
+  # Look at strength of seasonality, if >~0.64 this is strong seasonality
+  1- (var(wtemp_RIV_decomp$time.series[,'remainder'], na.rm = TRUE)/var(wtemp_RIV_decomp$time.series[,'remainder'] + wtemp_RIV_decomp$time.series[,'seasonal'], na.rm = TRUE)) # Like 0.95
+  # Remove the seasonal component
+
+  wtemp_RIV_noseas <- wtemp_RIV_ts - wtemp_RIV_decomp$time.series[,'seasonal']
+  covars_RV_1$WTmwk<- as.numeric(wtemp_RIV_noseas)
+
+```
+
+
+```{r}
+m0 <- lm(maxAvTemp ~ 0, data = tempM)
+m1 <- lm(maxAvTemp ~ Region, data = tempM)
+m2 <- lm(maxAvTemp ~ fWY, data = tempM)
+m3 <- lm(maxAvTemp ~ WY, data = tempM)
+m4 <- lm(maxAvTemp ~ fMonth, data = tempM)
+
+AIC(m0, m1, m2, m3, m4)
+anova(m1)
+
+m <- lmer(maxAvTemp ~ Region + (1|Station) + (1|Month) + (1|fWY), data = tempM)
+summary(m)
+
+mr1 <- lmer(maxAvTemp ~ Region * fWY + (1|Station) + (1|Month), data = tempM)
+summary(mr1)
+
+mr2<- lmer(maxAvTemp ~ Region * WY + (1|Station) + (1|Month), data = tempM)
+summary(mr2)
+
+mr3<- lmer(maxAvTemp ~ Region * WY + (1|Station) + Month + I(Month^2), data = tempM)
+summary(mr3)
+
+```
+
+Pairwise differences - can't get any packages to download
+```{r}
+lsmeans(m,pairwise~Region)
+```
+
+
+## Diagnostics
+https://www.ssc.wisc.edu/sscc/pubs/MM/MM_DiagInfer.html
+```{r}
+presid = residuals(mr3, type = "pearson")
+
+par(mfrow = c(2,2))
+plot(presid)
+qqnorm(residuals(mr2))
+acf(presid)
+```
+
+## Visualize
+```{r}
+visreg(m)
+```
+
+GAM
+```{r}
+library(mgcv)
+g1 <- gam(maxAvTemp ~ s(Station, bs = 're') + s(Region, k = 6), data = tempM, method = "REML")
+g1 <- gam(meanTemp ~ s(Station, bs = 're') + s(Station) +  s(WY), data = tempM, method = "REML")
+summary(g1)
+```
