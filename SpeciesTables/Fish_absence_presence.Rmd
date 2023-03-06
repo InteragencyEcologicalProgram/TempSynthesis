@@ -33,6 +33,53 @@ yolosubset <- c("Inland Silverside", "Striped Bass", "Splittail", "Largemouth Ba
 ```
 
 ## Download data
+### Yolo
+```{r}
+(yolo_length <- store("https://portal.edirepository.org/nis/dataviewer?packageid=edi.233.3&entityid=402732c0e6c782db8b8229c3b9310afa"))
+ylength_file <- contentid::resolve("hash://sha256/71c3a4667bd3a00859902018ea257c9914b63f1111d276d2cdd960025247c980")
+
+#(yolo_catch <- store("https://portal.edirepository.org/nis/dataviewer?packageid=edi.233.3&entityid=807b8cfb5edfd14bd9cd812c124327af"))
+#ycatch_file <- contentid::resolve("hash://sha256/b073c1e8047293419a11112cdc593c070e6d67666057c14d17cdd2c253e9c315")
+  
+(yolo_stations <- store("https://portal.edirepository.org/nis/dataviewer?packageid=edi.233.3&entityid=89146f1382d7dfa3bbf3e4b1554eb5cc"))
+yolo_stations_file <- contentid::resolve("hash://sha256/acc9940abf5662e81ee594553e7dc46a05c4cace9c924dbf5352c0544bc7a481")
+
+(yolo_taxonomy <- store("https://portal.edirepository.org/nis/dataviewer?packageid=edi.233.3&entityid=405122cb55c6996661c0dee20ab77a6c"))
+yolo_taxonomy_file <- contentid::resolve("hash://sha256/2d8de80b2549d9f4c5222f54f8f25bb518966899d27119be77cb2bca8786f645")
+
+(yolo_wq <- store("https://portal.edirepository.org/nis/dataviewer?packageid=edi.233.3&entityid=4488201fee45953b001f70acf30f7734"))
+yolo_wq_file <- contentid::resolve("hash://sha256/17fc26c768fa24c65016cfe3d4e8d579b909180a7e349386efa7e24e1772def2")
+
+#taxonomy
+yolo_taxonomy <- readr::read_csv(yolo_taxonomy_file) %>%
+  select(CommonName, Taxa, IEPFishCode, OrganismCode)
+
+# lengths 
+yolo_length <- readr::read_csv(ylength_file) %>%
+  left_join(yolo_taxonomy) %>%
+  filter(Taxa %in% speciesTaxa)
+
+# add site
+yolo_sites <- readr::read_csv(yolo_stations_file)
+
+# add samples and stations
+yolo_samples <- readr::read_csv(yolo_wq_file) %>%
+  left_join(yolo_length) %>%
+  left_join(yolo_sites) %>%
+  filter(!is.na(OrganismCode))
+
+yolo <- yolo_samples %>%
+  filter(!is.na(Longitude)) %>%
+  mutate(SampleID = paste("YBFMP", 1:nrow(.)),
+         Notes_catch = NA,
+         SampleDate = lubridate::mdy(SampleDate), 
+         Source = "YBFMP",
+         Count = 1)%>%
+  select(SampleID, Source, Date = SampleDate, StationCode, WaterTemp, Length =  ForkLength,
+         Count, Notes_catch, Taxa, Latitude = Latitude, Longitude = Longitude)
+unique(yolo_fish$CommonName)
+```
+
 ```{r}
 # Yolo
 #yolo_id <- contentid::store("https://portal.edirepository.org/nis/dataviewer?packageid=edi.233.2&entityid=015e494911cf35c90089ced5a3127334")
@@ -43,25 +90,25 @@ yolo_stations_file <- contentid::resolve("hash://sha256/e25498ffc0208c3ae0e31a23
 yolo_taxonomy_file <- contentid::resolve("hash://sha256/1473de800f3c5577da077507fb006be816a9194ddd417b1b98836be92eaea49d")
 
 #taxonomy
-yolo_taxonomy <- readr::read_csv(yolo_taxonomy_file) %>%
-  mutate(Taxa = paste(Genus, Species)) %>%
-  select(CommonName, Taxa) %>%
-  mutate(Taxa = replace(Taxa, Taxa == "Menidia beryllina", "Menidia audens"),
-         Taxa = replace(Taxa, Taxa == "Hysterocarpus traski", "Hysterocarpus traskii"))
-# add fish
-yolo_fish <- readr::read_csv(yolo_file) %>%
-  filter(CommonName %in% yolosubset) %>%
-  left_join(yolo_taxonomy)
-# add site
-yolo_sites <- readr::read_csv(yolo_stations_file)
-yolo <- left_join(yolo_fish, yolo_sites, by = "StationCode") %>%
-  mutate(SampleID = paste("YBFMP", 1:nrow(.)),
-         Notes_catch = NA,
-         SampleDate = lubridate::mdy(SampleDate), 
-         Source = "YBFMP")%>%
-  select(SampleID, Source, Date = SampleDate, StationCode, WaterTemperature, Length =  ForkLength,
-         Count, Notes_catch, Taxa, Latitude = LatitudeLocation, Longitude = LongitudeLocation)
-unique(yolo_fish$CommonName)
+# yolo_taxonomy <- readr::read_csv(yolo_taxonomy_file) %>%
+#   mutate(Taxa = paste(Genus, Species)) %>%
+#   select(CommonName, Taxa) %>%
+#   mutate(Taxa = replace(Taxa, Taxa == "Menidia beryllina", "Menidia audens"),
+#          Taxa = replace(Taxa, Taxa == "Hysterocarpus traski", "Hysterocarpus traskii"))
+# # add fish
+# yolo_fish <- readr::read_csv(yolo_file) %>%
+#   filter(CommonName %in% yolosubset) %>%
+#   left_join(yolo_taxonomy)
+# # add site
+# yolo_sites <- readr::read_csv(yolo_stations_file)
+# yolo <- left_join(yolo_fish, yolo_sites, by = "StationCode") %>%
+#   mutate(SampleID = paste("YBFMP", 1:nrow(.)),
+#          Notes_catch = NA,
+#          SampleDate = lubridate::mdy(SampleDate), 
+#          Source = "YBFMP")%>%
+#   select(SampleID, Source, Date = SampleDate, StationCode, WaterTemperature, Length =  ForkLength,
+#          Count, Notes_catch, Taxa, Latitude = LatitudeLocation, Longitude = LongitudeLocation)
+# unique(yolo_fish$CommonName)
 
 ## DJFMP
 # djfmp_id <- contentid::store("https://portal.edirepository.org/nis/dataviewer?packageid=edi.244.8&entityid=147fd5e2c7db15913b2ffa44410dc7f9")
@@ -70,7 +117,7 @@ unique(yolo_fish$CommonName)
 #djfmp_fish <- filter(djfmp, OrganismCode %in% c("CHN", "LMB", "RBT", "SASU", "STB", "SPLT", "DSM", "MSS", "PRS", "GSN", "WSN", "WAG", "LFS", "TSS", "TP", "SAPM", "HCH", "SCB"))
 
 # Salvage - from FTP
-# salvage_id <- contentid::store("SpeciesTables/data_raw/salvage.rds")
+salvage_id <- contentid::store("SpeciesTables/data_raw/salvage.rds")
 salvage_file <- contentid::resolve("hash://sha256/7e6d32127c22411ca5089d33a6444223302f05983035b5f3966c629a63f1d636")
 
 salvage <- readRDS(salvage_file) %>%
@@ -195,48 +242,47 @@ alldata <- readRDS("SpeciesTables/fishdata_joined.rds")
 # Add lifestage info
 ```{r}
 lifestage <- alldata %>%
-  mutate(Taxa = replace(Taxa, Taxa == "Hysterocarpus traski", "Hysterocarpus traskii")) %>%
   mutate(Taxa = replace(Taxa, Taxa == "Menidia beryllina", "Menidia audens")) %>%
-  mutate(LifeStage = case_when(Taxa == "Morone saxatilis" & Length < 20~"Larvae",
-                               Taxa == "Morone saxatilis" & Length >= 20 & Length < 350~"Juvenile",
+  mutate(LifeStage = case_when(Taxa == "Morone saxatilis" & Length < 7~"Larvae",
+                               Taxa == "Morone saxatilis" & Length >= 7 & Length < 350~"Juvenile",
                                Taxa == "Morone saxatilis" & Length >= 350 ~ "Adult",
-                               Taxa == "Micropterus salmoides" & Length < 25 ~ "Larvae",
-                               Taxa == "Micropterus salmoides" & Length >= 25 & Length < 180 ~ "Juvenile",
-                               Taxa == "Micropterus salmoides" & Length >= 180 ~ "Adult",
-                               Taxa == "Pogonichthys macrolepidotus" & Length < 20.2 ~ "Larvae",
-                               Taxa == "Pogonichthys macrolepidotus" & Length >= 20.2 & Length < 170 ~ "Juvenile",
-                               Taxa == "Pogonichthys macrolepidotus" & Length >= 170 ~ "Adult",
-                               Taxa == "Menidia audens" & Length < 9 ~ "Larvae",
-                               Taxa == "Menidia audens" & Length >=9 & Length < 50~"Juvenile",
-                               Taxa == "Menidia audens" & Length >= 50 ~ "Adult",
-                               Taxa %in% c("Hypomesus transpacificus", "Hypomesus nipponensis") & Length <20 ~ "Larvae",
-                               Taxa %in% c("Hypomesus transpacificus", "Hypomesus nipponensis") & Length >=20 & Length <59 ~ "Juvenile",
-                               Taxa %in% c("Hypomesus transpacificus", "Hypomesus nipponensis") & Length >=59 ~ "Adult",
-                               Taxa == "Spirinchus thaleichthys" & Length <20 ~ "Larvae",
-                               Taxa == "Spirinchus thaleichthys" & Length >=20 & Length <80 ~ "Juvenile",
-                               Taxa == "Spirinchus thaleichthys" & Length>=80 ~ "Adult",
-                               Taxa == "Acipenser medirostris" & Length <20 ~ "Larvae",
-                               Taxa == "Acipenser medirostris" & Length >=20 & Length <=1500 ~ "Juvenile",
-                               Taxa == "Acipenser medirostris" & Length >1500 ~ "Adult",
+                               Taxa == "Micropterus salmoides" & Length < 8.5 ~ "Larvae",
+                               Taxa == "Micropterus salmoides" & Length >= 8.5 & Length < 190 ~ "Juvenile",
+                               Taxa == "Micropterus salmoides" & Length >= 190 ~ "Adult",
+                               Taxa == "Pogonichthys macrolepidotus" & Length <= 20 ~ "Larvae",
+                               Taxa == "Pogonichthys macrolepidotus" & Length > 20 & Length <= 170 ~ "Juvenile",
+                               Taxa == "Pogonichthys macrolepidotus" & Length > 170 ~ "Adult",
+                               Taxa == "Menidia audens" & Length < 4.5 ~ "Larvae",
+                               Taxa == "Menidia audens" & Length >=4.5 & Length <= 80~"Juvenile",
+                               Taxa == "Menidia audens" & Length > 80 ~ "Adult",
+                               Taxa %in% c("Hypomesus transpacificus", "Hypomesus nipponensis") & Length <25 ~ "Larvae",
+                               Taxa %in% c("Hypomesus transpacificus", "Hypomesus nipponensis") & Length >=25 & Length <=50 ~ "Juvenile",
+                               Taxa %in% c("Hypomesus transpacificus", "Hypomesus nipponensis") & Length >50 ~ "Adult",
+                               Taxa == "Hypomesus nipponensis" & Length >=25 & Length <=73 ~ "Juvenile",
+                               Taxa == "Hypomesus nipponensis" & Length >73 ~ "Adult",
+                               Taxa == "Spirinchus thaleichthys" & Length <=16 ~ "Larvae",
+                               Taxa == "Spirinchus thaleichthys" & Length >16 & Length <=80 ~ "Juvenile",
+                               Taxa == "Spirinchus thaleichthys" & Length>80 ~ "Adult",
+                               Taxa == "Acipenser medirostris" & Length <100 ~ "Larvae",
+                               Taxa == "Acipenser medirostris" & Length >=100 & Length <=1450 ~ "Juvenile",
+                               Taxa == "Acipenser medirostris" & Length >1450 ~ "Adult",
                                Taxa == "Acipenser transmontanus" & Length <100 ~ "Larvae",
                                Taxa == "Acipenser transmontanus" & Length >=100 & Length <=1050 ~ "Juvenile",
                                Taxa == "Acipenser transmontanus" & Length >1050 ~ "Adult",
                                Taxa == "Oncorhynchus tshawytscha"  & Length <35 ~ "Larvae",
-                               Taxa == "Oncorhynchus tshawytscha" & Length >=35 & Length <=700 ~ "Juvenile",
-                               Taxa == "Oncorhynchus tshawytscha" & Length >700 ~ "Adult",
-                                 Taxa == "Oncorhynchus mykiss"  & Length <25 ~ "Larvae",
-                               Taxa == "Oncorhynchus mykiss" & Length >=25 & Length <=390 ~ "Juvenile",
-                               Taxa == "Oncorhynchus mykiss" & Length >390 ~ "Adult",
-                               
-                               
+                               Taxa == "Oncorhynchus tshawytscha" & Length >=35 & Length <=750 ~ "Juvenile",
+                               Taxa == "Oncorhynchus tshawytscha" & Length >750 ~ "Adult",
+                                 Taxa == "Oncorhynchus mykiss"  & Length <28 ~ "Larvae",
+                               Taxa == "Oncorhynchus mykiss" & Length >=28 & Length <350 ~ "Juvenile",
+                               Taxa == "Oncorhynchus mykiss" & Length >=350 ~ "Adult",
                                Taxa == "Orthodon microlepidotus" & Length < 250 ~ "Juvenile-Larvae",
                                Taxa == "Orthodon microlepidotus" & Length >=250  ~ "Adult",
                                Taxa == "Lavinia exilicauda" & Length <150 ~ "Juvenile-Larvae",
                                Taxa == "Lavinia exilicauda" & Length >=150 ~ "Adult",
                                Taxa == "Hysterocarpus traskii" & Length <100 ~ "Juvenile-Larvae",
                                Taxa == "Hysterocarpus traskii" & Length >=100 ~ "Adult",
-                               Taxa == "Ptychocheilus grandis" & Length <=220 ~ "Juvenile-Larvae",
-                               Taxa == "Ptychocheilus grandis" & Length >220 ~ "Adult",
+                               Taxa == "Ptychocheilus grandis" & Length <220 ~ "Juvenile-Larvae",
+                               Taxa == "Ptychocheilus grandis" & Length >=220 ~ "Adult",
                                Taxa == "Catostomus occidentalis" & Length < 14 ~ "Larvae",
                                Taxa == "Catostomus occidentalis" & Length >=14 & Length <200 ~ "Juvenile",
                                Taxa == "Catostomus occidentalis" & Length >=200 ~ "Adult",
@@ -244,13 +290,31 @@ lifestage <- alldata %>%
                                Taxa == "Gasterosteus aculeatus" & Length >=41 ~ "Adult",
                                Taxa == "Cottus asper" & Length <40 ~ "Juvenile-Larvae",
                                Taxa == "Cottus asper" & Length >=40 ~ "Adult",
-                               
                                TRUE ~ as.character("Undifferentiated")),
          Season = factor(Season, levels = c("Winter", "Spring", "Summer", "Fall"))) 
 ```
 
+## Calculate max temps
 
-## Summarized
+```{r}
+TempTable <- lifestage %>%
+  group_by(Taxa, LifeStage) %>%
+  summarize(meanTemp = round(mean(WaterTemperature, na.rm = TRUE),1),
+            q3 = round(quantile(WaterTemperature, 0.75, na.rm = TRUE),1),
+            maxTemp = round(max(WaterTemperature, na.rm = TRUE),1),
+            sd = round(sd(WaterTemperature, na.rm =TRUE),1),
+            n = n()) %>%
+  arrange(Taxa, LifeStage)
+```
+
+```{r}
+write.csv(TempTable, "SpeciesTables/surveymaxtemps_v3.csv", row.names = FALSE)
+TempTable <- read_csv("SpeciesTables/surveymaxtemps_v3.csv")
+```
+
+
+
+## Summarize data
 
 # Read in thresholds
 ```{r}
@@ -262,17 +326,20 @@ thresholds <- readxl::read_excel(here::here("SpeciesTables", "SpeciesThresholds.
 All_lifestages <- lifestage %>%
   group_by(Source, Season, Region, Taxa, LifeStage) %>%
   summarize(n = n(),
-            maxWaterTemp = max(WaterTemperature, na.rm = TRUE))
+            maxWaterTemp = max(WaterTemperature, na.rm = TRUE)) %>%
+  ungroup()
 
 All_notbysource <- lifestage %>%
   group_by(Season, Region, Taxa, LifeStage) %>%
   summarize(n = n(),
-            maxWaterTemp= max(WaterTemperature, na.rm = TRUE))
+            maxWaterTemp= max(WaterTemperature, na.rm = TRUE)) %>%
+  ungroup()
 
 All_removesingles <- All_notbysource %>%
   filter(n>1) %>%
   mutate(Taxa_Lifestage = paste0(Taxa, "_", LifeStage)) %>%
-  mutate(Presence = "Yes")
+  mutate(Presence = "Yes") %>%
+  ungroup()
 
 data_export <- All_removesingles %>%
   as.data.frame()%>%
@@ -337,7 +404,7 @@ level_order2 = c("Green Sturgeon Juvenile", "White Sturgeon Juvenile", "White St
 vegclams <- readxl::read_excel(here::here("SpeciesTables", "SpeciesTable_Veg_Clams.xlsx")) %>%
   mutate(maxWaterTemp = NA)
 
-species <- rbind(vegclams, absence_presence_all)
+#species <- rbind(vegclams, absence_presence_all)
 # write_csv(species, "SpeciesTables/absence_presence_temp.csv")
 ```
 
@@ -407,6 +474,12 @@ tiledataf <- rbind(num, chr) %>%
 
 check <- unique(tiledata$SpeciesLS)
 print(setdiff(level_order2, check ))
+```
+
+## Version for EDI - absence/presence
+```{r}
+abprestable <- tiledataf %>% select(Common_name = Species, Taxon, Life_stage = LifeStage, Region, Season, Presence)
+write_csv(abprestable, "SpeciesTables/data_write/absence_presence_EDI.csv")  
 ```
 
 ## Read in data for plotting
