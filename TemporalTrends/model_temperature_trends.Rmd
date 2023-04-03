@@ -1,0 +1,544 @@
+---
+title: "model_temperature_trends"
+author: "Catarina Pien"
+date: '2023-03-13'
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+# This is the most recent version of temperature trend modeling, including year, region + season
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(here)
+library(tidyverse)
+library(readr)
+library(lubridate)
+library(lme4) # glmm
+library(lmerTest) #glmm p values
+library(effects)
+library(wateRshedTools)
+library(mgcv)
+library(visreg)
+library(emmeans)
+```
+
+## Read in data
+```{r}
+tempMonthly <- readRDS(here("Data", "tempMonthly_20220801.rds"))
+tempDaily <- readRDS(here("Data", "tempDaily_20210811.rds"))
+temp20 <- readRDS(here("Data", "temp20years_20220125.rds"))
+```
+
+## Manipulations
+
+### 20 year
+```{r}
+# temp20Mon0 <- temp20 %>% 
+#   group_by(Region, Station, HabitatType, WY, WYType2_Sac, Index_c, Month) %>%
+#   summarize(maxTemp = max(Temp),
+#             minTemp = min(Temp),
+#             meanTemp = round(mean(Temp),1),
+#             rangeTemp = maxTemp-minTemp) %>%
+#   ungroup()
+
+temp20Av <- temp20 %>%
+  group_by(Region, Station, Year, WY, WYType2_Sac, Month, Date) %>%
+  summarize(maxTemp = max(Temp),
+            minTemp = min(Temp)) %>%
+  ungroup() %>%
+  group_by(Region, Station, Year, WY, WYType2_Sac,Month) %>%
+  summarize(maxAvTemp = round(mean(maxTemp),1),
+            minAvTemp = round(mean(minTemp),1))
+
+
+temp20Mon <- left_join(temp20Mon0, temp20Av) %>%
+  select(Region, Station, HabitatType,Year,  WY, WYType2_Sac, Index_c, Month, maxTemp, maxAvTemp, minAvTemp, everything())%>%
+  mutate(fWY = factor(WY),
+         fMonth = factor(Month),
+         Season = ifelse(Month %in% c(5,6,7,8,9), "Dry", "Wet"),
+         Season = factor(Season, levels = c("Wet", "Dry"))) %>%
+  mutate(Region2 = case_when(Region == "Sac River" ~ "SacRiver",
+                            Region == "Suisun Bay" ~ "SuisunBay",
+                            Region == "San Joaquin" ~ "SanJoaquin",
+                            Region == "Suisun Marsh" ~ "SuisunMarsh",
+                            Region == "North Delta" ~ "NorthDelta",
+                            TRUE~ Region))
+```
+
+### 9 year
+```{r}
+temp <- tempMonthly  %>%
+  select(Region, Station, HabitatType,Year,  WY, WYType2_Sac, Index_c, Month, maxTemp, maxAvTemp, minAvTemp, everything())%>%
+  mutate(fWY = factor(WY),
+         fMonth = factor(Month),
+         Season = ifelse(Month %in% c(5,6,7,8,9), "Dry", "Wet"),
+         Season = factor(Season, levels = c("Wet", "Dry"))) %>%
+  mutate(Region = case_when(Region == "Far North" ~ "North Delta",
+                            TRUE ~ Region)) %>%
+  mutate(Region2 = case_when(Region == "Sac River" ~ "SacRiver",
+                            Region == "Suisun Bay" ~ "SuisunBay",
+                            Region == "San Joaquin" ~ "SanJoaquin",
+                            Region == "Suisun Marsh" ~ "SuisunMarsh",
+                            Region == "North Delta" ~ "NorthDelta",
+                            TRUE~ Region))
+```
+
+# 9-year dataset
+## Run models
+```{r}
+summary(m.maxs9 <- lmer(maxAvTemp ~ fWY + Season * Region2 + (1|Station) +(1|fMonth), data = temp))
+
+summary(m.mins9 <- lmer(minAvTemp ~ fWY + Season * Region2 + (1|Station) +(1|fMonth), data = temp))
+
+summary(m.means9 <- lmer(meanTemp ~ fWY + Season * Region2 + (1|Station) +(1|fMonth), data = temp))
+```
+
+
+## Max temps
+
+### emmeans
+```{r}
+
+# WY-------------------------------------
+max9.emm <- emmeans(m.maxs9, "fWY")
+plot(max9.emm, comparisons = TRUE) + theme_bw()
+results_max9.emm = as.data.frame(pairs(max9.emm, adjust = "bonferroni")) %>%
+  mutate(sig = ifelse(p.value<0.01, "yes",  "no")) %>%
+  arrange(p.value)
+
+ci_max9_wy <- as.data.frame(confint(max9.emm))
+# need to double check these letters
+ci_max9_wy <- ci_max9_wy %>%
+  mutate(Label = c("a", "b", "ac", "d", "e", "g", "e", "f", "h", "cf"))
+
+
+# Region/Season ------------------------------
+max9.emm2 <- emmeans(m.maxs9, specs = pairwise ~ Region2:Season)
+results_max9.emm2 = as.data.frame(pairs(max9.emm2, adjust = "bonferroni")) %>%
+  mutate(sig = ifelse(p.value<0.01, "yes",  "no")) %>%
+  arrange(p.value)
+#multcomp::cld(pairs(max9.emm2, adjust = "bonferroni"))
+
+ci_max9_rs0 <- as.data.frame(max9.emm2$emmeans)
+# need to adjust letters based on updated p value
+ci_max9_rs <- ci_max9_rs0 %>%
+  mutate(Label = c("ab", "a", "bc", "abc", "abc", "c", "de", "d", "f", "ef", "g", "d")) %>%
+  mutate(Season = ifelse(Season == "Wet", "Wet Season", ifelse(Season == "Dry", "Dry Season", NA))) %>%
+  mutate(Season = factor(Season, levels = c("Wet Season", "Dry Season")))
+
+```
+
+Year plot
+```{r}
+(plot_ci_max9_wy <- ggplot() + 
+   geom_errorbar(data = ci_max9_wy, aes(x = fWY, ymin = asymp.LCL, ymax = asymp.UCL), size = 1,  width = 0.3) +
+   geom_text(data = ci_max9_wy, aes(label = Label, x = fWY, y = asymp.UCL + 0.5), position = position_dodge2(width = 0.75)) + 
+  geom_point(data = ci_max9_wy, aes(x=fWY, y=emmean), size = 2.5, shape = 5) + 
+  viridis::scale_color_viridis(discrete = TRUE, option = "turbo") + 
+  scale_y_continuous(breaks = seq(14, 28, by = 1))+
+  
+  labs(y = "Water Temperature (°C) with 95% Confidence Intervals") +
+  theme_bw() +
+  theme(axis.text.x = element_text(size = 11),
+        legend.position = "top",
+        axis.title.x = element_blank()) )
+```
+
+
+Region-Season plot
+```{r}
+# ggplot(newdata) + geom_boxplot(aes(x = fWY, y = Predicted_maxtemp))
+
+
+(plot_ci_max9 <- ggplot() + 
+  # geom_jitter(data = temp, aes(x = Season, y = maxAvTemp, color = Region2)) +
+  
+  geom_errorbar(data = ci_max9_rs, aes(x = Season, ymin = asymp.LCL, ymax = asymp.UCL, color = Region2), size = 1,  width = 0.75, position = position_dodge2()) +
+  # geom_errorbar(data = ci_max9_rs, aes(x = Season, ymin = emmean-SE, ymax = emmean+SE ), color = "black", size = 0.2,  width = 0.75, position = position_dodge2())+
+  
+  geom_text(data = ci_max9_rs, aes(label = Label, x = Season, y = asymp.UCL + 0.5), position = position_dodge2(width = 0.75)) + 
+  
+  geom_point(data = ci_max9_rs, aes(x=Season, y=emmean, color = Region2), size = 2.5, shape = 5, position = position_dodge2(width = 0.75)) + 
+  
+  viridis::scale_color_viridis(discrete = TRUE, option = "turbo") + 
+  scale_y_continuous(breaks = seq(10, 30, by = 2))+
+  
+  labs(y = "Water Temperature (°C) with 95% Confidence Intervals", color = "Region") +
+  theme_bw() +
+  theme(axis.text.x = element_text(size = 11),
+        legend.position = c(0.15, 0.7),
+        legend.title = element_blank(),
+        axis.title.x = element_blank()))
+
+
+# 
+# emmip(m.maxs9, ~ Region2 | Season, CIs = TRUE, type = "response") +
+#     geom_point(aes(x = Region2, y = maxAvTemp), data = temp, pch = 2, color = "blue") +
+#   theme_bw()
+```
+
+### Combined Plot
+```{r}
+library(patchwork)
+p4 <- ggplot(data.frame(l = "Water Temperature (°C) with 95% Confidence Intervals", x = 1, y = 1)) +
+      geom_text(aes(x, y, label = l), angle = 90) + 
+      theme_void() +
+      coord_cartesian(clip = "off")
+plot_ci_max9_wy$labels$y <- plot_ci_max9$labels$y <- " "
+
+
+
+
+png(filename = "Figures/Watertemp_trends.png", height = 7, width = 7,units = "in", 
+    res = 300, pointsize = 12, family = "sans")
+p4 + (plot_ci_max9_wy/plot_ci_max9) + plot_layout(widths = c(1,25))
+
+dev.off()
+```
+
+
+
+### Other code I tried but did not use in the end
+```{r}
+library(sjPlot)
+plot_model(m.maxs9, type = "int") + labs(title = "Max") + theme_bw()
+plot_model(m.maxs9, show.values = TRUE, show.p = TRUE)
+plot_model(m.mins9, type = "int") + labs(title = "Min")+ theme_bw()
+plot_model(m.mins9)
+plot_model(m.means9, type = "int") + labs(title = "Mean")+ theme_bw()
+plot_model(m.means9)
+```
+
+#### Predict results
+```{r}
+newdata <- expand.grid(
+  Region2 = unique(temp$Region2),
+  Season = unique(temp$Season),
+  fWY = unique(temp$fWY),
+  Station = unique(temp$Station),
+  fMonth = unique(temp$fMonth)
+)
+
+newdata$Predicted_maxtemp <- predict(m.maxs9, newdata = newdata)
+confint <- confint(m.maxs9)
+```
+
+#### Table of results
+```{r}
+sjPlot:: tab_model(m.maxs9)
+sjPlot:: tab_model(m.mins)
+sjPlot:: tab_model(m.means)
+```
+
+#### Effects
+```{r}
+effects_max9 <- effects::effect(term = "Region2", mod = m.maxs9)
+summary(effects_max9)
+
+Effect(focal.predictors = c("Region2", "Season"), mod =  m.maxs9)
+eff.max9 <- allEffects(m.maxs9, fixed.predictors = c("Region2", "Season", "fWY"))
+eff.max9
+
+# Make plots
+plot(eff.max9)
+plot(allEffects(m.maxs9, residuals = TRUE, se = list(type = "scheffe")))
+```
+
+
+#------------------------
+
+### Min temps
+## emmeans
+```{r}
+min9.emm <- emmeans(m.mins9, "fWY")
+pairs(min9.emm, adjust = "tukey")
+plot(min9.emm, comparisons = TRUE) + theme_bw()
+ci_min9_wy <- confint(min9.emm)
+results_min9.emm = as.data.frame(pairs(min9.emm)) %>%
+  mutate(sig = ifelse(p.value<0.01, "yes",  "no")) %>%
+  arrange(p.value)
+
+ci_min9_wy <- as.data.frame(confint(min9.emm))
+ci_min9_wy <- ci_min9_wy %>%
+  mutate(Label = c("a", "b", "ac", "d", "e", "g", "e", "f", "h", "cf"))
+
+
+min9.emm2 <- emmeans(m.mins9, specs = pairwise ~ Region2:Season)
+pairs(min9.emm2, adjust = "bonferroni")
+results_min9.emm2 = as.data.frame(pairs(min9.emm2)) %>%
+  mutate(sig = ifelse(p.value<0.01, "yes",  "no")) %>%
+  arrange(p.value)
+#multcomp::cld(pairs(min9.emm2, adjust = "bonferroni"))
+
+ci_min9_rs0 <- as.data.frame(min9.emm2$emmeans)
+ci_min9_rs <- ci_min9_rs0 %>%
+  mutate(Label = c("ab", "a", "bc", "abc", "abc", "c", "de", "d", "f", "ef", "g", "d")) %>%
+  mutate(Season = ifelse(Season == "Wet", "Wet Season", ifelse(Season == "Dry", "Dry Season", NA))) %>%
+  mutate(Season = factor(Season, levels = c("Wet Season", "Dry Season")))
+
+```
+
+Year plot
+```{r}
+(plot_ci_min9_wy <- ggplot() + 
+   geom_errorbar(data = ci_min9_wy, aes(x = fWY, ymin = asymp.LCL, ymax = asymp.UCL), size = 1,  width = 0.3) +
+   geom_text(data = ci_min9_wy, aes(label = Label, x = fWY, y = asymp.UCL + 0.5), position = position_dodge2(width = 0.75)) + 
+  geom_point(data = ci_min9_wy, aes(x=fWY, y=emmean), size = 2.5, shape = 5) + 
+  viridis::scale_color_viridis(discrete = TRUE, option = "turbo") + 
+  scale_y_continuous(breaks = seq(14, 28, by = 1))+
+  
+  labs(y = "Water Temperature (°C) with 95% Confidence Intervals") +
+  theme_bw() +
+  theme(axis.text.x = element_text(size = 11),
+        legend.position = "top",
+        axis.title.x = element_blank()) )
+```
+
+
+Region-Season plot
+```{r}
+ggplot(newdata) + geom_boxplot(aes(x = fWY, y = Predicted_mintemp))
+
+
+(plot_ci_min9 <- ggplot() + 
+  # geom_jitter(data = temp, aes(x = Season, y = minAvTemp, color = Region2)) +
+  
+  geom_errorbar(data = ci_min9_rs, aes(x = Season, ymin = asymp.LCL, ymax = asymp.UCL, color = Region2), size = 1,  width = 0.75, position = position_dodge2()) +
+  # geom_errorbar(data = ci_min9_rs, aes(x = Season, ymin = emmean-SE, ymin = emmean+SE ), color = "black", size = 0.2,  width = 0.75, position = position_dodge2())+
+  
+  geom_text(data = ci_min9_rs, aes(label = Label, x = Season, y = asymp.UCL + 0.5), position = position_dodge2(width = 0.75)) + 
+  
+  geom_point(data = ci_min9_rs, aes(x=Season, y=emmean, color = Region2), size = 2.5, shape = 5, position = position_dodge2(width = 0.75)) + 
+  
+  viridis::scale_color_viridis(discrete = TRUE, option = "turbo") + 
+  scale_y_continuous(breaks = seq(10, 30, by = 2))+
+  
+  labs(y = "Water Temperature (°C) with 95% Confidence Intervals", color = "Region") +
+  theme_bw() +
+  theme(axis.text.x = element_text(size = 11),
+        legend.position = c(0.15, 0.7),
+        legend.title = element_blank(),
+        axis.title.x = element_blank()))
+```
+
+### Combined Plot
+```{r}
+library(patchwork)
+p4 <- ggplot(data.frame(l = "Water Temperature (°C) with 95% Confidence Intervals", x = 1, y = 1)) +
+      geom_text(aes(x, y, label = l), angle = 90) + 
+      theme_void() +
+      coord_cartesian(clip = "off")
+plot_ci_min9_wy$labels$y <- plot_ci_min9$labels$y <- " "
+
+
+
+
+png(filename = "Figures/Watertemp_trends.png", height = 7, width = 7,units = "in", 
+    res = 300, pointsize = 12, family = "sans")
+p4 + (plot_ci_min9_wy/plot_ci_min9) + plot_layout(widths = c(1,25))
+
+dev.off()
+```
+
+
+# 20-year dataset
+## Run model
+```{r}
+summary(m.maxs <- lmer(maxAvTemp ~ fWY + Season * Region2 + (1|Station) +(1|fMonth), data = temp20Mon))
+
+summary(m.mins <- lmer(minAvTemp ~ fWY + Season * Region2 + (1|Station) +(1|fMonth), data = temp20Mon))
+
+summary(m.means <- lmer(meanTemp ~ fWY + Season * Region2 + (1|Station) +(1|fMonth), data = temp20Mon))
+
+```
+
+## Plot results
+```{r}
+library(sjPlot)
+plot_model(m.maxs, type = "int") + labs(title = "Max") + theme_bw()
+plot_model(m.maxs, show.values = TRUE, show.p = TRUE)
+plot_model(m.mins, type = "int") + labs(title = "Min")+ theme_bw()
+plot_model(m.mins)
+plot_model(m.means, type = "int") + labs(title = "Mean")+ theme_bw()
+plot_model(m.means)
+```
+
+## Table of results
+```{r}
+sjPlot:: tab_model(m.maxs)
+sjPlot:: tab_model(m.mins)
+sjPlot:: tab_model(m.means)
+```
+
+## Effects
+```{r}
+effects_max <- effects::effect(term = "Region2", mod = m.maxs)
+summary(effects)
+
+Effect(focal.predictors = c("Region2", "Season"), mod =  m.maxs)
+eff.max <- allEffects(m.maxs, fixed.predictors = c("Region2", "Season", "fWY"))
+eff.max
+
+# Make plots
+plot(eff.max)
+plot(allEffects(m.maxs, residuals = TRUE, se = list(type = "scheffe")))
+```
+
+## Diagnostics
+
+```{r}
+par(mfrow = c(2,4))
+resid.maxs = resid(m.maxs, type = "pearson")
+lev2a = hatvalues(m.maxs)
+plot(m.maxs)
+qqnorm(resid(m.maxs))
+qqline(resid(m.maxs))
+plot(lev2a, y = resid.maxs)
+hist(resid.maxs)
+plot(resid.maxs)
+plot(temp20Mon$Region, resid.maxs)
+plot(temp20Mon$fWY, resid.maxs)
+plot(temp20Mon$Season, resid.maxs)
+acf(resid.maxs)
+
+par(mfrow = c(2,4))
+resid.mins = resid(m.mins, type = "pearson")
+lev2a = hatvalues(m.mins)
+plot(m.mins)
+qqnorm(resid(m.mins))
+qqline(resid(m.mins))
+plot(lev2a, y = resid.mins)
+hist(resid.mins)
+plot(resid.mins)
+plot(temp20Mon$Region, resid.mins)
+plot(temp20Mon$fWY, resid.mins)
+plot(temp20Mon$Season, resid.mins)
+acf(resid.mins)
+
+par(mfrow = c(2,4))
+resid.means = resid(m.means, type = "pearson")
+lev3a = hatvalues(m.means)
+plot(m.means)
+qqnorm(resid(m.means))
+qqline(resid(m.means))
+plot(lev3a, y = resid.means)
+hist(resid.means)
+plot(resid.means)
+plot(temp20Mon$Region, resid.means)
+plot(temp20Mon$fWY, resid.means)
+plot(factor(temp20Mon$Season), resid.means)
+acf(resid.means)
+```
+
+## RE
+#### max
+```{r}
+re_m.maxs <- as.data.frame(ranef(m.maxs))
+
+ggplot(re_m.maxs) + 
+  geom_point(aes(grp, condval)) +
+  geom_errorbar(aes(x = grp, ymin = condval-condsd, ymax = condval+condsd), width = 0.3) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 0.95),
+        axis.title = element_blank())
+```
+
+#### min
+```{r}
+re_m.mins <- as.data.frame(ranef(m.mins))
+
+ggplot(re_m.mins) + 
+  geom_point(aes(grp, condval)) +
+  geom_errorbar(aes(x = grp, ymin = condval-condsd, ymax = condval+condsd), width = 0.3) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 0.95),
+        axis.title = element_blank())
+```
+
+#### mean
+```{r}
+re_m.means <- as.data.frame(ranef(m.means))
+
+ggplot(re_m.means) + 
+  geom_point(aes(grp, condval)) +
+  geom_errorbar(aes(x = grp, ymin = condval-condsd, ymax = condval+condsd), width = 0.3) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 0.95),
+        axis.title = element_blank())
+```
+
+## Post hoc seasonal model 
+
+```{r}
+emm_options(pbkrtest.limit = 5384)
+```
+
+### max
+```{r}
+emmaxFit1 <- emmeans(m.maxs, "fWY", data=temp20Mon)
+(pairs_mmaxs_wy <- as.data.frame(pairs(emmaxFit1, adjust="tukey")) %>%
+  mutate(Sig = ifelse(p.value<0.05, "yes", "no")) %>%
+  arrange(Sig))
+plot(emmaxFit1, comparisons = TRUE)+
+  labs(title = "Max")
+
+# emmaxFit2 <- emmeans(m.maxs, "Region2", data=temp20Mon)
+# pairs_mmax_regions <- as.data.frame(pairs(emmaxFit2, adjust="tukey")) %>%
+#   mutate(Sig = ifelse(p.value<0.05, "yes", "no"))%>%
+#   arrange(Sig)
+
+emmaxFit2 <- emmeans(m.maxs, pairwise ~ Region2 | Season, adjust = "tukey", data = temp20Mon)
+emmip(m.maxs, fWY~ Region2|Season) + 
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle = 90))
+
+pairs_mmaxs_rs <- as.data.frame(emmeans(m.maxs, pairwise ~ Region2 | Season, data = temp20Mon))
+```
+
+#### min
+```{r}
+emminFit1 <- emmeans(m.mins, "fWY", data=temp20Mon)
+pairs_mmins_wy <- as.data.frame(pairs(emminFit1, adjust="tukey")) %>%
+  mutate(Sig = ifelse(p.value<0.05, "yes", "no"))%>%
+  arrange(Sig)
+plot(emminFit1, comparisons = TRUE) +
+  labs(title = "Min")
+
+emminFit2 <- emmeans(m.mins, pairwise ~ Region2 | Season, adjust = "tukey", data = temp20Mon)
+emmip(m.mins, fWY~ Region2|Season) + 
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle = 90))
+
+pairs_mmins_rs <- as.data.frame(emmeans(m.mins, pairwise ~ Region2 | Season, data = temp20Mon))
+```
+
+#### mean
+```{r}
+emmeanFit1 <- emmeans(m.means, "fWY", data=temp20Mon)
+pairs_mmeans_wy <- as.data.frame(pairs(emmeanFit1, adjust="tukey")) %>%
+  mutate(Sig = ifelse(p.value<0.05, "yes", "no"))%>%
+  arrange(Sig)
+plot(emmeanFit1, comparisons = TRUE)+
+  labs(title = "Mean")
+
+emmeanFit2 <- emmeans(m.means, pairwise ~ Region2 | Season, adjust = "tukey", data = temp20Mon)
+emmip(m.means, fWY~ Region2|Season) + 
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle = 90))
+
+pairs_mmeans_rs <- as.data.frame(emmeans(m.means, pairwise ~ Region2 | Season, data = temp20Mon))
+```
+
+## Write emmeans results
+```{r}
+write_csv(pairs_mmaxs_rs, "TemporalTrends/emmeans_results/seasonal_emmeans_m.maxrs.csv")
+write_csv(pairs_mmeans_rs, "TemporalTrends/emmeans_results/seasonal_emmeans_m.meanrs.csv")
+write_csv(pairs_mmins_rs, "TemporalTrends/emmeans_results/seasonal_emmeans_m.minrs.csv")
+write_csv(pairs_mmaxs_wy, "TemporalTrends/emmeans_results/seasonal_emmeans_m.maxwy.csv")
+write_csv(pairs_mmeans_wy, "TemporalTrends/emmeans_results/seasonal_emmeans_m.meanwy.csv")
+write_csv(pairs_mmins_wy, "TemporalTrends/emmeans_results/seasonal_emmeans_m.minwy.csv")
+```
