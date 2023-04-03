@@ -26,14 +26,16 @@ library(sjPlot)
 
 # Read data
 ```{r}
-data_exceedance0 <- read_csv("SpeciesTables/daysExceedanceUpperDataForPlotting.csv") 
+data_exceedance0 <- read_csv("SpeciesTables/daysExceedanceUpperDataForPlotting.csv") %>%
+  filter(!Species %in% c("Giant Reed EAV", "Brazilian Waterweed", "Water Hyacinth FAV", "Microcystis", "Asian Clam", "Overbite Clam"))
 ```
 
 # Categorize data
 ```{r}
 native <- c("Green Sturgeon", "White Sturgeon","Delta Smelt", "Longfin Smelt", "Wakasagi","Chinook Salmon", "Steelhead/Rainbow Trout","Sacramento Splittail", "Sacramento Pikeminnow", "Sacramento Sucker", "Sacramento Blackfish", "Hitch", "Tule Perch", "Threespine Stickleback", "Prickly Sculpin")
 
-nonnative <- c("Mississippi Silverside", "Striped Bass", "Largemouth Bass", "Giant Reed EAV", "Brazilian Waterweed", "Water Hyacinth FAV", "Microcystis", "Asian Clam", "Overbite Clam")
+# nonnative <- c("Mississippi Silverside", "Striped Bass", "Largemouth Bass", "Giant Reed EAV", "Brazilian Waterweed", "Water Hyacinth FAV", "Microcystis", "Asian Clam", "Overbite Clam")
+nonnative <- c("Mississippi Silverside", "Striped Bass", "Largemouth Bass")
 
 listed <- c("Green Sturgeon","Delta Smelt", "Longfin Smelt","Chinook Salmon", "Steelhead/Rainbow Trout")
 
@@ -43,7 +45,7 @@ listed <- c("Green Sturgeon","Delta Smelt", "Longfin Smelt","Chinook Salmon", "S
 ```{r}
 data_exceedance <- data_exceedance0 %>%
   mutate(fWY = factor(WY),
-         Status = ifelse(Species %in% native, "Native", "NonNativePest"),
+         Status = ifelse(Species %in% native, "Native", "NonNative"),
          Status = as.factor(Status),
          Status2 = ifelse(Status == "Native", 0, 1),
          Lstatus = ifelse(Species %in% listed, "Listed", "Unlisted"),
@@ -65,6 +67,20 @@ data_adult_tol <- data_exceedance%>%
 
 str(data_adult_tol)
 ```
+
+Write table of species included in model
+```{r}
+table <- data_exceedance %>% 
+  filter(LifeStage == "Adult" | LifeStage == "Undifferentiated", 
+         !is.na(daysExceedanceTol)) %>%
+  select(Species, Lstatus, Tolerance_Upper) %>%
+  distinct() %>%
+  arrange(Species)
+
+# write_csv(table, "SpeciesTables/data_write/model_status_species_thresholds.csv")
+```
+
+
 
 ## normality
 ```{r}
@@ -99,7 +115,7 @@ kruskal.test(data_adult_tol$Lstatus2, data_adult_tol$daysExceedanceTol)
 ## lm
 ### by native status
 ```{r}
-mAdult1 <- lm(sqrt_daysTol ~ Status, data = data_adult_tol)
+mAdult1 <- lm(log_daysTol ~ Status, data = data_adult_tol)
 summary(mAdult1)
 anova(mAdult1)
 par(mfrow = c(2,2))
@@ -120,7 +136,7 @@ plot(mAdult1)
 
 ### by listed status
 ```{r}
-mAdult2 <- lm(sqrt_daysTol ~ Lstatus, data = data_adult_tol)
+mAdult2 <- lm(log_daysTol ~ Lstatus, data = data_adult_tol)
 summary(mAdult2)
 anova(mAdult2)
 par(mfrow = c(2,2))
@@ -206,8 +222,15 @@ ggplot(re_m_tolb) +
 
 ```{r}
 library(effects)
-mem_eff=Effect(focal.predictors = "Temperature", mod=mem,
-xlevels=list(Temperature=temp_seq))
+library(sjPlot)
+
+c3 <- with(effect("Lstatus",mAdultListb),cbind(lower,upper))
+
+(mem_eff=Effect(focal.predictors = "Lstatus", mod=mAdultListb))
+eff.lstatus <- allEffects(mod = mAdultListb, fixed.predictors = "Lstatus")
+eff.lstatus
+tab_model(mAdultListb)
+confint(mAdultListb)
 ```
 
 #### post hoc
@@ -215,6 +238,7 @@ xlevels=list(Temperature=temp_seq))
 mtol.emm <- emmeans(mAdultListb , "Lstatus", data=data_adult_tol)
 pairs(mtol.emm, adjust = "tukey")
 plot(mtol.emm, comparisons = TRUE, type = "response") + theme_bw()
+confint(mtol.emm, type = "response")
 ```
 
 
@@ -231,6 +255,20 @@ data_adult_opt <- data_exceedance %>%
 
 str(data_adult_opt)
 ```
+
+Write table of species included in model
+```{r}
+table_opt <- data_exceedance %>% 
+  filter(LifeStage == "Adult" | LifeStage == "Undifferentiated", 
+         !is.na(daysExceedanceOpt)) %>%
+  select(Species, Lstatus, Suboptimum_Upper) %>%
+  distinct() %>%
+  arrange(Species)
+
+# write_csv(table_opt, "SpeciesTables/data_write/model_status_species_thresholds_opt.csv")
+```
+
+
 
 ## normality
 ```{r}
@@ -369,6 +407,11 @@ binomial
 mAdultList_ob <- glmer(cbind(daysExceedanceOpt,daysTotal) ~ Lstatus +  (1|Species), data = data_adult_opt, family = "binomial")
 summary(mAdultList_ob)
 
+summary(mAdult2b_o)
+
+
+
+
 par(mfrow = c(2,3))
 resid.optb = resid(mAdultList_ob, type = "pearson")
 lev2a = hatvalues(mAdultList_ob)
@@ -396,9 +439,8 @@ ggplot(re_m_ob) +
 mopt.emm <- emmeans(mAdultList_ob , "Lstatus", data=data_adult_opt)
 pairs(mopt.emm, adjust = "tukey")
 plot(mopt.emm, comparisons = TRUE, type = "response") + theme_bw()
+confint(mopt.emm, type = "response")
 ```
-
-
 
 
 # Tolerance Values
