@@ -28,7 +28,8 @@ library(emmeans)
 
 ## Read in data
 ```{r}
-tempMonthly <- readRDS(here("Data", "tempMonthly_20220801.rds"))
+#tempMonthly <- readRDS(here("Data", "tempMonthly_20220801.rds"))
+tempMonthly <- readRDS(here("Data", "tempMonthly.rds"))
 tempDaily <- readRDS(here("Data", "tempDaily_20210811.rds"))
 temp20 <- readRDS(here("Data", "temp20years_20220125.rds"))
 ```
@@ -72,7 +73,7 @@ temp20Mon <- left_join(temp20Mon0, temp20Av) %>%
 ### 9 year
 ```{r}
 temp <- tempMonthly  %>%
-  select(Region, Station, HabitatType,Year,  WY, WYType2_Sac, Index_c, Month, maxTemp, maxAvTemp, minAvTemp, everything())%>%
+  dplyr::select(Region, Station, HabitatType,Year,  WY, WYType2_Sac, Index_c, Month, maxTemp, maxAvTemp, minAvTemp, everything())%>%
   mutate(fWY = factor(WY),
          fMonth = factor(Month),
          Season = ifelse(Month %in% c(5,6,7,8,9), "Dry", "Wet"),
@@ -84,7 +85,8 @@ temp <- tempMonthly  %>%
                             Region == "San Joaquin" ~ "SanJoaquin",
                             Region == "Suisun Marsh" ~ "SuisunMarsh",
                             Region == "North Delta" ~ "NorthDelta",
-                            TRUE~ Region))
+                            TRUE~ Region)) %>%
+  filter(WY > 2009)
 ```
 
 # 9-year dataset
@@ -106,6 +108,18 @@ summary(m.means9 <- lmer(meanTemp ~ fWY + Season * Region2 + (1|Station) +(1|fMo
 # WY-------------------------------------
 max9.emm <- emmeans(m.maxs9, "fWY")
 plot(max9.emm, comparisons = TRUE) + theme_bw()
+
+#save a dataframe of all the things the plotting function uses so we can plot with ggplot later
+plotmax9 = plot(max9.emm, comparisons = TRUE, plotit = F)
+
+
+#the cld function from the multcomp package gives you the letters
+library(multcomp)
+
+#this organzies all the results
+results_max92 = cld(max9.emm, Letters = LETTERS) %>%
+  left_join(plotmax9)
+
 results_max9.emm = as.data.frame(pairs(max9.emm, adjust = "bonferroni")) %>%
   mutate(sig = ifelse(p.value<0.01, "yes",  "no")) %>%
   arrange(p.value)
@@ -134,10 +148,15 @@ ci_max9_rs <- ci_max9_rs0 %>%
 
 Year plot
 ```{r}
-(plot_ci_max9_wy <- ggplot() + 
-   geom_errorbar(data = ci_max9_wy, aes(x = fWY, ymin = asymp.LCL, ymax = asymp.UCL), size = 1,  width = 0.3) +
-   geom_text(data = ci_max9_wy, aes(label = Label, x = fWY, y = asymp.UCL + 0.5), position = position_dodge2(width = 0.75)) + 
-  geom_point(data = ci_max9_wy, aes(x=fWY, y=emmean), size = 2.5, shape = 5) + 
+(plot_ci_max9_wy <- ggplot(data = results_max92,) + 
+   geom_errorbar(aes(x = fWY, ymin = asymp.LCL, ymax = asymp.UCL), size = 1,  width = 0.3) +
+   geom_text( aes(label = .group, x = fWY, y = asymp.UCL + 0.5), position = position_dodge2(width = 0.75)) + 
+  geom_point( aes(x=fWY, y=emmean), size = 2.5, shape = 5) + 
+     geom_segment(aes(x=fWY, y=emmean,xend =fWY, yend = rcmpl), color = "red",  linewidth = 2, 
+                  arrow = arrow(length = unit(.1,"inches"), ends = "last"))+
+  geom_segment(aes(x=fWY, y=emmean,xend = fWY, yend = lcmpl), color = "red",   linewidth = 2,
+               arrow = arrow(unit(.1,"inches"), ends = "last"))+
+
   viridis::scale_color_viridis(discrete = TRUE, option = "turbo") + 
   scale_y_continuous(breaks = seq(14, 28, by = 1))+
   
