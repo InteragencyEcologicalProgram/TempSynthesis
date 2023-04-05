@@ -24,6 +24,7 @@ library(wateRshedTools)
 library(mgcv)
 library(visreg)
 library(emmeans)
+library(multcomp)
 ```
 
 ## Read in data
@@ -108,58 +109,58 @@ summary(m.means9 <- lmer(meanTemp ~ fWY + Season * Region2 + (1|Station) +(1|fMo
 # WY-------------------------------------
 max9.emm <- emmeans(m.maxs9, "fWY")
 plot(max9.emm, comparisons = TRUE) + theme_bw()
-
 #save a dataframe of all the things the plotting function uses so we can plot with ggplot later
-plotmax9 = plot(max9.emm, comparisons = TRUE, plotit = F)
+plotmax9 = plot(max9.emm, comparisons = TRUE, plotit = F, adjust = "bonferroni", alpha = 0.01)
+results_max92 = cld(max9.emm, Letters = LETTERS, alpha = 0.01, p.adj.methods = "bonferroni") %>%
+  left_join(plotmax9) %>%
+  mutate(.group = gsub(" ", "", .group))
 
-
-#the cld function from the multcomp package gives you the letters
-library(multcomp)
-
-#this organzies all the results
-results_max92 = cld(max9.emm, Letters = LETTERS) %>%
-  left_join(plotmax9)
-
-results_max9.emm = as.data.frame(pairs(max9.emm, adjust = "bonferroni")) %>%
+results_max9.emm = as.data.frame(pairs(max9.emm, adjust = "bonferroni", alpha = 0.01)) %>%
   mutate(sig = ifelse(p.value<0.01, "yes",  "no")) %>%
   arrange(p.value)
-
-ci_max9_wy <- as.data.frame(confint(max9.emm))
-# need to double check these letters
-ci_max9_wy <- ci_max9_wy %>%
-  mutate(Label = c("a", "b", "ac", "d", "e", "g", "e", "f", "h", "cf"))
-
 
 # Region/Season ------------------------------
 max9.emm2 <- emmeans(m.maxs9, specs = pairwise ~ Region2:Season)
-results_max9.emm2 = as.data.frame(pairs(max9.emm2, adjust = "bonferroni")) %>%
-  mutate(sig = ifelse(p.value<0.01, "yes",  "no")) %>%
-  arrange(p.value)
-#multcomp::cld(pairs(max9.emm2, adjust = "bonferroni"))
+# max9.emm2 <- emmeans(m.maxs9, Region2:Season)
+plotmax9.rs = plot(max9.emm2, comparisons = TRUE, plotit = F, adjust = "bonferroni", alpha = 0.01)
 
-ci_max9_rs0 <- as.data.frame(max9.emm2$emmeans)
-# need to adjust letters based on updated p value
-ci_max9_rs <- ci_max9_rs0 %>%
-  mutate(Label = c("ab", "a", "bc", "abc", "abc", "c", "de", "d", "f", "ef", "g", "d")) %>%
+# add letters
+letters.rs <- cld(max9.emm2, Letters = LETTERS, alpha = 0.05, p.adj.methods = "bonferroni")%>%
+  mutate(.group = gsub(" ", "", .group))
+ci_max9_rs <- as.data.frame(max9.emm2$emmeans) %>%
+  left_join(letters.rs) %>%
   mutate(Season = ifelse(Season == "Wet", "Wet Season", ifelse(Season == "Dry", "Dry Season", NA))) %>%
   mutate(Season = factor(Season, levels = c("Wet Season", "Dry Season")))
+  
+# other suggested plots but a bit too crazy
+emmip(m.maxs9, Region2~Season, CI = TRUE, plotit = FALSE)
+plotmax9.rs <- emmeans(m.maxs9, ~ Region2*Season, adjust = "bonferroni", alpha = 0.01)
+(data <- pwpp(plotmax9.rs, type = "response", adjust = "bonferroni", plotit = F))
+rs <- data$data
+pwpp(plotmax9.rs, type = "response", adjust = "bonferroni", by = "Season")
 
+
+# results_max9.emm2 = as.data.frame(pairs(max9.emm2, adjust = "bonferroni")) %>%
+#   mutate(sig = ifelse(p.value<0.01, "yes",  "no")) %>%
+#   arrange(p.value)
+# #multcomp::cld(pairs(max9.emm2, adjust = "bonferroni"))
 ```
 
-Year plot
+### Year plot
 ```{r}
 (plot_ci_max9_wy <- ggplot(data = results_max92,) + 
-   geom_errorbar(aes(x = fWY, ymin = asymp.LCL, ymax = asymp.UCL), size = 1,  width = 0.3) +
-   geom_text( aes(label = .group, x = fWY, y = asymp.UCL + 0.5), position = position_dodge2(width = 0.75)) + 
-  geom_point( aes(x=fWY, y=emmean), size = 2.5, shape = 5) + 
-     geom_segment(aes(x=fWY, y=emmean,xend =fWY, yend = rcmpl), color = "red",  linewidth = 2, 
-                  arrow = arrow(length = unit(.1,"inches"), ends = "last"))+
-  geom_segment(aes(x=fWY, y=emmean,xend = fWY, yend = lcmpl), color = "red",   linewidth = 2,
-               arrow = arrow(unit(.1,"inches"), ends = "last"))+
-
-  viridis::scale_color_viridis(discrete = TRUE, option = "turbo") + 
+   geom_errorbar(aes(x = fWY, ymin = asymp.LCL, ymax = asymp.UCL), size = 0.5,  width = 0.3) +
+   geom_text( aes(label = .group, x = fWY, y = asymp.UCL + 0.3), position = position_dodge2(width = 0.75)) + 
+  # geom_segment(aes(x=fWY, y=emmean, xend =fWY, yend = rcmpl), color = "orange",
+  #              linewidth = 3, arrow = arrow(length = unit(.1,"inches"),
+  #                                           ends = "last"))+
+  # geom_segment(aes(x=fWY, y=emmean, xend = fWY, yend = lcmpl), color = "orange",
+  #              linewidth = 3, arrow = arrow(unit(.1,"inches"), ends = "last"))+
+  geom_segment(aes(x = fWY, y = emmean, xend = fWY, yend = rcmpl, color = .group), size = 6, color = "cadetblue3", lineend = "butt") +
+    geom_segment(aes(x = fWY, y = emmean, xend = fWY, yend = lcmpl, color = .group), size = 6, color = "cadetblue3", lineend = "butt") +
+  geom_point( aes(x=fWY, y=emmean), size = 2.5, shape = 18) +     
+  viridis::scale_color_viridis(discrete = TRUE, option = "turbo") +
   scale_y_continuous(breaks = seq(14, 28, by = 1))+
-  
   labs(y = "Water Temperature (°C) with 95% Confidence Intervals") +
   theme_bw() +
   theme(axis.text.x = element_text(size = 11),
@@ -168,21 +169,14 @@ Year plot
 ```
 
 
-Region-Season plot
+### Region-Season plot
 ```{r}
 # ggplot(newdata) + geom_boxplot(aes(x = fWY, y = Predicted_maxtemp))
 
-
 (plot_ci_max9 <- ggplot() + 
-  # geom_jitter(data = temp, aes(x = Season, y = maxAvTemp, color = Region2)) +
-  
-  geom_errorbar(data = ci_max9_rs, aes(x = Season, ymin = asymp.LCL, ymax = asymp.UCL, color = Region2), size = 1,  width = 0.75, position = position_dodge2()) +
-  # geom_errorbar(data = ci_max9_rs, aes(x = Season, ymin = emmean-SE, ymax = emmean+SE ), color = "black", size = 0.2,  width = 0.75, position = position_dodge2())+
-  
-  geom_text(data = ci_max9_rs, aes(label = Label, x = Season, y = asymp.UCL + 0.5), position = position_dodge2(width = 0.75)) + 
-  
-  geom_point(data = ci_max9_rs, aes(x=Season, y=emmean, color = Region2), size = 2.5, shape = 5, position = position_dodge2(width = 0.75)) + 
-  
+   geom_errorbar(data = ci_max9_rs, aes(x = Season, ymin = asymp.LCL, ymax = asymp.UCL, color = Region2), size = 1,  width = 0.75, position = position_dodge2()) +
+  geom_text(data = ci_max9_rs, aes(label = .group, x = Season, y = asymp.UCL + 0.5), position = position_dodge2(width = 0.75)) + 
+  geom_point(data = ci_max9_rs, aes(x=Season, y=emmean), color = "black", size = 3, shape = 5, position = position_dodge2(width = 0.75)) + 
   viridis::scale_color_viridis(discrete = TRUE, option = "turbo") + 
   scale_y_continuous(breaks = seq(10, 30, by = 2))+
   
@@ -203,14 +197,11 @@ Region-Season plot
 ### Combined Plot
 ```{r}
 library(patchwork)
-p4 <- ggplot(data.frame(l = "Water Temperature (°C) with 95% Confidence Intervals", x = 1, y = 1)) +
+p4 <- ggplot(data.frame(l = "Max Water Temperature (°C) with 95% Confidence Intervals", x = 1, y = 1)) +
       geom_text(aes(x, y, label = l), angle = 90) + 
       theme_void() +
       coord_cartesian(clip = "off")
 plot_ci_max9_wy$labels$y <- plot_ci_max9$labels$y <- " "
-
-
-
 
 png(filename = "Figures/Watertemp_trends.png", height = 7, width = 7,units = "in", 
     res = 300, pointsize = 12, family = "sans")
@@ -270,8 +261,38 @@ plot(allEffects(m.maxs9, residuals = TRUE, se = list(type = "scheffe")))
 
 #------------------------
 
-### Min temps
-## emmeans
+## Min temps
+### emmeans
+```{r}
+# WY-------------------------------------
+min9.emm <- emmeans(m.mins9, "fWY")
+plot(min9.emm, comparisons = TRUE) + theme_bw()
+#save a dataframe of all the things the plotting function uses so we can plot with ggplot later
+plotmin9 = plot(min9.emm, comparisons = TRUE, plotit = F, adjust = "bonferroni", alpha = 0.01)
+results_min92 = cld(min9.emm, Letters = LETTERS, alpha = 0.01, p.adj.methods = "bonferroni") %>%
+  left_join(plotmin9) %>%
+  mutate(.group = gsub(" ", "", .group))
+
+results_min9.emm = as.data.frame(pairs(min9.emm, adjust = "bonferroni", alpha = 0.01)) %>%
+  mutate(sig = ifelse(p.value<0.01, "yes",  "no")) %>%
+  arrange(p.value)
+
+# Region/Season ------------------------------
+min9.emm2 <- emmeans(m.mins9, specs = pairwise ~ Region2:Season)
+# min9.emm2 <- emmeans(m.mins9, Region2:Season)
+plotmin9.rs = plot(min9.emm2, comparisons = TRUE, plotit = F, adjust = "bonferroni", alpha = 0.01)
+
+# add letters
+letters.rs <- cld(min9.emm2, Letters = LETTERS, alpha = 0.05, p.adj.methods = "bonferroni")%>%
+  mutate(.group = gsub(" ", "", .group))
+ci_min9_rs <- as.data.frame(min9.emm2$emmeans) %>%
+  left_join(letters.rs) %>%
+  mutate(Season = ifelse(Season == "Wet", "Wet Season", ifelse(Season == "Dry", "Dry Season", NA))) %>%
+  mutate(Season = factor(Season, levels = c("Wet Season", "Dry Season")))
+  
+```
+
+
 ```{r}
 min9.emm <- emmeans(m.mins9, "fWY")
 pairs(min9.emm, adjust = "tukey")
@@ -301,12 +322,19 @@ ci_min9_rs <- ci_min9_rs0 %>%
 
 ```
 
-Year plot
+### Year plot
 ```{r}
-(plot_ci_min9_wy <- ggplot() + 
-   geom_errorbar(data = ci_min9_wy, aes(x = fWY, ymin = asymp.LCL, ymax = asymp.UCL), size = 1,  width = 0.3) +
-   geom_text(data = ci_min9_wy, aes(label = Label, x = fWY, y = asymp.UCL + 0.5), position = position_dodge2(width = 0.75)) + 
-  geom_point(data = ci_min9_wy, aes(x=fWY, y=emmean), size = 2.5, shape = 5) + 
+(plot_ci_min9_wy <- ggplot(results_min92) + 
+   geom_errorbar(aes(x = fWY, ymin = asymp.LCL, ymax = asymp.UCL), size = 1,  width = 0.3) +
+      geom_text( aes(label = .group, x = fWY, y = asymp.UCL + 0.3), position = position_dodge2(width = 0.75)) + 
+  # geom_segment(aes(x=fWY, y=emmean, xend =fWY, yend = rcmpl), color = "orange",
+  #              linewidth = 3, arrow = arrow(length = unit(.1,"inches"),
+  #                                           ends = "last"))+
+  # geom_segment(aes(x=fWY, y=emmean, xend = fWY, yend = lcmpl), color = "orange",
+  #              linewidth = 3, arrow = arrow(unit(.1,"inches"), ends = "last"))+
+  geom_segment(aes(x = fWY, y = emmean, xend = fWY, yend = rcmpl, color = .group), size = 6, color = "cadetblue3", lineend = "butt") +
+    geom_segment(aes(x = fWY, y = emmean, xend = fWY, yend = lcmpl, color = .group), size = 6, color = "cadetblue3", lineend = "butt") +
+  geom_point(aes(x=fWY, y=emmean), size = 3, shape = 18) + 
   viridis::scale_color_viridis(discrete = TRUE, option = "turbo") + 
   scale_y_continuous(breaks = seq(14, 28, by = 1))+
   
@@ -318,18 +346,15 @@ Year plot
 ```
 
 
-Region-Season plot
+### Region-Season plot
 ```{r}
-ggplot(newdata) + geom_boxplot(aes(x = fWY, y = Predicted_mintemp))
-
+# ggplot(newdata) + geom_boxplot(aes(x = fWY, y = Predicted_mintemp))
 
 (plot_ci_min9 <- ggplot() + 
-  # geom_jitter(data = temp, aes(x = Season, y = minAvTemp, color = Region2)) +
-  
   geom_errorbar(data = ci_min9_rs, aes(x = Season, ymin = asymp.LCL, ymax = asymp.UCL, color = Region2), size = 1,  width = 0.75, position = position_dodge2()) +
   # geom_errorbar(data = ci_min9_rs, aes(x = Season, ymin = emmean-SE, ymin = emmean+SE ), color = "black", size = 0.2,  width = 0.75, position = position_dodge2())+
   
-  geom_text(data = ci_min9_rs, aes(label = Label, x = Season, y = asymp.UCL + 0.5), position = position_dodge2(width = 0.75)) + 
+  geom_text(data = ci_min9_rs, aes(label = .group, x = Season, y = asymp.UCL + 0.5), position = position_dodge2(width = 0.75)) + 
   
   geom_point(data = ci_min9_rs, aes(x=Season, y=emmean, color = Region2), size = 2.5, shape = 5, position = position_dodge2(width = 0.75)) + 
   
@@ -347,7 +372,7 @@ ggplot(newdata) + geom_boxplot(aes(x = fWY, y = Predicted_mintemp))
 ### Combined Plot
 ```{r}
 library(patchwork)
-p4 <- ggplot(data.frame(l = "Water Temperature (°C) with 95% Confidence Intervals", x = 1, y = 1)) +
+p4 <- ggplot(data.frame(l = "Minimum Water Temperature (°C) with 95% Confidence Intervals", x = 1, y = 1)) +
       geom_text(aes(x, y, label = l), angle = 90) + 
       theme_void() +
       coord_cartesian(clip = "off")
@@ -356,7 +381,7 @@ plot_ci_min9_wy$labels$y <- plot_ci_min9$labels$y <- " "
 
 
 
-png(filename = "Figures/Watertemp_trends.png", height = 7, width = 7,units = "in", 
+png(filename = "Figures/Watertemp_trends_min.png", height = 7, width = 7,units = "in", 
     res = 300, pointsize = 12, family = "sans")
 p4 + (plot_ci_min9_wy/plot_ci_min9) + plot_layout(widths = c(1,25))
 
