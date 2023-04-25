@@ -969,11 +969,13 @@ load("finalplots_20211202.RData")
 
 ##### Theme
 ```{r}
-theme_fig <- ggplot2::theme(plot.title=element_text(size=12), 
-               axis.text.x=element_text(size=10, color="black"), 
-               axis.text.y = element_text(size=10, color="black"), 
-               axis.title.x = element_blank(), 
-               axis.title.y = element_blank(),
+theme_fig <-ggplot2::theme(plot.title=element_text(size=12), 
+               axis.text = element_blank(), 
+               axis.title = element_blank(), 
+               axis.ticks = element_blank(),
+               axis.text.y = element_blank(),
+               panel.grid.major = element_blank(), 
+               panel.grid.minor = element_blank(),
                strip.text = element_text(size = 13),
                legend.text = element_text(size = 10),
                legend.title = element_text(size = 11),
@@ -1036,11 +1038,15 @@ legend2 <- get_legend(raster21DiffPlot)
 legend2
 
 (raster21DiffPlot2 <- raster21DiffPlot + 
+    scale_x_continuous(expand = c(0,0)) + 
+    scale_y_continuous(expand = c(0,0)) +
     theme_fig +
     theme(legend.position = "none") +
     labs(title = "Difference"))
 
 (raster25DiffPlot2 <- raster25DiffPlot + 
+    scale_x_continuous(expand = c(0,0)) + 
+    scale_y_continuous(expand = c(0,0)) +
     theme_fig +
     theme(legend.position = "none"))
 
@@ -1055,7 +1061,7 @@ plot25_avg3 <- annotate_figure(plot25_avg2,
 (stress <- grid.arrange(legend1, plot21_avg3, plot21_anom2, plot25_avg3, plot25_anom2, 
                         nrow = 3, 
                         layout_matrix = rbind(c(1,1), c(2,3), c(4,5)),
-                        widths = c(5,5), heights = c(1,3,3)))
+                        widths = c(5,5,5), heights = c(1,3.3,3)))
 
 ```
 
@@ -1067,7 +1073,7 @@ tiff(filename=file.path("Figures/StressPlot.tiff"), units="in",type="cairo", bg=
 stressPlotC <- grid.arrange(legend1, legend2, plot21_avg3, plot21_anom2, raster21DiffPlot2, plot25_avg3, plot25_anom2, raster25DiffPlot2,
                             nrow = 3,
             layout_matrix = rbind(c(1,1,2), c(3,4,5), c(6,7,8)),
-             widths = c(3.3,3,2.85), heights = c(0.75,3,3))
+             widths = c(3.3,3,3), heights = c(0.75,3.3,3.05))
 dev.off()
 ```
 
@@ -1090,7 +1096,8 @@ get_legend<-function(myggplot){
 (plot21NR_avg <- plot21NR_avg  + 
     scale_fill_viridis_c(option = "viridis", breaks = seq(from = 0, to = 120, by = 20), na.value="white", limits = c(0,110)) + 
     guides(fill=guide_colorbar(title="Number Stressful Days", barwidth = 9)) +
-    theme_fig)
+    theme_fig +
+    theme(axis.text.x = element_blank()))
 
 legend3 <- get_legend(plot21_avg)
 
@@ -1133,10 +1140,14 @@ legend4 <- get_legend(raster21NRDiffPlot)
 legend4
 
 (raster21NRDiffPlot2 <- raster21NRDiffPlot + 
+    scale_x_continuous(expand = c(0,0)) + 
+    scale_y_continuous(expand = c(0,0)) +
     theme_fig + theme(legend.position = "none") +
     labs(title = "Difference"))
 
 (raster25NRDiffPlot2 <- raster25NRDiffPlot + 
+    scale_x_continuous(expand = c(0,0)) + 
+    scale_y_continuous(expand = c(0,0)) +
     theme_fig + theme(legend.position = "none"))
 
 ```
@@ -1153,7 +1164,7 @@ tiff(filename=file.path("Figures/StressNRPlot.tiff"), units="in",type="cairo", b
 stressPlotD <- grid.arrange(legend3, legend4, plot21NR_avg3, plot21NR_anom2, raster21NRDiffPlot2, 
                             nrow = 2,
             layout_matrix = rbind(c(1,1,2), c(3,4,5)), 
-             widths = c(3.23,3,2.85), heights = c(0.75,3))
+             widths = c(3.3,3,3), heights = c(0.75,3))
 dev.off()
 ```
 
