@@ -23,10 +23,11 @@ library(scales)
 
 ```{r}
 #tempdata <- readRDS("Data/temp10years_20200922.rds")
+
 tempDaily <- readRDS("Data/tempDaily_20210811.rds") %>%
-  mutate(Region = replace(Region, Region == "Far North", "North Delta"),
-         Region = replace(Region, Region == "San Joaquin", "Central"),
-         Region = replace(Region, Region == "Sac River", "Confluence")) %>%
+  mutate(Region = case_when(Region == "San Joaquin"~ "Central",
+                            Region == "Sac River"~ "Confluence",
+                            TRUE~ Region)) %>%
   mutate(Month = month(Date),
          Year = year(Date),
          DOY = yday(Date),
@@ -53,8 +54,8 @@ temp_filt <- temp_Region %>%
   filter(Year %in% c(2015, 2018)) %>%
   mutate(Suitable_max = ifelse(meanMax<21, 1, 0),
          Suitable_min = ifelse(meanMin<21, 1, 0),
-         DiffMax = meanMax-21,
-         DiffMin = meanMin-21) %>%
+         DiffMax = 21-meanMax,
+         DiffMin = 21-meanMin) %>%
   group_by(Region) %>%
   mutate(Suitable = sum(Suitable_max == 1)/n()) %>%
   ungroup()%>%
@@ -81,7 +82,7 @@ theme_fig <- theme_bw() +
 
 ggplot(temp_filt) + 
   geom_tile(aes(DOY, Region, fill = DiffMin)) +
-  scale_fill_steps2(midpoint=0, n.breaks=8, low = "darkblue", high = "tomato3")+
+  scale_fill_steps2(midpoint=0, n.breaks=8, low = "tomato3", high = "darkblue")+
   geom_line(data = data.frame(x = c(0, 365) + 0.5, y = rep(2:6, each = 2) - 0.5),
             aes(x = x, y = y, group = y)) +
   scale_colour_manual(values = c("navy", "navajowhite3")) + 
@@ -91,12 +92,13 @@ ggplot(temp_filt) +
 
 (maxplot <- ggplot(temp_filt) + 
   geom_tile(aes(DOY, Region, fill = DiffMax)) +
-  scale_fill_steps2(midpoint=0, n.breaks=12, low = "darkblue", high = "tomato3")+
+  scale_fill_steps2(midpoint=0, n.breaks=12, low = "tomato3", high = "darkblue")+
   geom_line(data = data.frame(x = c(0, 365) + 0.5, y = rep(2:6, each = 2) - 0.5),
             aes(x = x, y = y, group = y)) +
   geom_vline(xintercept = seq(30,360, 30), linetype = "longdash") +
   scale_colour_manual(values = c("navy", "navajowhite3")) +
-  scale_x_continuous(breaks = seq(0,365, 30)) +
+  scale_x_continuous(breaks = seq(0,365, 30),
+                     expand = c(0,0)) +
   facet_wrap(~Year,nrow = 2) +
   labs(fill = "Difference between \nregional mean maximum \ntemperature and 21°C", x = "Day of year") + 
   theme_fig + theme(axis.title.y = element_blank(),
@@ -110,8 +112,8 @@ ggplot(temp_filt) +
 ```
 
 ```{r}
-tiff(filename=file.path("Figures/MaxTempComparisonYears.tiff"), units="in",type="cairo", bg="white", height=6, 
-     width=9, res=300, pointsize=10,compression="lzw")
+png(filename=file.path("Figures/MaxTempComparisonYears.png"), units="in",type="cairo", bg="white", height=6, 
+     width=9, res=300, pointsize=10)
 maxplot
 dev.off()
 ```
