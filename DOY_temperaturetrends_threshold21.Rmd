@@ -52,6 +52,7 @@ temp_Region <- tempDaily %>%
 
 temp_filt <- temp_Region %>%
   filter(Year %in% c(2015, 2018)) %>%
+  mutate(Date2 =date(paste0("1998-", month(Date), "-", day(Date) ))) %>%
   mutate(Suitable_max = ifelse(meanMax<21, 1, 0),
          Suitable_min = ifelse(meanMin<21, 1, 0),
          DiffMax = 21-meanMax,
@@ -90,18 +91,26 @@ ggplot(temp_filt) +
   facet_wrap(~Year,nrow = 2) +
   theme_fig 
 
+months = as.Date(c("1998-01-01", "1998-02-01", "1998-03-01", "1998-04-01","1998-05-01", "1998-06-01","1998-07-01", "1998-08-01","1998-09-01", "1998-10-01","1998-11-01", "1998-12-01", "1998-12-31"))
+
 (maxplot <- ggplot(temp_filt) + 
-  geom_tile(aes(DOY, Region, fill = DiffMax)) +
+  geom_tile(aes(Date2, Region, fill = DiffMax)) +
   scale_fill_steps2(midpoint=0, n.breaks=12, low = "tomato3", high = "darkblue")+
-  geom_line(data = data.frame(x = c(0, 365) + 0.5, y = rep(2:6, each = 2) - 0.5),
-            aes(x = x, y = y, group = y)) +
-  geom_vline(xintercept = seq(30,360, 30), linetype = "longdash") +
+    geom_vline(xintercept = months, linetype = "longdash") + 
+    geom_line(data = 
+                 data.frame(x = as.Date(c("1998-01-01", "1998-12-31")) + 0.5,
+                            y = rep(2:6, each = 2) - 0.5),   
+                            aes(x = x, y = y, group = y)) +
+    # geom_line(data = data.frame(x = c(0, 365) + 0.5, y = rep(2:6, each = 2) - 0.5),
+   #           aes(x = x, y = y, group = y)) +
   scale_colour_manual(values = c("navy", "navajowhite3")) +
-  scale_x_continuous(breaks = seq(0,365, 30),
+  scale_x_date(date_breaks = "1 month", date_labels = "%b",
                      expand = c(0,0)) +
+    scale_y_discrete(expand = c(0,0))+
   facet_wrap(~Year,nrow = 2) +
-  labs(fill = "Difference between \nregional mean maximum \ntemperature and 21°C", x = "Day of year") + 
+  labs(fill = "Difference between \nregional mean maximum \ntemperature and 21°C") + 
   theme_fig + theme(axis.title.y = element_blank(),
+                    axis.title.x = element_blank(),
                     legend.position = "top",
                     legend.text = element_text(size = 11),
                     plot.margin = margin(0,0.2,0.5,0.2, "in")) +
