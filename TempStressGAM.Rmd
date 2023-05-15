@@ -97,7 +97,7 @@ heatDays21 <- heatDays210 %>%
 highStress21 <- heatDays21 %>%
   filter(Stress == "High")%>%
  mutate(nDaysAdj = round((propDays*365),0)) %>%
-  rename(Index = ...1) %>%
+  mutate(Index = 1:n()) %>%
   left_join(latlon)%>%
   filter(WY>2009 & WY<2020,
          Station != "OH1")
@@ -105,14 +105,14 @@ highStress21 <- heatDays21 %>%
 highStress25 <- heatDays25 %>%
   filter(Stress == "High") %>%
   mutate(nDaysAdj = round((propDays*365),0)) %>%
-  rename(Index = ...1) %>%
+ mutate(Index = 1:n()) %>%
   left_join(latlon)%>%
   filter(WY>2009 & WY<2020,
          Station != "OH1")
 
 noRecov21 <- noRecov210 %>%
   left_join(Anomaly) %>%
-  rename(Index = ...1) %>%
+ mutate(Index = 1:n()) %>%
   filter(StressAllDay == "Y") %>%
   mutate(nDaysAdj = round((propDays*365),0)) %>%
   left_join(latlon) %>%
@@ -121,7 +121,7 @@ noRecov21 <- noRecov210 %>%
 
 noRecov25 <- noRecov250 %>%
   left_join(Anomaly) %>%
-  rename(Index = ...1) %>%
+ mutate(Index = 1:n()) %>%
   filter(StressAllDay == "Y")%>%
   mutate(nDaysAdj = round((propDays*365),0)) %>%
   left_join(latlon)%>%
@@ -450,7 +450,7 @@ Read delta shapefile in (shapefile of the Delta)
 Read station latlons in, convert to sf
 
 ```{r}
-regions = read_sf("RosieRegions/shpExport.shp")
+regions = read_sf("RosieRegions/Rosies_regions_edited.shp")
 regions = st_transform(regions, crs = 4326)
 
 delta = read_sf("DeltaShapefile/hydro_delta_marsh.shp")
@@ -657,9 +657,9 @@ range(newdatag25NRabin$Prediction*365) # very small
 
 #### Save.load files
 ```{r}
-save(delta2, stas, newdatag21abin, newdatag25abin, newdatag21NRabin,  newdatag25NRabin, file = "newdataPreds_annualanomaly_20211202.RData")
+save(delta2, stas, newdatag21abin, newdatag25abin, newdatag21NRabin,  newdatag25NRabin, file = "newdataPreds_annualanomaly_20230503.RData")
 
-load("newdataPreds_annualanomaly_20211202.RData")
+load("newdataPreds_annualanomaly_20230503.RData")
 ```
 
 Out of function
@@ -741,13 +741,13 @@ rastered_preds25NRabin <- Rasterize_all(newdatag25NRabin, Prediction2)
 
 #### Save raster files
 ```{r}
-save(rastered_preds21abin, rastered_preds25abin, rastered_preds21NRabin, rastered_preds25NRabin, file = "RasteredPreds_20211202.RData")
+save(rastered_preds21abin, rastered_preds25abin, rastered_preds21NRabin, rastered_preds25NRabin, file = "RasteredPreds_20230503.RData")
 ```
 
 #### Start here if just want to plot
 ```{r}
 load("deltabuffThick.RData")
-load("RasteredPreds_20211202.RData")
+load("RasteredPreds_20230503.RData")
 ```
 
 
@@ -824,9 +824,9 @@ plot(raster25NRDiff_crop)
 
 Save crops
 ```{r}
-save(raster25Diff_crop, raster21Diff_crop, raster21NRDiff_crop, raster25NRDiff_crop, file = "RasterDiff_20211202.RData")
+save(raster25Diff_crop, raster21Diff_crop, raster21NRDiff_crop, raster25NRDiff_crop, file = "RasterDiff_20230503.RData")
 
-load("RasterDiff_20211202.RData")
+load("RasterDiff_20230503.RData")
 ```
 
 
@@ -958,9 +958,9 @@ rastered_preds25NRabin[[2]]-rastered_preds25NRabin[[1]]
 
 #### Save and load here
 ```{r}
-save(plot21_anom, plot21_avg, plot25_anom, plot25_avg, plot21NR_anom, plot21NR_avg, plot25NR_anom, plot25NR_avg, raster21DiffPlot, raster25DiffPlot, raster21NRDiffPlot, raster25NRDiffPlot, file= "finalplots_20211202.RData")
+save(plot21_anom, plot21_avg, plot25_anom, plot25_avg, plot21NR_anom, plot21NR_avg, plot25NR_anom, plot25NR_avg, raster21DiffPlot, raster25DiffPlot, raster21NRDiffPlot, raster25NRDiffPlot, file= "finalplots_20230503.RData")
 
-load("finalplots_20211202.RData")
+load("finalplots_20230503.RData")
 ```
 
 
@@ -1070,10 +1070,10 @@ plot25_avg3 <- annotate_figure(plot25_avg2,
 ```{r}
 tiff(filename=file.path("Figures/StressPlot.tiff"), units="in",type="cairo", bg="white", height=6.5, 
      width=8, res=300, pointsize=10,compression="lzw")
-stressPlotC <- grid.arrange(legend1, legend2, plot21_avg3, plot21_anom2, raster21DiffPlot2, plot25_avg3, plot25_anom2, raster25DiffPlot2,
+(stressPlotC <- grid.arrange(legend1, legend2, plot21_avg3, plot21_anom2, raster21DiffPlot2, plot25_avg3, plot25_anom2, raster25DiffPlot2,
                             nrow = 3,
             layout_matrix = rbind(c(1,1,2), c(3,4,5), c(6,7,8)),
-             widths = c(3.3,3,3), heights = c(0.75,3.3,3.05))
+             widths = c(3.3,3,3), heights = c(0.75,3.3,3.05)))
 dev.off()
 ```
 
@@ -1154,7 +1154,7 @@ legend4
 
 ##### Final No Recovery Plot
 ```{r}
-tiff(filename=file.path("Figures/StressNRPlot.tiff"), units="in",type="cairo", bg="white", height=3.5, 
+tiff(filename=file.path("Figures/StressNRPlot_updated.tiff"), units="in",type="cairo", bg="white", height=3.5, 
      width=8, res=300, pointsize=10,compression="lzw")
 # stressPlotD <- grid.arrange(legend3, legend4, plot21NR_avg3, plot21NR_anom2, raster21NRDiffPlot2, plot25NR_avg3, plot25NR_anom2, raster25NRDiffPlot2,
 #                             nrow = 3,
@@ -1180,12 +1180,14 @@ Info25 <- noRecov25 %>%
   mutate(AnomalyGrp = ifelse(Anomaly>0.4, "High", "Low"),
          Region = replace(Region, Region == "San Joaquin", "Central"),
          Region = replace(Region, Region == "Sac River", "Confluence")) %>%
-  mutate(Region = factor(Region, levels = c("Far North", "North Delta", "Confluence", "Central", "South", "Suisun Bay", "Suisun Marsh")))
+  mutate(Region = factor(Region, levels = c("North Delta", "Confluence", "Central", "South", "Suisun Bay", "Suisun Marsh")))
 
 Range <- Info25 %>%
-  group_by(AnomalyGrp) %>%
+  group_by(AnomalyGrp, Region) %>%
   summarize(min = min(nDaysAdj),
-            max = max(nDaysAdj))
+            mean = mean(nDaysAdj),
+            max = max(nDaysAdj),
+            sd = sd(nDaysAdj))
 (Anomaly25NRPlot <- ggplot(Info25) + 
   geom_boxplot(aes(x = Region, y = nDays, fill = AnomalyGrp)) + 
   labs(y = "Number of Days of Heat Stress at 25°C", fill = "Anomaly") + 
@@ -1196,10 +1198,76 @@ Range <- Info25 %>%
 ```
 
 ```{r}
-tiff(filename=file.path("Figures/Anomaly25NRPlot.tiff"), units="in",type="cairo", bg="white", height=4, 
+tiff(filename=file.path("Figures/Anomaly25NRPlot_updated.tiff"), units="in",type="cairo", bg="white", height=4, 
      width=6, res=300, pointsize=10,compression="lzw")
 
 Anomaly25NRPlot
 dev.off()
+```
+
+## Get estimates of ndays by region
+```{r}
+# predicted data
+
+# Model for 21 days
+newdatag21abin$Prediction2 = newdatag21abin$Prediction*365
+df_data21 <- as.data.frame(newdatag21abin)
+df_data21_sf <- df_sf <- st_as_sf(df_data21, coords = c("Longitude", "Latitude"), crs = 4326)
+deltabuff_4326 <- st_transform(deltabuff, st_crs(df_data21_sf))
+
+df_data21_diff <- df_data21_sf_regions %>%
+  as.data.frame() %>%
+  filter(!is.na(Regions)) %>%
+  select(-Prediction, -SE, -L95, -U95) %>%
+  pivot_wider(names_from = "Anomaly",values_from = "Prediction2", id_cols = c("Location", "Latitude_s", "Longitude_s", "Regions")) %>%
+  mutate(diff = `1`-`0`) %>%
+  pivot_longer(cols = c(`0`:diff), names_to = "Anom", values_to = "value") %>%
+  group_by(Anom) %>%
+  mutate(meanAnom= mean(value, na.rm = TRUE),
+         sdAnom = sd(value, na.rm = TRUE)) %>%
+  ungroup() %>%
+  group_by(Regions, Anom, meanAnom, sdAnom) %>%
+  summarize(min = min(value, na.rm = TRUE),
+            max = max(value, na.rm = TRUE),
+            mean = mean(value, na.rm = TRUE),
+            sd = sd(value, na.rm = TRUE),
+            n = n()) %>%
+  
+  ungroup()
+
+write_csv(df_data21_diff, "Data/stressgam_predictions_summarized_21.csv")
+
+
+
+# Model for 25 days
+newdatag25abin$Prediction2 = newdatag25abin$Prediction*365
+df_data25 <- as.data.frame(newdatag25abin)
+df_data25_sf <- df_sf <- st_as_sf(df_data25, coords = c("Longitude", "Latitude"), crs = 4326)
+deltabuff_4326 <- st_transform(deltabuff, st_crs(df_data25_sf))
+
+df_data25_crop <- st_crop(df_data25_sf, deltabuff_4326)
+head(df_data25_crop)
+df_data25_sf_regions <- st_join(df_data25_crop, regions, join = st_within)
+df_data25_diff <- df_data25_sf_regions %>%
+  as.data.frame() %>%
+  filter(!is.na(Regions)) %>%
+    select(-Prediction, -SE, -L95, -U95) %>%
+  pivot_wider(names_from = "Anomaly",values_from = "Prediction2", id_cols = c("Location", "Latitude_s", "Longitude_s", "Regions")) %>%
+  mutate(diff = `1`-`0`) %>%
+  pivot_longer(cols = c(`0`:diff), names_to = "Anom", values_to = "value") %>%
+  group_by(Anom) %>%
+  mutate(meanAnom= mean(value, na.rm = TRUE),
+         sdAnom = sd(value, na.rm = TRUE)) %>%
+  ungroup() %>%
+  group_by(Regions, Anom, meanAnom, sdAnom) %>%
+  summarize(min = min(value, na.rm = TRUE),
+            max = max(value, na.rm = TRUE),
+            mean = mean(value, na.rm = TRUE),
+            sd = sd(value, na.rm = TRUE),
+            n = n()) %>%
+  
+  ungroup()
+
+write_csv(df_data25_diff, "Data/stressgam_predictions_summarized_25.csv")
 ```
 
