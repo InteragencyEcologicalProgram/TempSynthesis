@@ -157,9 +157,9 @@ map_final <-
   #ggmap(map_obj) + 
   ggplot() +
   geom_sf(data = regions_4269, aes(fill = Regions), inherit.aes = FALSE, alpha = 0.3)+
-  geom_sf(data = WW_Delta_crop, fill = "steelblue", colour = "steelblue", alpha = 0.6, inherit.aes = FALSE) + 
+  geom_sf(data = WW_Delta_crop, fill = "gray60", colour = "gray50", alpha = 0.6, inherit.aes = FALSE) + 
   geom_sf(data = filter(WW_Delta,HNAME == "SACRAMENTO RIVER"), fill = "navyblue", colour = "navyblue", alpha = 0.6, inherit.aes = FALSE) + 
-  geom_sf(data = filter(WW_Delta,HNAME == "SAN JOAQUIN RIVER"), fill = "cadetblue1", colour = "cadetblue1", alpha = 0.8, inherit.aes = FALSE) +  
+  geom_sf(data = filter(WW_Delta,HNAME == "SAN JOAQUIN RIVER"), fill = "dodgerblue", colour = "dodgerblue", alpha = 0.8, inherit.aes = FALSE) +  
   geom_sf(data = stations_sf_4269, size = 2, shape = 21, 
           aes(fill = Region), inherit.aes = FALSE)+
   geom_label(data = centroid_coords, aes(label = Regions, x = X, y = Y), inherit.aes = FALSE, 
