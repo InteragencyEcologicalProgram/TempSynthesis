@@ -26,18 +26,22 @@ library(here)
 ## Import data
 - These datasets were created in TempHeatStress.Rmd based off tempDaily.rds
 ```{r}
-tempToUse <- readRDS(here::here("Data", "tempToUse_20210811.rds"))
+tempToUse <- readRDS(here::here("Data", "temp10years_20210811.rds"))
 tempDaily <- readRDS(here::here("Data", "tempDaily_20210811.rds"))
 thresholds <- readxl::read_excel(here::here("SpeciesTables", "SpeciesThresholds.xlsx")) %>%
   na_if(.,"NA") 
-species <- readr::read_csv(here::here("SpeciesTables", "absence_presence_temp.csv")) 
+species0b <- readr::read_csv(here::here("SpeciesTables", "exportfishabsence_presence.csv")) 
+species0 <- readr::read_csv(here::here("SpeciesTables", "absence_presence_temp.csv")) %>%
+  filter(Species %in% c("Giant Reed EAV", "Brazilian Waterweed", "Water Hyacinth FAV", "Microcystis", "Asian Clam", "Overbite Clam"))
+species <- rbind(species0, species0b)
 ```
 
 ## Manipulate data
 ```{r}
 tempRegions <- tempDaily %>%
-  mutate(Region = replace(Region, Region == "San Joaquin", "Central"),
-         Region = replace(Region, Region == "Sac River", "Confluence"))
+  mutate(Region = case_when(Region == "San Joaquin"~ "Central",
+                            Region == "Sac River"~ "Confluence",
+                            TRUE~ Region))
 ```
 
 Calculate the number of stations within each region
@@ -160,7 +164,7 @@ daysExceedance3 <- tempRegions2 %>%
   ungroup() %>%
     mutate(SpeciesLS = specieslsinput) %>%
   left_join(filternewdf) %>%
-  select(WY, Species, LifeStage, Tolerance,  daysExceedanceTol, daysExceedanceOpt, Suboptimum)%>%
+  dplyr::select(WY, Species, LifeStage, Tolerance,  daysExceedanceTol, daysExceedanceOpt, Suboptimum)%>%
   distinct() 
 }
 ```
@@ -295,7 +299,7 @@ daysExceedance3 <- tempRegions2 %>%
   ungroup() %>%
     mutate(SpeciesLS = specieslsinput) %>%
   left_join(filternewdf) %>%
-  select(WY, Species, LifeStage, Tolerance_Upper,  daysExceedanceTol, daysExceedanceOpt, Suboptimum_Upper)%>%
+  dplyr::select(WY, Species, LifeStage, Tolerance_Upper,  daysExceedanceTol, daysExceedanceOpt, Suboptimum_Upper)%>%
   distinct() 
 }
 ```
@@ -317,7 +321,7 @@ DaysExceedanceDataUpper <- DaysExceedanceDataUpper0 %>%
 
 ### Start from here if just editing plot
 ```{r}
-#write_csv(DaysExceedanceDataUpper, "SpeciesTables/daysExceedanceUpperDataForPlotting.csv")
+# write_csv(DaysExceedanceDataUpper, "SpeciesTables/daysExceedanceUpperDataForPlotting.csv")
 DaysExceedanceDataUpper <- read_csv("SpeciesTables/daysExceedanceUpperDataForPlotting.csv")
 ```
 
@@ -335,7 +339,13 @@ daysExceedanceSummary <- DaysExceedanceDataUpper %>%
          outputSuboptimum = ifelse(is.na(meanSuboptimum), NA, paste0(meanSuboptimum, " (", minSuboptimum, "-", maxSuboptimum, ")"))) %>%
   distinct()
 
-write_csv(daysExceedanceSummary, here::here("SpeciesTables","Table_numDaysExceedance_v2.csv"))            
+write_csv(daysExceedanceSummary, here::here("SpeciesTables","Table_numDaysExceedance_v3.csv"))    
+
+daysExceedanceSummary %>%
+  ungroup() %>%
+  filter(!(Species %in% c("Giant Reed EAV", "Brazilian Waterweed", "Water Hyacinth FAV", "Microcystis", "Asian Clam", "Overbite Clam"))) %>%
+  summarize(meanTol = mean(meanTolerance, na.rm = TRUE),
+            meanOpt = mean(meanSuboptimum, na.rm = TRUE))
 ```
 
 
