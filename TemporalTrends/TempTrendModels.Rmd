@@ -20,6 +20,7 @@ library(plotly)
 library(pscl)
 library(visreg)
 library(lattice)
+library(here)
 ```
 
 ## Data Prep and Exploration
@@ -30,8 +31,12 @@ Data import
 tempFilt0 <- readRDS(here("Data", "Temp_filtered.rds")) %>%
   select(-StationName) # temperature data 
 
-Regions <- read.csv(here("Data", "Stations_wRosiesReg.csv")) %>%
-  select(-c(Latitude, Longitude)) # Rosie's Regions
+# Regions <- read.csv(here("Data", "Stations_wRosiesReg2.csv")) %>%
+#   select(-c(Latitude, Longitude)) %>%
+#   mutate(Region = ifelse(Station == "LIS", "North Delta", Region))# Rosie's Regions
+Regions <- read_csv(here::here("Data", "stations_w_regions_20230601.csv"))  %>%
+  select(Station, Regions) %>%
+  rename(Region = Regions)
 
 staInfo <- read.csv(here("Data", "StationsMetadata.csv")) # Get habitat type here
 
@@ -60,7 +65,7 @@ Merge regions, habitats, wytype
 # subregions <- st_read("Data/EDSM_Subregions/EDSM_Subregions_03302020.shp")
 
 tempFilt1 <- left_join(tempFilt0, Regions, by = "Station") %>%
-  filter(!Station %in% c("CNT", "CPP", "DAR", "DMC", "DYR","ECD", "HBP", "ROR", "DV7", "FLT"),
+  filter(!Station %in% c("CNT", "CPP", "DAR", "DMC", "DYR","ECD", "HBP", "ROR", "DV7", "FLT", "RCS", "FPT"),
          !is.na(Region)) 
 tempFilt2 <- left_join(tempFilt1, staInfo, by = "Station") %>%
   select(-c(StartDateDataset:County))
@@ -75,6 +80,7 @@ tempFilt$HabitatType <- as.factor(tempFilt$HabitatType)
 ```
 
 * Informational (don't need to run for filtering but useful info)
+These are slow
 ```{r Filtering down }
 StationYearCombo <- tempFilt %>%
   group_by(Region, Station, WY, Date) %>%
@@ -91,6 +97,25 @@ StationNyears <- StationYearCombo %>%
             lastYear = last(WY),
             nYear = n()) %>%
   ungroup()
+
+StationDayFilterN <- tempFilt %>%
+  left_join(StationYearCombo) %>%
+  filter(totalDays>275) %>%
+  select(-Date) %>%
+  unique() %>%
+  group_by(Region, Station, WY) %>%
+  mutate(nMonth = n()) %>%
+  ungroup()
+
+StationMonthFilterN <- StationDayFilterN %>%
+  filter(nMonth >10) %>%
+  select(-Month) %>%
+  unique() %>%
+  group_by(Region, Station) %>%
+  mutate(nYear = n())
+
+
+
 ```
 
 New filtering code by days then months then years
@@ -102,7 +127,7 @@ StationYearCombo <- tempFilt %>%
   unique() %>%
   group_by(Region, Station, WY) %>%
   mutate(totalDays = n()) %>%
-  ungroup() 
+  ungroup()
   
 StationDayFilter <- StationYearCombo %>%
   filter(totalDays>275) %>%
@@ -206,19 +231,21 @@ MapYears2 %>%
 ```
 
 Subset data to use to data that has at least 10 years of data, and that extends to 2019, and each year has > 275 days of data
-Took out Far North Region. Should we add LIS somewhere else?
+Took out Far North Region. Add LIS to North Delta.
 ```{r subset}
 tempToUse <- inner_join(tempFilt, StationYearFilter, by = c("Region","Station", "WY")) 
+tempMonth <- inner_join(tempFilt, StationMonthFilter) 
 #tempToUse$WY = as.numeric(tempToUse$WY)
 today = format(today(), "%Y%m%d")
-#saveRDS(tempToUse, paste0("Data/temp10years_", today, ".rds"))
+saveRDS(tempToUse, paste0("Data/temp10years_", today, ".rds"))
+saveRDS(tempToUse, here::here("Data/temp10years_20210811.rds"))
 ```
 
 
 Edit dataset for Peggy (Calendar Year)
 1 more station: SJJ
 ```{r}
-StationYearComboCY <- tempFilt %>%
+StationYearComboCY <- tempFilt1 %>%
   filter(Year>2009) %>%
   select(c(Region,Station,Year,Month, Date)) %>%
   unique() %>%
@@ -296,7 +323,7 @@ tempDaily <- tempToUse %>%
             rangeTemp = maxDaily-minDaily) %>%
   ungroup()
 tempDaily$WY <- as.numeric(tempDaily$WY)
-saveRDS(tempDaily, "Data/tempDaily_20210811.rds")
+saveRDS(tempDaily, here::here("Data/tempDaily_20210811.rds"))
 ```
 
 Monthly Temp
@@ -320,7 +347,7 @@ tempAn <- tempToUse %>%
             meanTemp = round(mean(Temp),1),
             rangeTemp = maxTemp-minTemp) %>%
   ungroup()
-#saveRDS(tempAn, "Data/tempAnnual.rds")
+# saveRDS(tempAn, here::here("Data/tempAnnual.rds"))
 ```
 
 Code to make sure every month has data - currently is not being used (need to join with above)
@@ -347,7 +374,7 @@ tempMon <- left_join(tempMon0, tempAvMon0) %>%
   select(Region, Station, HabitatType,Year,  WY, WYType2_Sac, Index_c, Month, maxTemp, maxAvTemp, minAvTemp, everything())
 
 
-#saveRDS(tempMon, here("Data","tempMonthly_20220801.rds"))
+# saveRDS(tempMon, here::here("Data","tempMonthly_20220801.rds"))
 ```
 
 ########### Written files from above ###############
@@ -356,7 +383,7 @@ Read in
 setwd("C:/Users/cpien/OneDrive - California Department of Water Resources/Work/ClimateChange/R_code/TempSynthesis/")
 
 tempFilt <- readRDS("Data/tempFilt.rds") 
-tempToUse <- readRDS("Data/temp10years_20200922.rds")
+tempToUse <- readRDS(here::here("Data/temp10years_20210811.rds"))
 tempAn <- readRDS("Data/tempAnnual.rds")
 tempMon <- readRDS("Data/tempMonthly.rds")
 tempDaily <- readRDS("Data/tempDaily.rds")
