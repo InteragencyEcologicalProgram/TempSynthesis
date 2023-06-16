@@ -1,0 +1,374 @@
+---
+title: "TempTrendModels"
+author: "Catarina Pien"
+date: "9/10/2020"
+output: 
+  html_document:
+    code_folding: hide
+    editor_options: 
+      chunk_output_type: console
+---
+# Create Datasets
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(lubridate)
+library(viridis) # color palette
+library(plotly)
+library(pscl)
+library(visreg)
+library(lattice)
+library(here)
+```
+
+## Data import
+```{r import, include = FALSE, message = FALSE, warning = FALSE}
+tempFilt0 <- readRDS(here("Data", "Temp_filtered.rds")) %>%
+  dplyr::select(-StationName) # temperature data 
+
+# Regions <- read.csv(here("Data", "Stations_wRosiesReg2.csv")) %>%
+#   select(-c(Latitude, Longitude)) %>%
+#   mutate(Region = ifelse(Station == "LIS", "North Delta", Region))# Rosie's Regions
+Regions <- read_csv(here::here("Data", "stations_w_regions_20230601.csv"))  %>%
+  dplyr::select(Station, Regions) %>%
+  rename(Region = Regions)
+
+staInfo <- read.csv(here("Data", "StationsMetadata.csv")) # Get habitat type here
+
+LatLon <- dplyr::select(staInfo, c("Station", "StationName", "Latitude", "Longitude"))
+
+WYType <- read.csv(here("Data", "WYType.csv")) %>% # Get WY, WY type, Index 
+  dplyr::select(-c(starts_with("Runoff"))) %>%
+   mutate(Index_c = Index_Sac + Index_SJ) 
+
+WYSimple <- dplyr::select(WYType, c("WY", "WYType2_Sac", "Index_c"))
+
+str(tempFilt0)
+```
+
+Add variables
+```{r vars}
+tempFilt0 <- tempFilt0 %>%
+  mutate(Year = year(tempFilt0$Date),
+         Month = month(tempFilt0$Date),
+         yDay = yday(tempFilt0$Date)) %>%
+  mutate(WY = ifelse(Month %in% c(10, 11, 12), Year+1, Year))
+```
+
+## Filter out stations, merge regions and wytype
+```{r regions, message = FALSE, warning = FALSE}
+tempFilt1 <- left_join(tempFilt0, Regions, by = "Station") %>%
+  filter(!Station %in% c("CNT", "CPP", "DAR", "DMC", "DYR","ECD", "HBP", "ROR", "DV7", "FLT", "RCS", "FPT"),
+         !Station %in% c("RPN", "RIP", "VER"), 
+         !is.na(Region)) 
+tempFilt2 <- left_join(tempFilt1, staInfo, by = "Station") %>%
+  dplyr::select(-c(StartDateDataset:County))
+
+tempFilt <- left_join(tempFilt2, WYSimple, by = "WY") 
+
+tempFilt$Region <- as.factor(tempFilt$Region)
+tempFilt$HabitatType <- as.factor(tempFilt$HabitatType)
+
+# saveRDS(tempFilt, "Data/tempFilt.rds")
+
+```
+
+* Informational (don't need to run for filtering but useful info)
+These are slow
+```{r Filtering down }
+StationYearCombo <- tempFilt %>%
+  group_by(Region, Station, WY, Date) %>%
+  summarize(perDay = n()) %>%
+  ungroup() %>%
+  group_by(Region, Station, WY) %>%
+  summarize(totalDays = n()) %>%
+  ungroup()
+
+StationNyears <- StationYearCombo %>%
+  filter(totalDays>275) %>%
+  group_by(Region, Station) %>%
+  summarize(firstYear = first(WY),
+            lastYear = last(WY),
+            nYear = n()) %>%
+  ungroup()
+
+StationDayFilterN <- tempFilt %>%
+  left_join(StationYearCombo) %>%
+  filter(totalDays>275) %>%
+  select(-Date) %>%
+  unique() %>%
+  group_by(Region, Station, WY) %>%
+  mutate(nMonth = n()) %>%
+  ungroup()
+
+StationMonthFilterN <- StationDayFilterN %>%
+  filter(nMonth >10) %>%
+  select(-Month) %>%
+  unique() %>%
+  group_by(Region, Station) %>%
+  mutate(nYear = n())
+
+
+
+```
+
+## Filter by days then months then years
+10 years of data
+```{r}
+StationYearCombo <- tempFilt %>%
+  filter(WY>2009) %>%
+  dplyr::select(c(Region,Station,WY,Month, Date)) %>%
+  unique() %>%
+  group_by(Region, Station, WY) %>%
+  mutate(totalDays = n()) %>%
+  ungroup()
+
+StationNyears <- StationYearCombo %>%
+  filter(totalDays>275) %>%
+  group_by(Region, Station) %>%
+  summarize(firstYear = first(WY),
+            lastYear = last(WY),
+            nYear = n()) %>%
+  ungroup()
+  
+StationDayFilter <- StationYearCombo %>%
+  filter(totalDays>275) %>%
+  dplyr::select(-Date) %>%
+  unique() %>%
+  group_by(Region, Station, WY) %>%
+  mutate(nMonth = n()) %>%
+  ungroup()
+
+StationMonthFilter <- StationDayFilter %>%
+  filter(nMonth >10) %>%
+  dplyr::select(-Month) %>%
+  unique() %>%
+  group_by(Region, Station) %>%
+  mutate(nYear = n())
+
+StationYearFilter <- StationMonthFilter %>%
+  filter(nYear>7) 
+
+ListOfSta <- StationYearFilter %>%
+  dplyr::select(-c(WY, totalDays, nMonth))%>%
+  unique() 
+
+# write.csv(StationYearFilter, "StationYearFilter.csv")
+```
+
+Subset data to use to data that has at least 10 years of data, and that extends to 2019, and each year has > 275 days of data
+Took out Far North Region. Add LIS to North Delta.
+```{r subset}
+tempToUse <- inner_join(tempFilt, StationYearFilter, by = c("Region","Station", "WY")) 
+tempMonth <- inner_join(tempFilt, StationMonthFilter) 
+#tempToUse$WY = as.numeric(tempToUse$WY)
+today = format(today(), "%Y%m%d")
+saveRDS(tempToUse, paste0("Data/temp10years_", today, ".rds"))
+saveRDS(tempToUse, here::here("Data/temp10years_20210811.rds"))
+```
+
+
+# Calendar Year 
+
+Edit dataset for Peggy (Calendar Year)
+```{r}
+StationYearComboCY <- tempFilt1 %>%
+  filter(Year>2009) %>%
+  dplyr::select(c(Region,Station,Year,Month, Date)) %>%
+  unique() %>%
+  group_by(Region, Station, Year) %>%
+  mutate(totalDays = n()) %>%
+  ungroup() 
+  
+StationDayFilterCY <- StationYearComboCY %>%
+  filter(totalDays>275) %>%
+  dplyr::select(-Date) %>%
+  unique() %>%
+  group_by(Region, Station, Year) %>%
+  mutate(nMonth = n()) %>%
+  ungroup()
+
+StationMonthFilterCY <- StationDayFilterCY %>%
+  filter(nMonth >10) %>%
+  dplyr::select(-Month) %>%
+  unique() %>%
+  group_by(Region, Station) %>%
+  mutate(nYear = n()) %>%ungroup()
+
+StationYearFilterCY <- StationMonthFilterCY %>%
+  filter(nYear>7) %>%
+  filter(Station!="FLT")
+
+ListOfStaCY <- StationYearFilterCY %>%
+  dplyr::select(-c(Year, totalDays, nMonth))%>%
+  unique() 
+
+# Write data -------------------------
+tempToUseCY <- inner_join(tempFilt, StationYearFilterCY, by = c("Region","Station", "Year")) %>%
+  dplyr::select(-nMonth, -nYear, -totalDays)
+#tempToUse$WY = as.numeric(tempToUse$WY)
+today = format(today(), "%Y%m%d")
+saveRDS(tempToUseCY, paste0("../manuscript_code/Data/temp10yearsCalYr_", today, ".rds"))
+
+```
+
+# Create additional datasets
+* Create dataset for mean, max, and min, var for Monthly
+* Filter for data that is represented for a whole year
+* Create datasets for mean, max, min
+
+Daily Temp
+```{r dailyoverall}
+tempDaily <- tempToUse %>%
+  group_by(Region, Station, HabitatType, WY, WYType2_Sac, Index_c, Date) %>%
+  summarize(maxDaily = max(Temp),
+            minDaily = min(Temp),
+            meanDaily = round(mean(Temp),1),
+            rangeTemp = maxDaily-minDaily) %>%
+  ungroup()
+tempDaily$WY <- as.numeric(tempDaily$WY)
+saveRDS(tempDaily, here::here("manuscript_code/Data/tempDaily.rds"))
+```
+
+Monthly Temp
+```{r monthlyoverall, message = FALSE, warning = FALSE}
+tempMon0 <- tempToUse %>% 
+  group_by(Region, Station, HabitatType, WY, WYType2_Sac, Index_c, Month) %>%
+  summarize(maxTemp = max(Temp),
+            minTemp = min(Temp),
+            meanTemp = round(mean(Temp),1),
+            rangeTemp = maxTemp-minTemp) %>%
+  ungroup()
+#saveRDS(tempMon0, "tempMonthly.rds")
+```
+
+Annual Temp
+```{r annualoverall}
+tempAn <- tempToUse %>% 
+  group_by(Region, Station, HabitatType, WY, WYType2_Sac, Index_c) %>%
+  summarize(maxTemp = max(Temp),
+            minTemp = min(Temp),
+            meanTemp = round(mean(Temp),1),
+            rangeTemp = maxTemp-minTemp) %>%
+  ungroup()
+# saveRDS(tempAn, here::here("Data/tempAnnual.rds"))
+```
+
+Code to make sure every month has data - currently is not being used (need to join with above)
+```{r nMon}
+# Filter to only data that has temps from every month so as not to skew the data that only has part of the year represented.
+nMon <- tempMon %>% group_by(Station, WY) %>%
+  summarize(nMon = n())
+
+nMon$WY <- as.numeric(nMon$WY)
+```
+
+Mean Max and Min Temp
+```{r Mean Max}
+tempAvMon0 <- tempToUse %>%
+  group_by(Region, Station, Year, WY, WYType2_Sac, Month, Date) %>%
+  summarize(maxTemp = max(Temp),
+            minTemp = min(Temp)) %>%
+  ungroup() %>%
+  group_by(Region, Station, Year, WY, WYType2_Sac,Month) %>%
+  summarize(maxAvTemp = round(mean(maxTemp),1),
+            minAvTemp = round(mean(minTemp),1))
+
+tempMon <- left_join(tempMon0, tempAvMon0) %>%
+  dplyr::select(Region, Station, HabitatType,Year,  WY, WYType2_Sac, Index_c, Month, maxTemp, maxAvTemp, minAvTemp, everything())
+
+
+saveRDS(tempMon, here::here("manuscript_code", "Data","tempMonthly.rds"))
+```
+
+########### Written files from above ###############
+Read in 
+```{r}
+setwd("C:/Users/cpien/OneDrive - California Department of Water Resources/Work/ClimateChange/R_code/TempSynthesis/")
+
+tempFilt <- readRDS("Data/tempFilt.rds") 
+tempToUse <- readRDS(here::here("Data/temp10years_20210811.rds"))
+tempAn <- readRDS("Data/tempAnnual.rds")
+tempMon <- readRDS("Data/tempMonthly.rds")
+tempDaily <- readRDS("Data/tempDaily.rds")
+```
+
+
+
+
+# Some exploratory plots to look at data
+```{r exploratory plots}
+tilerecord <- ggplot(StationYearFilter, aes(Station, ordered(WY), fill = totalDays)) + geom_tile() + labs(title = "Period of Record - Number of days each water year for each station") +
+  theme_bw() + theme(axis.text.y = element_text(size = 12),
+                     axis.text.x = element_text(size = 10, angle = 90, vjust = 0.5),
+                     axis.title = element_text(size =14),
+                     legend.text = element_text(size = 14),
+                     legend.title = element_text(size = 14))
+ggplotly(tilerecord)
+tilerecord
+
+nyears <- ggplot(StationNyears, aes(x = Region, y = nYear, color = Station)) + geom_point() +
+  labs(title = "Number of years of data by Region/Station, filtered for years with >200 days data")
+ggplotly(nyears)
+
+nYearBar <- ggplot(StationNyears, aes(y = ..count.., x = nYear)) + geom_bar() +
+  labs(title = "Count of Stations and number of years of data available") +
+  theme_bw() + theme(axis.text = element_text(size = 14),
+                     axis.title = element_text(size =14))
+ggplotly(nYearBar)
+nYearBar
+```
+
+Map showing distribution of data with number of years of data
+```{r map}
+library(leaflet)
+
+MapYears <- left_join(StationNyears, LatLon)
+
+# Palette from viridis
+  staPal <- colorNumeric("viridis", domain = MapYears$nYear)
+  
+MapYears %>%
+  leaflet() %>%
+  addTiles() %>%
+  addCircleMarkers(
+    color = ~staPal(nYear),
+    stroke = FALSE,
+    fillOpacity = 0.9,
+    lng = ~Longitude,
+    lat = ~Latitude,
+    labelOptions = labelOptions(noHide = F),
+    popup = ~paste(Station, ":", StationName, "<br/>", "nYears:", nYear, "<br/>",
+                   "Date Range:", firstYear, "-", lastYear)) %>%
+    addLegend(pal = staPal,
+            values = ~nYear,
+            position = "bottomright")
+```
+
+Map 10 years+ Data
+```{r}
+# Filter for those with 10 years + 
+MapYears2 <- MapYears %>% filter(nYear > 9)
+
+# Palette from viridis
+  staPal2 <- colorNumeric("magma", domain = MapYears2$nYear)
+  
+MapYears2 %>%
+  leaflet() %>%
+  addTiles() %>%
+  addCircleMarkers(
+    color = ~staPal2(nYear),
+    stroke = FALSE,
+    fillOpacity = 0.9,
+    lng = ~Longitude,
+    lat = ~Latitude,
+    labelOptions = labelOptions(noHide = F),
+    popup = ~paste(Station, ":", StationName, "<br/>", "nYears:", nYear, "<br/>",
+                   "Date Range:", firstYear, "-", lastYear)) %>%
+    addLegend(pal = staPal2,
+            values = ~nYear,
+            position = "bottomright")
+```
+

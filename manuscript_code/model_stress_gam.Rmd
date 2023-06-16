@@ -1,0 +1,1223 @@
+---
+title: "TempStressGAM"
+author: "Catarina Pien"
+date: "5/12/2021"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+# Temp Stress GAM
+
+## Load packages
+```{r}
+library(tidyverse)
+library(lubridate)
+library(mgcv)
+
+if (!require("rspatial")) devtools::install_github('rspatial/rspatial')
+library(rspatial)
+library( spgwr )
+library(nlme)
+library(boot)
+library(itsadug)
+library(raster)
+library(stars)
+library(countreg) # rootogram
+library(DHARMa) # residuals
+library(sf)
+library(sp)
+library(tidymv)
+library(gridExtra)
+library(grid)
+library(viridis)
+
+```
+
+## Load data
+
+- These datasets were created in TempHeatStress.Rmd based off tempDaily.rds
+```{r}
+latlon <- read_csv("manuscript_code/Data/StationsMetadata.csv")%>%
+  dplyr::select(c(Station, Latitude, Longitude))
+heatDays250 <- read_csv("manuscript_code/Data/heatDaysHighMedLow25_20210811.csv")
+heatDays210 <- read_csv("manuscript_code/Data/heatDaysHighLow21_20210904.csv")
+noRecov250 <- read_csv("manuscript_code/Data/noRecovery25_20210811.csv")
+noRecov210 <- read_csv("manuscript_code/Data/noRecovery21_20211118.csv")
+tempDaily0 <- readRDS("manuscript_code/Data/tempDaily.rds") %>%
+  filter(WY>2009 & WY<2020)
+```
+
+## Data Manipulation
+
+### Calculate temperature anomaly
+
+Calculate average temp over dataset. Subtract annual mean temperature - 10-yr mean temperature
+```{r calculateAnomaly}
+mean10Years <- tempDaily0 %>%
+  #filter(month(Date) > 4 & month(Date) < 10) %>%
+  mutate(mean10 = round(mean(meanDaily),1)) %>%
+  group_by(WY, mean10) %>%
+  summarize(meanAnnual = round(mean(meanDaily),1),
+            sdAnnual = round(sd(meanDaily),1),
+            Anomaly = meanAnnual-mean10,
+            AnomalyStd = Anomaly/sdAnnual) %>%
+  ungroup() %>%
+  unique()
+
+tempAnnual <- mean10Years
+# Divide anomaly by standard deviation?
+Anomaly <- tempAnnual %>%
+  dplyr::select(c(WY, Anomaly, AnomalyStd))
+```
+
+### Bring anomaly into datasets
+```{r joinAnomaly}
+heatDays25 <- heatDays250 %>%
+  left_join(Anomaly) 
+
+heatDays21 <- heatDays210 %>%
+  left_join(Anomaly)
+```
+
+### Filter to high stress/no recovery only
+```{r filterHighStress}
+highStress21 <- heatDays21 %>%
+  filter(Stress == "High")%>%
+ mutate(nDaysAdj = round((propDays*365),0)) %>%
+  mutate(Index = 1:n()) %>%
+  left_join(latlon)%>%
+  filter(WY>2009 & WY<2020,
+         Station != "OH1")
+
+highStress25 <- heatDays25 %>%
+  filter(Stress == "High") %>%
+  mutate(nDaysAdj = round((propDays*365),0)) %>%
+ mutate(Index = 1:n()) %>%
+  left_join(latlon)%>%
+  filter(WY>2009 & WY<2020,
+         Station != "OH1")
+
+noRecov21 <- noRecov210 %>%
+  left_join(Anomaly) %>%
+ mutate(Index = 1:n()) %>%
+  filter(StressAllDay == "Y") %>%
+  mutate(nDaysAdj = round((propDays*365),0)) %>%
+  left_join(latlon) %>%
+  filter(WY>2009 & WY<2020,
+         Station != "OH1")
+
+noRecov25 <- noRecov250 %>%
+  left_join(Anomaly) %>%
+ mutate(Index = 1:n()) %>%
+  filter(StressAllDay == "Y")%>%
+  mutate(nDaysAdj = round((propDays*365),0)) %>%
+  left_join(latlon)%>%
+  filter(WY>2009 & WY<2020,
+         Station != "OH1")
+```
+
+Look at data availability
+```{r plotAnomaly}
+tile1 <- ggplot(highStress21) + geom_tile(aes(x = fWY, y = Station, fill = propDays))
+tile <- ggplot(highStress21) + geom_tile(aes(x = fWY, y = Station, fill = Anomaly))
+
+tile1
+
+plotly::ggplotly(tile)
+```
+
+Look at high stress no recovery data
+* a couple of high points in the SE causing weird modeling results 
+```{r}
+ggplot(noRecov25) + geom_point(aes(x = Longitude, y = Latitude, color = propDays), size = 2.5) + facet_wrap(~Anomaly) + scale_color_viridis() + theme_bw()
+```
+
+
+
+
+## Models
+
+Look at data
+```{r}
+hist(highStress21$propDays)
+hist(highStress25$propDays)
+hist(noRecov21$propDays)
+hist(noRecov25$propDays)
+```
+
+
+### Models for heat stress days at 21C ---
+- no family 
+- binomial family
+- quasibinomial family
+- beta family
+
+#### Binomial
+```{r}
+# Binomial model
+g21abin <- gam(cbind(nDays, totalDays)~te(Latitude, Longitude, Anomaly, d = c(2,1), bs = c("tp", "tp"), k = c(12,6)) ,  data = highStress21, method= "REML", family = binomial)
+summary(g21abin)
+
+# Check residuals
+par(mfrow = c(2,2))
+gam.check(g21abin)
+# Plot residuals vs predicted
+plot(predict(g21abin), residuals(g21abin))
+abline(h=0, lty = 2, col = "grey")
+lines(lowess(predict(g21abin),residuals(g21abin)),col="black",lwd=2)
+
+# Plot predicted
+par(mfrow = c(1,1))
+vis.gam(g21abin,
+        view = c("Longitude", "Latitude"),
+        color = "heat", 
+        plot.type = "contour",
+        too.far = 0.1,
+        se = -1, type = "response")
+```
+
+#### Random effect
+```{r}
+# With random effect
+g21abinre <- gam(cbind(nDays, totalDays)~ te(Latitude, Longitude, Anomaly, d = c(2,1), bs = c("tp", "tp"), k = c(12,6)) +  s(Index, bs = 're'),  data = highStress21, method= "REML", family = binomial)
+summary(g21abinre)
+
+par(mfrow = c(2,2))
+gam.check(g21abinre)
+par(mfrow = c(1,1))
+vis.gam(g21abinre,
+        view = c("Longitude", "Latitude"),
+        color = "heat", 
+        plot.type = "contour",
+        too.far = 0.1,
+        se = -1, type = "response")
+```
+
+#### Plot residuals
+```{r}
+# Plot residuals vs predicted
+plot(predict(g21abin), residuals(g21abin))
+abline(h=0, lty = 2, col = "grey")
+lines(lowess(predict(g21abin),residuals(g21abin)),col="black",lwd=2)
+
+plot(predict(g21abinre), residuals(g21abinre))
+abline(h=0, lty = 2, col = "grey")
+lines(lowess(predict(g21abinre),residuals(g21abinre)),col="black",lwd=2)
+```
+
+#### Check for overdispersion
+```{r}
+# Check for overdispersion
+# rootogram doesn't work
+# root_g21abin <- rootogram(g21abin, style = "hanging", plot = FALSE)
+
+#Dharma doesn't work
+#simulationOutput <- simulateResiduals(fittedModel = g21abin)
+#testDispersion(simulationOutput)
+
+# Overdispersion for glm
+# https://bbolker.github.io/mixedmodels-misc/glmmFAQ.html#testing-for-overdispersioncomputing-overdispersion-factor
+overdisp_fun <- function(model) {
+    rdf <- df.residual(model)
+    rp <- residuals(model,type="pearson")
+    Pearson.chisq <- sum(rp^2)
+    prat <- Pearson.chisq/rdf
+    pval <- pchisq(Pearson.chisq, df=rdf, lower.tail=FALSE)
+    c(chisq=Pearson.chisq,ratio=prat,rdf=rdf,p=pval)
+}
+overdisp_fun(g21abin)
+```
+
+#### Quasibinomial
+```{r}
+g21abinQ <- gam(cbind(nDays, totalDays)~ te(Latitude, Longitude, Anomaly, d = c(2,1), bs = c("tp", "tp"), k = c(12,6)) ,  data = highStress21, method= "REML", family = quasibinomial)
+summary(g21abinQ)
+overdisp_fun(g21abinQ)
+
+par(mfrow = c(2,2))
+gam.check(g21abinQ)
+par(mfrow = c(1,1))
+vis.gam(g21abinQ,
+        view = c("Longitude", "Latitude"),
+        color = "heat", 
+        plot.type = "contour",
+        too.far = 0.1,
+        se = -1, type = "response")
+
+g21abin1 <- gam(propDays~ te(Latitude, Longitude, Anomaly, d = c(2,1), bs = c("tp", "tp"), k = c(12,6)) ,  data = highStress21, method= "REML", weights = totalDays, family = binomial)
+summary(g21abin1)
+gam.check(g21abin1)
+plot(g21abin1)
+```
+
+#### Alternative models
+```{r}
+g21abin2 <- gam(cbind(nDays, totalDays)~ te(Latitude, Longitude, bs = "tp", k = 12) + s(Anomaly, bs = "tp", k = 6),data = highStress21, method= "REML", family = binomial)
+summary(g21abin2)
+gam.check(g21abin2)
+plot(g21abin2)
+
+g21abin3 <- gam(cbind(nDays, totalDays)~ te(Latitude, Longitude, by = Anomaly, bs = "tp", k = c(6,6)) + Anomaly, data = highStress21, method= "REML", family = binomial)
+
+summary(g21abin3)
+gam.check(g21abin3)
+plot(g21abin3)
+
+
+# g21abetar <- gam(cbind(nDays, totalDays)~ te(Latitude, Longitude, Anomaly, d = c(2,1), bs = c("tp", "tp"), k = c(12,6)) ,  data = highStress21, method= "REML", family = betar)
+# 
+# par(mfrow = c(2,2))
+# gam.check(g21abetar)
+# par(mfrow = c(1,1))
+# plot(g21abetar)
+# 
+# AIC(g21abin, g21abin1, g21abin2, g21abin3, g21abetar)
+```
+
+
+### Models for no recovery at 21 ---
+
+#### Binomial
+```{r}
+g21NRabin <- gam(cbind(nDays, totalDays)~ te(Latitude, Longitude, Anomaly, d = c(2,1), bs = c("tp", "tp"), k = c(12,6)),  data = noRecov21, method= "REML", family = binomial)
+summary(g21NRabin)
+
+par(mfrow = c(2,2))
+gam.check(g21NRabin)
+par(mfrow = c(1,1))
+#plot_smooths(model = g21NRabin, Latitude, Anomaly, transform = exp)
+vis.gam(g21NRabin,
+        view = c("Longitude", "Latitude"),
+        color = "heat", 
+        plot.type = "contour",
+        too.far = 0.1,
+        se = -1, type = "response")
+
+```
+
+#### Random effect
+```{r}
+# Random effect
+g21NRabinre <- gam(cbind(nDays, totalDays)~ te(Latitude, Longitude, Anomaly, d = c(2,1), bs = c("tp", "tp"), k = c(12,6)) +  s(Index, bs = 're'),  data = noRecov21, method= "REML", family = binomial)
+summary(g21NRabinre)
+par(mfrow = c(2,2))
+gam.check(g21NRabinre)
+```
+
+#### Quasi-binomial
+```{r}
+g21NRabinQ <- gam(cbind(nDays, totalDays)~ te(Latitude, Longitude, Anomaly, d = c(2,1), bs = c("tp", "tp"), k = c(12,6)) ,  data = noRecov21, method= "REML", family = quasibinomial)
+summary(g21NRabinQ)
+par(mfrow = c(2,2))
+gam.check(g21NRabinQ)
+```
+
+### Models for High stress 25 ---
+
+#### Binomial
+```{r}
+g25abin <- gam(cbind(nDays, totalDays)~ te(Latitude, Longitude, Anomaly, d = c(2,1), bs = c("tp", "tp"), k = c(12,6)) ,  data = highStress25, method= "REML", family = binomial)
+summary(g25abin)
+
+par(mfrow = c(2,2))
+gam.check(g25abin)
+
+par(mfrow = c(1,1))
+plot.gam(g25abin)
+par(mfrow = c(1,1))
+vis.gam(g25abin,
+        view = c("Longitude", "Latitude"),
+        color = "heat", 
+        plot.type = "contour",
+        too.far = 0.1,
+        se = -1, type = "response")
+
+# modPred <- predict.gam(g25abin, se.fit=TRUE,type="response")
+# summary(modPred$fit)
+
+```
+
+#### Random effect
+```{r}
+# With random effect
+g25abinre <- gam(cbind(nDays, totalDays)~ te(Latitude, Longitude, Anomaly, d = c(2,1), bs = c("tp", "tp"), k = c(12,6)) +  s(Index, bs = 're'),  data = highStress25, method= "REML", family = binomial)
+summary(g25abinre)
+par(mfrow = c(2,2))
+gam.check(g25abinre)
+```
+
+#### Quasibinomial
+```{r}
+# quasi-binomial
+g25abinQ <- gam(cbind(nDays, totalDays)~ te(Latitude, Longitude, Anomaly, d = c(2,1), bs = c("tp", "tp"), k = c(12,6)) ,  data = highStress25, method= "REML", family = quasibinomial)
+summary(g25abinQ)
+par(mfrow = c(2,2))
+gam.check(g25abinQ)
+par(mfrow = c(1,1))
+vis.gam(g25abinQ,
+        view = c("Longitude", "Latitude"),
+        color = "heat", 
+        plot.type = "contour",
+        too.far = 0.1,
+        se = -1, type = "response")
+```
+
+
+### Plot data
+```{r}
+ggplot(highStress21)+ geom_boxplot(aes(x = Station, y = Anomaly, fill = Region)) + geom_hline(yintercept = 1, color = "orange") + theme_bw()
+
+ggplot(highStress25)+ geom_tile(aes(x = Anomaly, y = Station, fill = propDays))
+
+ggplot(highStress25)+ geom_col(aes(x = Station, y = propDays, fill = Anomaly), position = position_dodge()) + scale_fill_viridis() + facet_wrap(~Region)
+
+ggplot(highStress25)+ geom_jitter(aes(x = Longitude, y = Latitude, color = propDays),alpha = 0.5, size = 3, position = position_dodge()) + scale_color_viridis()
+
+South <- ggplot(subset(highStress25, Region == "South"))+ geom_col(aes(x = Station, y = propDays, fill = Anomaly), position = position_dodge()) + scale_fill_viridis() + labs(title = "South")
+
+SJ <- ggplot(subset(highStress25, Region == "San Joaquin"))+ geom_col(aes(x = Station, y = propDays, fill = Anomaly), position = position_dodge()) + scale_fill_viridis() + labs(title = "San Joaquin")
+
+ND <- ggplot(subset(highStress25, Region == "North Delta"))+ geom_col(aes(x = Station, y = propDays, fill = Anomaly), position = position_dodge()) + scale_fill_viridis() + labs(title = "North Delta")
+
+SR <- ggplot(subset(highStress25, Region == "Sac River"))+ geom_col(aes(x = Station, y = propDays, fill = Anomaly), position = position_dodge()) + scale_fill_viridis() + labs(title = "Sac River")
+
+SB <- ggplot(subset(highStress25, Region == "Suisun Bay"))+ geom_col(aes(x = Station, y = propDays, fill = Anomaly), position = position_dodge()) + scale_fill_viridis() + labs(title = "Suisun Bay")
+
+SM <- ggplot(subset(highStress25, Region == "Suisun Marsh"))+ geom_col(aes(x = Station, y = propDays, fill = Anomaly), position = position_dodge()) + scale_fill_viridis() + labs(title = "Suisun Marsh")
+
+grid.arrange(ND, SR, South, SJ, SB, SM)
+```
+
+### Models for no recovery at 25 ---
+#### Binomial (better)
+```{r}
+g25NRabin <- gam(cbind(nDays, totalDays)~ te(Latitude, Longitude, Anomaly, d = c(2,1), bs = c("tp", "tp"), k = c(12,6)) ,  data = noRecov25, method= "REML", family = binomial)
+summary(g25NRabin)
+
+par(mfrow = c(2,2))
+gam.check(g25NRabin)
+par(mfrow = c(1,1))
+plot.gam(g25NRabin)
+vis.gam(g25NRabin,
+        view = c("Longitude", "Latitude"),
+        color = "heat", 
+        plot.type = "contour",
+        too.far = 0.1,
+        se = -1, type = "response")
+
+```
+
+#### Random effect
+```{r}
+# Random effect
+g25NRabinre <- gam(cbind(nDays, totalDays)~ te(Latitude, Longitude, Anomaly, d = c(2,1), bs = c("tp", "tp"), k = c(12,6)) +  s(Index, bs = 're'),  data = noRecov25, method= "REML", family = binomial)
+summary(g25NRabinre)
+par(mfrow = c(2,2))
+gam.check(g25NRabinre)
+```
+
+#### Quasibinomial
+```{r}
+# quasibinomial
+
+g25NRabinQ <- gam(cbind(nDays, totalDays)~ te(Latitude, Longitude, Anomaly, d = c(2,1), bs = c("tp", "tp"), k = c(12,6)) ,  data = noRecov25, method= "REML", family = quasibinomial)
+summary(g25NRabinQ)
+par(mfrow = c(2,2))
+gam.check(g25NRabinQ)
+par(mfrow = c(1,1))
+plot.gam(g25NRabinQ)
+```
+
+
+## Mapping
+
+### Prep Shapefiles
+Read regions shapefile (shapefile of regions created for water temp)
+Read delta shapefile in (shapefile of the Delta)
+Read station latlons in, convert to sf
+
+```{r}
+regions = read_sf(here::here("manuscript_code/RosiesRegionsEdited/Rosies_regions_edited.shp"))
+regions = st_transform(regions, crs = 4326)
+
+delta = read_sf("manuscript_code/DeltaShapefile/hydro_delta_marsh.shp")
+delta = st_transform(delta,crs=4326)
+
+delta2 = dplyr::filter(delta,HNAME != "SAN FRANCISCO BAY", HNAME != "SAN PABLO BAY") 
+
+unique(heatDays21$Station)
+
+stas = read.csv("manuscript_code/Data/StationsMetadata.csv") %>%
+  right_join(heatDays21 %>% dplyr::select(Station)) %>%
+  dplyr::select(Station, Latitude, Longitude) %>%
+  distinct()
+
+```
+
+Create a convex hull around the points and buffer by 0.01
+only predict in our station area
+```{r}
+ch = chull(stas$Longitude, stas$Latitude) #define hull boundaries
+hull = stas[ch,]
+
+library(sfheaders)
+hullp = sf_polygon(
+  obj = hull
+  , x = "Longitude"
+  , y = "Latitude"
+)
+
+st_crs(hullp) = 4326
+
+chbuff = st_as_sf(hullp) %>%
+  st_buffer(dist = 0.1)
+
+# subset delta shapefile to area close to our stations
+st_crs(delta) = 4326
+
+deltabuff = st_buffer(delta, 400) %>%
+  st_intersection(chbuff) # some warning messages
+
+#ggplot() + 
+#  geom_sf(data = deltabuff, fill = "blue", alpha = 0.5)
+
+# save(deltabuff, file="manuscript_code/Data/gam/deltabuffthick.Rdata")
+
+```
+
+Change station into sf
+```{r}
+load("manuscript_code/Data/gam/deltabuffthick.Rdata")
+coordinates(stas) = ~ Longitude + Latitude #change to sp
+proj4string(stas) <- CRS("+proj=longlat +datum=NAD83") #changed this line from Rosie'sclass(stas)
+stas = st_as_sf(stas) %>% st_transform(stas, crs=4326) #change to sf
+```
+
+## Create new data and make predictions 
+
+This function creates new data based off of your data limits
+- Make new lat/lons based off shapefile (delta regions)
+- Make sure these are all on water
+- expand grid for Anomaly data, join lat lons in
+- standardize all variables (??)
+- turn into sf
+- again confirm in regions boundary (??)
+```{r}
+HD_pred<-function(Full_data=Data,
+                  Delta_subregions = regions,
+                  Delta_water=delta,
+                  Stations = stas,
+                  n=500, # 500 points x, 500  points y
+                  AnomalyRange = 0:1
+){
+  
+  # Create point locations on a grid for predictions
+  Points<-st_make_grid(Delta_subregions, n=n)%>%
+    st_as_sf(crs=st_crs(Delta_subregions))%>%
+    st_join(Delta_water)%>% 
+    
+    # Joining a map of delta waterways (from my spacetools package) to ensure all these points are over water.
+    st_coordinates()%>%
+    as_tibble()%>%
+    mutate(Location=1:nrow(.))%>%
+    dplyr::select(Longitude=X, Latitude=Y, Location)
+  
+  # Create full dataset for predictions
+  newdata<-expand.grid(Location=1:nrow(Points),
+                       Anomaly = AnomalyRange)%>% # Create all combinations of predictor variables
+    left_join(Points, by="Location")%>% #Add Lat/Longs to each location
+    mutate(Latitude_s=(Latitude-mean(Full_data$Latitude, na.rm=T))/sd(Full_data$Latitude, na.rm=T), # Standardize each variable based on full dataset for model
+           Longitude_s=(Longitude-mean(Full_data$Longitude, na.rm=T))/sd(Full_data$Longitude, na.rm=T),
+           Anomaly_s = (Anomaly-mean(Full_data$Anomaly, na.rm=T))/sd(Full_data$Anomaly, na.rm=T)) %>%
+    st_as_sf(coords=c("Longitude", "Latitude"), crs=4326, remove=FALSE)%>% # Turn into sf object
+    
+    st_transform(crs=st_crs(Delta_subregions))%>% # transform to crs of Delta shapefile
+    
+   # st_join(Delta_subregions, join = st_intersects)
+  
+  return(newdata)
+}
+
+
+```
+
+
+#### Create data
+Is the n specific to lat/lon? Creating 500 lats and lons based on your specifications? How to pick?
+
+If you don't specify the numbers, it will use all available integers. 
+```{r}
+# * normal ----
+newdata_21a <- HD_pred(Full_data=highStress21, n=500,
+                       Anomaly = c(0,1)) 
+
+newdata_25a <- HD_pred(Full_data=highStress25, n=500,
+                       Anomaly = c(0,1))
+
+# * no recovery ----
+newdata_21NRa<- HD_pred(Full_data=noRecov21, n=500,
+                       Anomaly = c(0,1))
+newdata_25NRa <- HD_pred(Full_data = noRecov25, n = 500,
+                       Anomaly = c(0,1))
+
+```
+
+#### Predictions with new data - use function above 
+```{r}
+# 21a
+modelg21abin_predictions<-predict(g21abin, newdata=newdata_21a, type="response", se.fit=TRUE, discrete=T) # Create predictions
+# Edit data frame
+newdatag21abin<-newdata_21a%>%
+  mutate(Prediction=modelg21abin_predictions$fit)%>%
+  mutate(SE=modelg21abin_predictions$se.fit,
+         L95=Prediction-SE*1.96,
+         U95=Prediction+SE*1.96)
+
+
+# 25a
+modelg25abin_predictions<-predict(g25abin, newdata=newdata_25a, type="response", se.fit=TRUE, discrete=T) # Create predictions
+# Edit data frame
+newdatag25abin<-newdata_25a%>%
+  mutate(Prediction=modelg25abin_predictions$fit)%>%
+  mutate(SE=modelg25abin_predictions$se.fit,
+         L95=Prediction-SE*1.96,
+         U95=Prediction+SE*1.96)
+
+# 25a
+modelg25abin_predictions2<-predict(g25abinQ, newdata=newdata_25a, type="response", se.fit=TRUE, discrete=T) # Create predictions
+# Edit data frame
+newdatag25abi2n<-newdata_25a%>%
+  mutate(Prediction=modelg25abin_predictions2$fit)%>%
+  mutate(SE=modelg25abin_predictions2$se.fit,
+         L95=Prediction-SE*1.96,
+         U95=Prediction+SE*1.96)
+
+# * no recovery ----
+
+# NR21a
+modelg21NRabin_predictions<-predict(g21NRabin, newdata=newdata_21NRa, type="response", se.fit=TRUE, discrete=T) # Create predictions
+# Edit data frame
+newdatag21NRabin<-newdata_21NRa%>%
+  mutate(Prediction=modelg21NRabin_predictions$fit)%>%
+  mutate(SE=modelg21NRabin_predictions$se.fit,
+         L95=Prediction-SE*1.96,
+         U95=Prediction+SE*1.96)
+
+
+# NR25a
+modelg25NRabin_predictions<-predict(g25NRabin, newdata=newdata_25NRa, type="response", se.fit=TRUE, discrete=T) # Create predictions
+# Edit data frame
+newdatag25NRabin<-newdata_25NRa%>%
+  mutate(Prediction=modelg25NRabin_predictions$fit)%>%
+  mutate(SE=modelg25NRabin_predictions$se.fit,
+         L95=Prediction-SE*1.96,
+         U95=Prediction+SE*1.96)
+```
+
+Check model predictions
+
+```{r}
+range(filter(highStress21,Anomaly>=0)$nDays) #48-185
+range(newdatag21abin$Prediction*365) #50-138
+
+range(filter(highStress21,Anomaly < .1)$nDays) #48-185
+range(filter(newdatag21abin, Anomaly ==0)$Prediction*365) #50-138
+
+
+range(filter(noRecov21,Anomaly>=0)$nDays) #0-154
+range(newdatag21NRabin$Prediction*365) #11-108
+
+range(filter(highStress25,Anomaly>=0)$nDays) #0-110
+range(newdatag25abi2n$Prediction*365) #0.218-319.6
+
+range(filter(highStress25,Anomaly <0.1)$nDays) #0-107
+range(filter(newdatag25abin, Anomaly ==0)$Prediction*365) #0.217, 77.4
+
+foo = filter(newdatag25abin, Anomaly ==0)
+foo2 = filter(newdatag25abin, Anomaly ==1)
+
+range(noRecov25$nDays) #0-76
+range(newdatag25NRabin$Prediction*365) # very small
+```
+
+
+
+
+#### Save/load files
+```{r}
+save(delta2, stas, newdatag21abin, newdatag25abin, newdatag21NRabin,  newdatag25NRabin, file = "manuscript_code/Data/gam/newdataPreds_annualanomaly_20230613.RData", compress = "xz")
+
+load("manuscript_code/Data/gam/newdataPreds_annualanomaly_20230613.RData")
+```
+
+## Rasterize data
+
+#### Function to rasterize data
+- What does map() do? One map for each anomaly 
+- st_rasterize will rasterize your data. dx = cell size x, dy = cell size y
+  - Take your max x - min x and divide by number of cells, same with y
+- What is exec(c) part?
+
+- map = apply
+for every unique Anomaly, we will rasterize data, where Anomaly = x (-2,0,2), select Prediction, rasterize area within delta
+
+bang bang unquotes, bang bang bang (big bang) operator: unquotes several operators at once
+```{r}
+Rasterize_all <- function(data, var, out_crs=4326, n=100){
+  var<-rlang::enquo(var)
+  rlang::as_name(var)
+  preds<-map(unique(data$Anomaly), 
+             function(x) st_rasterize(data%>%
+                                      filter(Anomaly==x)%>%
+                                      dplyr::select(!!var),                 
+                                      template=st_as_stars(st_bbox(delta2),
+              dx=diff(st_bbox(delta2)[c(1, 3)])/n,                     dy=diff(st_bbox(delta2)[c(2, 4)])/n, values = NA_real_))%>%
+               st_warp(crs=out_crs))
+  return(preds)
+  # Then bind all Anomalies together into 1 raster
+  out <- exec(c, !!!preds, along=list(Anomaly=unique(data$Anomaly)))
+  return(out)
+}
+
+```
+
+
+#### Rasterize (use function above)
+```{r}
+# Create full rasterization of all predictions for interactive visualizations
+newdatag21abin$Prediction2 = newdatag21abin$Prediction*365
+newdatag25abin$Prediction2 = newdatag25abin$Prediction*365
+newdatag21NRabin$Prediction2 = newdatag21NRabin$Prediction*365
+newdatag25NRabin$Prediction2 = newdatag25NRabin$Prediction*365
+
+rastered_preds21abin<-Rasterize_all(newdatag21abin, Prediction2)
+rastered_preds25abin<-Rasterize_all(newdatag25abin, Prediction2)
+rastered_preds21NRabin <- Rasterize_all(newdatag21NRabin, Prediction2)
+rastered_preds25NRabin <- Rasterize_all(newdatag25NRabin, Prediction2)
+
+```
+
+#### Save raster files
+```{r}
+save(delta2, rastered_preds21abin, rastered_preds25abin, rastered_preds21NRabin, rastered_preds25NRabin, file = "manuscript_code/Data/gam/RasteredPreds_20230613.RData", compress = "xz")
+```
+
+#### Start here if just want to plot
+```{r}
+load("manuscript_code/Data/gam/RasteredPreds_20230613.RData")
+load("manuscript_code/Data/gam/deltabuffthick.Rdata")
+```
+
+
+#### Change coordinate reference system for data and deltabuff to UTM 10
+
+```{r}
+plot(rastered_preds25abin[[2]])
+plot(rastered_preds21NRabin[[2]])
+plot(rastered_preds25NRabin[[2]])
+
+rastered_preds21abin[[1]] <- st_warp(rastered_preds21abin[[1]], crs = 32610)
+rastered_preds21abin[[2]] <- st_warp(rastered_preds21abin[[2]], crs = 32610)
+#rastered_preds21abin[[3]] <- st_warp(rastered_preds21abin[[3]], crs = 32610)
+rastered_preds25abin[[1]] <- st_warp(rastered_preds25abin[[1]], crs = 32610)
+rastered_preds25abin[[2]] <- st_warp(rastered_preds25abin[[2]], crs = 32610)
+
+rastered_preds21NRabin[[1]] <- st_warp(rastered_preds21NRabin[[1]], crs = 32610)
+rastered_preds21NRabin[[2]] <- st_warp(rastered_preds21NRabin[[2]], crs = 32610)
+#rastered_preds21NRabin[[3]] <- st_warp(rastered_preds21NRabin[[3]], crs = 32610)
+rastered_preds25NRabin[[1]] <- st_warp(rastered_preds25NRabin[[1]], crs = 32610)
+rastered_preds25NRabin[[2]] <- st_warp(rastered_preds25NRabin[[2]], crs = 32610)
+#rastered_preds25NRabin[[3]] <- st_warp(rastered_preds25NRabin[[3]], crs = 32610)
+deltabuff <- st_transform(deltabuff, crs = 32610)
+```
+
+#### Calculating difference
+
+* Why are there negative differences for NR? 
+```{r}
+raster21Anom0 <- rastered_preds21abin[[1]]
+raster21Anom1 <- rastered_preds21abin[[2]]
+raster21Anom1$Prediction1 - raster21Anom0$Prediction2
+raster21Diff <- raster21Anom1-raster21Anom0
+
+raster25Anom0 <- rastered_preds25abin[[1]]
+raster25Anom1 <- rastered_preds25abin[[2]]
+raster25Diff <- raster25Anom1-raster25Anom0
+
+raster21NRAnom0 <- rastered_preds21NRabin[[1]]
+raster21NRAnom1 <- rastered_preds21NRabin[[2]]
+raster21NRDiff <- raster21NRAnom1-raster21NRAnom0
+
+raster25NRAnom0 <- rastered_preds25NRabin[[1]]
+raster25NRAnom1 <- rastered_preds25NRabin[[2]]
+raster25NRDiff <- raster25NRAnom1-raster25NRAnom0
+
+raster21Anom0
+raster21NRAnom0
+raster21NRAnom1
+plot(raster21NRDiff)
+plot(raster25NRAnom0)
+plot(raster25NRDiff)
+```
+
+Crop 
+* This is slow, about 20-30 mins per crop
+```{r}
+raster25Diff_crop <- st_crop(raster25Diff, deltabuff)
+raster21Diff_crop <- st_crop(raster21Diff, deltabuff)
+raster21NRDiff_crop <- st_crop(raster21NRDiff, deltabuff)
+raster25NRDiff_crop <- st_crop(raster25NRDiff, deltabuff)
+
+plot(raster21NRDiff)
+plot(raster21Diff)
+
+
+plot(raster25Diff_crop)
+plot(raster21Diff_crop)
+
+
+plot(raster21NRDiff_crop)
+plot(raster25NRDiff_crop)
+
+```
+
+Save crops
+```{r}
+# save(raster25Diff_crop, raster21Diff_crop, raster21NRDiff_crop, file = "manuscript_code/Data/gam/RasterDiff_part1_20230503.RData", compress = "xz")
+# load("manuscript_code/Data/gam/RasterDiff_part1_20230503.RData")
+
+save(raster25Diff_crop, raster21Diff_crop, raster21NRDiff_crop, raster25NRDiff_crop, file = "manuscript_code/Data/gam/RasterDiff_20230503.RData", compress = "xz")
+```
+
+```{r}
+load("manuscript_code/Data/gam/RasterDiff_20230503.RData")
+```
+
+
+
+### Plot raster
+Function for plotting cropped rasters
+```{r}
+raster_plotDayDiff<-function(data, labels="All", limit1, limit2, by){
+
+ # lims = c(min(data$Prediction, na.rm = T), max(data$Prediction, na.rm = T))
+
+ ggplot()+
+  geom_stars(data=data)+
+   scale_x_continuous(breaks = seq(from = 550000, to = 670000, by = 40000), expand = c(0,0))+
+  scale_fill_viridis_c(option = "plasma", breaks = seq(from = limit1, to = limit2, by = by), na.value="white",limits = c(limit1, limit2))+
+   # facet_wrap(~Date)+
+    coord_sf()+
+    ylab("Latitude")+
+    xlab("Longitude")+
+    theme_bw() + 
+    theme(panel.grid.minor = element_line(colour = "grey50"), 
+        axis.text = element_text(size = 12),
+          axis.title = element_blank(),
+          plot.title = element_text(hjust = 0.5),
+          legend.position = "bottom",
+         # legend.spacing.x = unit(2, 'cm'),
+          legend.text = element_text(size = 10))  +
+    guides(fill=guide_colorbar(title="Days Difference"))
+      
+          # plot.margin = margin(0,0,0,0, "cm"))
+    #guides(fill = guide_colorbar(barwidth = 2))
+       # guides(fill=guide_colorbar(title="Days"))
+}
+```
+
+#### Make plots for difference
+```{r}
+range(raster21Diff_crop$Prediction2, na.rm=TRUE)
+range(raster25Diff_crop$Prediction2, na.rm=TRUE)
+
+range(raster21NRDiff_crop$Prediction2, na.rm=TRUE)
+range(raster25NRDiff_crop$Prediction2, na.rm=TRUE)
+
+(raster21DiffPlot <- raster_plotDayDiff(data = raster21Diff_crop, limit1 = -10, limit2 = 45, by = 15))
+(raster25DiffPlot <- raster_plotDayDiff(data = raster25Diff_crop, limit1 = -15, limit2 = 45, by = 15))
+(raster21NRDiffPlot <- raster_plotDayDiff(raster21NRDiff_crop, limit1 = 0, limit2 = 45, by = 15))
+(raster25NRDiffPlot <- raster_plotDayDiff(raster25NRDiff_crop,limit1 = -10, limit2 = 85, by = 15))
+```
+
+#### Function
+
+```{r}
+raster_plot<-function(data, Anomaly, labels="All"){
+  data = data[[Anomaly]]
+ data = st_crop(data, deltabuff)
+ # lims = c(min(data$Prediction, na.rm = T), max(data$Prediction, na.rm = T))
+   ggplot()+
+    geom_stars(data=data)+
+   scale_x_continuous(breaks = seq(from = 550000, to = 670000, by = 40000),
+                      expand = c(0,0))+
+   # facet_wrap(~Date)+
+    scale_fill_viridis_c(option = "viridis", breaks = seq(from = 0, to = 125, by = 25), na.value="white",limits = c(0, 125))+
+    coord_sf()+
+    ylab("Latitude")+
+    xlab("Longitude")+
+    theme_bw() + 
+    theme(axis.text = element_text(size = 10),
+          axis.title = element_blank(),
+          plot.title = element_text(hjust = 0.5),
+          legend.title = element_text(size = 11),
+          legend.position = "bottom",
+         # legend.spacing.x = unit(2, 'cm'),
+          legend.text = element_text(size = 10)) +
+    scale_y_continuous(expand = c(0,0))+     
+          # plot.margin = margin(0,0,0,0, "cm"))
+    #guides(fill = guide_colorbar(barwidth = 2))
+        guides(fill=guide_colorbar(title="Days"))
+}
+
+```
+
+#### Make plots for stress and NR
+* This is very slow, took ~ 5 hours?
+```{r}
+plot21_avg <- raster_plot(rastered_preds21abin, 1) 
+plot21_anom <- raster_plot(rastered_preds21abin, 2) 
+
+plot25_avg <- raster_plot(rastered_preds25abin, 1) 
+plot25_anom <- raster_plot(rastered_preds25abin, 2) 
+
+
+plot21NR_avg <- raster_plot(rastered_preds21NRabin, 1)
+plot21NR_anom <- raster_plot(rastered_preds21NRabin, 2)
+
+plot25NR_avg <- raster_plot(rastered_preds25NRabin, 1) 
+plot25NR_anom <- raster_plot(rastered_preds25NRabin, 2) 
+
+plot25NR_avg
+plot25NR_anom
+plot21NR_avg
+plot21NR_anom
+
+rastered_preds21NRabin[[2]]-rastered_preds21NRabin[[1]]
+ 
+rastered_preds25NRabin[[2]]-rastered_preds25NRabin[[1]]
+
+
+
+```
+
+
+#### Save and load here
+```{r}
+save(plot21_anom, plot21_avg, plot25_anom, plot25_avg, plot21NR_anom, plot21NR_avg, plot25NR_anom, plot25NR_avg, raster21DiffPlot, raster25DiffPlot, raster21NRDiffPlot, raster25NRDiffPlot, file= "manuscript_code/Data/gam/finalplots_20230613.RData")
+```
+
+```{r}
+load("manuscript_code/Data/gam/finalplots_20230503.RData")
+```
+
+#### Combined Plots Stress
+
+##### Theme
+```{r}
+theme_fig <-ggplot2::theme(plot.title=element_text(size=12), 
+               axis.text = element_blank(), 
+               axis.title = element_blank(), 
+               axis.ticks = element_blank(),
+               axis.text.y = element_blank(),
+               panel.grid.major = element_blank(), 
+               panel.grid.minor = element_blank(),
+               strip.text = element_text(size = 13),
+               legend.text = element_text(size = 10),
+               legend.title = element_text(size = 11),
+               strip.background = element_rect(size=0.3)) 
+```
+
+
+##### Reformat stress figures
+```{r}
+library(ggpubr)
+# save legend separately for final figure
+get_legend<-function(myggplot){
+  tmp <- ggplot_gtable(ggplot_build(myggplot))
+  leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
+  legend <- tmp$grobs[[leg]]
+  return(legend)
+}
+
+# Stress plots
+(plot21_avg <- plot21_avg  + 
+    scale_fill_viridis_c(option = "viridis", breaks = seq(from = 0, to = 120, by = 20), na.value="white", limits = c(0,110)) + 
+    guides(fill=guide_colorbar(title="Number Stressful Days", barwidth = 9)) +
+    theme_fig) 
+
+legend1 <- get_legend(plot21_avg)
+plot(legend1)
+
+(plot21_avg2 <- plot21_avg  + 
+    scale_fill_viridis_c(option = "viridis", breaks = seq(from = 0, to = 120, by = 20), na.value="white", limits = c(0,110)) + 
+    theme_fig +
+    theme(legend.position = "none") + 
+    labs(title = "Average Year"))
+
+
+(plot21_anom2 <- plot21_anom + 
+    theme_fig +
+    theme(legend.position = "none") +
+    scale_fill_viridis_c(option = "viridis", breaks = seq(from = 0, to = 120, by = 20), na.value="white", limits = c(0,110)) +
+
+    labs(title = "Warm Year (+1°C)"))
+
+
+(plot25_avg2 <- plot25_avg + 
+    scale_fill_viridis_c(option = "viridis", breaks = seq(from = 0, to = 120, by = 20), na.value="white", limits = c(0,110)) +
+    theme_fig + 
+    theme(legend.position = "none"))
+
+
+(plot25_anom2 <- plot25_anom + 
+    scale_fill_viridis_c(option = "viridis", breaks = seq(from = 0, to = 120, by = 20), na.value="white", limits = c(0,110)) + 
+    theme_fig +
+    theme(legend.position = "none"))
+
+
+# Diff plots
+legend2 <- get_legend(raster21DiffPlot)
+legend2
+
+(raster21DiffPlot2 <- raster21DiffPlot + 
+    scale_x_continuous(expand = c(0,0)) + 
+    scale_y_continuous(expand = c(0,0)) +
+    theme_fig +
+    theme(legend.position = "none") +
+    labs(title = "Difference"))
+
+(raster25DiffPlot2 <- raster25DiffPlot + 
+    scale_x_continuous(expand = c(0,0)) + 
+    scale_y_continuous(expand = c(0,0)) +
+    theme_fig +
+    theme(legend.position = "none"))
+
+
+### Annotate figures
+
+plot21_avg3 <- annotate_figure(plot21_avg2, left = text_grob("21°C", color = "black", rot = 90, size = 14))
+
+plot25_avg3 <- annotate_figure(plot25_avg2,
+  left = text_grob("25°C", color = "black", rot = 90, size = 14))
+
+(stress <- grid.arrange(legend1, plot21_avg3, plot21_anom2, plot25_avg3, plot25_anom2, 
+                        nrow = 3, 
+                        layout_matrix = rbind(c(1,1), c(2,3), c(4,5)),
+                        widths = c(5,5,5), heights = c(1,3.3,3)))
+
+```
+
+
+##### Final Stress plot
+```{r}
+png(filename=file.path("manuscript_code/Figures/StressPlot.png"), units="in",type="cairo", bg="white", height=6.5, 
+     width=8, res=300, pointsize=10)
+(stressPlotC <- grid.arrange(legend1, legend2, plot21_avg3, plot21_anom2, raster21DiffPlot2, plot25_avg3, plot25_anom2, raster25DiffPlot2,
+                            nrow = 3,
+            layout_matrix = rbind(c(1,1,2), c(3,4,5), c(6,7,8)),
+             widths = c(3.3,3,3), heights = c(0.75,3.3,3.05)))
+dev.off()
+```
+
+
+
+#### Combined Plots No recovery
+
+##### Reformat NR plots
+```{r}
+library(ggpubr)
+# save legend separately for final figure
+get_legend<-function(myggplot){
+  tmp <- ggplot_gtable(ggplot_build(myggplot))
+  leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
+  legend <- tmp$grobs[[leg]]
+  return(legend)
+}
+(plot21NR_avg)
+
+(plot21NR_avg <- plot21NR_avg  + 
+    scale_fill_viridis_c(option = "viridis", breaks = seq(from = 0, to = 120, by = 20), na.value="white", limits = c(0,110)) + 
+    guides(fill=guide_colorbar(title="Number Stressful Days", barwidth = 9)) +
+    theme_fig +
+    theme(axis.text.x = element_blank()))
+
+legend3 <- get_legend(plot21_avg)
+
+legend3
+
+(plot21NR_avg2 <- plot21NR_avg  + 
+    scale_fill_viridis_c(option = "viridis", breaks = seq(from = 0, to = 120, by = 20), na.value="white", limits = c(0,110)) + 
+    theme_fig +
+    theme(legend.position = "none") + 
+    labs(title = "Average Year"))
+
+(plot21NR_anom2 <- plot21NR_anom + 
+    theme_fig +
+    theme(legend.position = "none") +
+    scale_fill_viridis_c(option = "viridis", breaks = seq(from = 0, to = 120, by = 20), na.value="white", limits = c(0,110)) +
+    labs(title = "Warm Year (+1°C)"))
+
+(plot25NR_avg2 <- plot25NR_avg + 
+    scale_fill_viridis_c(option = "viridis", breaks = seq(from = 0, to = 120, by = 20), na.value="white", limits = c(0,110)) + 
+    theme_fig +
+    theme(legend.position = "none"))
+
+(plot25NR_anom2 <- plot25NR_anom + 
+    scale_fill_viridis_c(option = "viridis", breaks = seq(from = 0, to = 120, by = 25), na.value="white", limits = c(0,110)) +
+    theme_fig +
+    theme(legend.position = "none"))
+
+
+# Annotate
+plot21NR_avg3 <- annotate_figure(plot21NR_avg2, 
+                left = text_grob("21°C", color = "black", rot = 90, size = 14))
+
+plot25NR_avg3 <- annotate_figure(plot25NR_avg2,
+                left = text_grob("25°C", color = "black", rot = 90, size = 14))
+
+
+### Diff
+
+legend4 <- get_legend(raster21NRDiffPlot)
+legend4
+
+(raster21NRDiffPlot2 <- raster21NRDiffPlot + 
+    scale_x_continuous(expand = c(0,0)) + 
+    scale_y_continuous(expand = c(0,0)) +
+    theme_fig + theme(legend.position = "none") +
+    labs(title = "Difference"))
+
+(raster25NRDiffPlot2 <- raster25NRDiffPlot + 
+    scale_x_continuous(expand = c(0,0)) + 
+    scale_y_continuous(expand = c(0,0)) +
+    theme_fig + theme(legend.position = "none"))
+
+```
+
+##### Final No Recovery Plot
+```{r}
+png(filename=file.path("manuscript_code/Figures/StressNRPlot_updated.png"), units="in",type="cairo", bg="white", height=3.5, 
+     width=8, res=300, pointsize=10)
+# stressPlotD <- grid.arrange(legend3, legend4, plot21NR_avg3, plot21NR_anom2, raster21NRDiffPlot2, plot25NR_avg3, plot25NR_anom2, raster25NRDiffPlot2,
+#                             nrow = 3,
+#             layout_matrix = rbind(c(1,1,2), c(3,4,5), c(6,7,8)),
+#              widths = c(3.23,3,2.85), heights = c(0.75,3,3))
+
+stressPlotD <- grid.arrange(legend3, legend4, plot21NR_avg3, plot21NR_anom2, raster21NRDiffPlot2, 
+                            nrow = 2,
+            layout_matrix = rbind(c(1,1,2), c(3,4,5)), 
+             widths = c(3.3,3,3), heights = c(0.75,3))
+dev.off()
+```
+
+### No recovery 25 Info
+```{r}
+
+ggplot(noRecov25) + geom_point(aes(x = Longitude, y = Latitude, color = propDays), size = 2.5) + facet_wrap(~Anomaly) + scale_color_viridis() + theme_bw()
+```
+
+```{r}
+viridis::mako(6)
+Info25 <- noRecov25 %>%
+  mutate(AnomalyGrp = ifelse(Anomaly>0.4, "High", "Low"),
+         Region = replace(Region, Region == "San Joaquin", "Central"),
+         Region = replace(Region, Region == "Sac River", "Confluence")) %>%
+  mutate(Region = factor(Region, levels = c("North Delta", "Confluence", "Central", "South", "Suisun Bay", "Suisun Marsh")))
+
+Range <- Info25 %>%
+  group_by(AnomalyGrp, Region) %>%
+  summarize(min = min(nDaysAdj),
+            mean = mean(nDaysAdj),
+            max = max(nDaysAdj),
+            sd = sd(nDaysAdj))
+(Anomaly25NRPlot <- ggplot(Info25) + 
+  geom_boxplot(aes(x = Region, y = nDays, fill = AnomalyGrp)) + 
+  labs(y = "Number of Days of Heat Stress at 25°C", fill = "Anomaly") + 
+  scale_fill_manual(values = c("#3497A9FF", "#DEF5E5FF")) +
+  #scale_fill_viridis(discrete = TRUE, option = "cividis") + 
+  theme_bw() + theme(axis.text.x = element_text(angle = 60,vjust = 0.5),
+                     axis.title.x = element_blank()) )
+```
+
+```{r}
+png(filename=file.path("manuscript_code/Figures/Anomaly25NRPlot_updated.png"), units="in",type="cairo", bg="white", height=4, 
+     width=6, res=300, pointsize=10,compression="lzw")
+
+Anomaly25NRPlot
+dev.off()
+```
+
+## Get estimates of ndays by region
+```{r}
+# predicted data
+
+# Model for 21 days
+newdatag21abin$Prediction2 = newdatag21abin$Prediction*365
+df_data21 <- as.data.frame(newdatag21abin)
+df_data21_sf <- df_sf <- st_as_sf(df_data21, coords = c("Longitude", "Latitude"), crs = 4326)
+regions <- st_read(here::here("manuscript_code", "RosiesRegionsEdited", "Rosies_regions_edited.shp"))
+deltabuff_4326 <- st_transform(deltabuff, st_crs(df_data21_sf))
+
+df_data21_crop <- st_crop(df_data21_sf, deltabuff_4326)
+head(df_data21_crop)
+df_data21_sf_regions <- st_join(df_data21_crop, regions, join = st_within)
+
+df_data21_diff <- df_data21_sf_regions %>%
+  as.data.frame() %>%
+  filter(!is.na(Regions)) %>%
+  dplyr::select(-Prediction, -SE, -L95, -U95) %>%
+  pivot_wider(names_from = "Anomaly",values_from = "Prediction2", id_cols = c("Location", "Latitude_s", "Longitude_s", "Regions")) %>%
+  mutate(diff = `1`-`0`) %>%
+  pivot_longer(cols = c(`0`:diff), names_to = "Anom", values_to = "value") %>%
+  group_by(Anom) %>%
+  mutate(meanAnom= mean(value, na.rm = TRUE),
+         sdAnom = sd(value, na.rm = TRUE)) %>%
+  ungroup() %>%
+  group_by(Regions, Anom, meanAnom, sdAnom) %>%
+  summarize(min = min(value, na.rm = TRUE),
+            max = max(value, na.rm = TRUE),
+            mean = mean(value, na.rm = TRUE),
+            sd = sd(value, na.rm = TRUE),
+            n = n()) %>%
+  
+  ungroup()
+
+write_csv(df_data21_diff, "manuscript_code/Data/gam/stressgam_predictions_summarized_21.csv")
+
+
+
+# Model for 25 days
+newdatag25abin$Prediction2 = newdatag25abin$Prediction*365
+df_data25 <- as.data.frame(newdatag25abin)
+df_data25_sf <- df_sf <- st_as_sf(df_data25, coords = c("Longitude", "Latitude"), crs = 4326)
+deltabuff_4326 <- st_transform(deltabuff, st_crs(df_data25_sf))
+
+df_data25_crop <- st_crop(df_data25_sf, deltabuff_4326)
+head(df_data25_crop)
+df_data25_sf_regions <- st_join(df_data25_crop, regions, join = st_within)
+
+df_data25_diff <- df_data25_sf_regions %>%
+  as.data.frame() %>%
+  filter(!is.na(Regions)) %>%
+  dplyr::select(-Prediction, -SE, -L95, -U95) %>%
+  pivot_wider(names_from = "Anomaly",values_from = "Prediction2", id_cols = c("Location", "Latitude_s", "Longitude_s", "Regions")) %>%
+  mutate(diff = `1`-`0`) %>%
+  pivot_longer(cols = c(`0`:diff), names_to = "Anom", values_to = "value") %>%
+  group_by(Anom) %>%
+  mutate(meanAnom= mean(value, na.rm = TRUE),
+         sdAnom = sd(value, na.rm = TRUE)) %>%
+  ungroup() %>%
+  group_by(Regions, Anom, meanAnom, sdAnom) %>%
+  summarize(min = min(value, na.rm = TRUE),
+            max = max(value, na.rm = TRUE),
+            mean = mean(value, na.rm = TRUE),
+            sd = sd(value, na.rm = TRUE),
+            n = n()) %>%
+  
+  ungroup()
+
+write_csv(df_data25_diff, "manuscript_code/Data/gam/stressgam_predictions_summarized_25.csv")
+```
+

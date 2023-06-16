@@ -1,0 +1,131 @@
+---
+title: "TempHeatStress"
+author: "Catarina Pien"
+date: "2/16/2021"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(lubridate)
+library(viridis) # color palette
+library(plotly) # interactive plots
+library(pscl) # glm
+library(visreg) # visualize model results
+library(lattice)
+library(lme4) # glmm
+library(lmerTest) #glmm p values
+library(here)
+```
+
+```{r}
+theme_wtemp <- theme_classic() + 
+  theme(axis.text = element_text(size = 14),
+        axis.title = element_text(size = 15),
+        strip.text = element_text(size = 14),
+        legend.text = element_text(size = 14),
+        legend.title = element_text(size = 15))
+```
+
+## Read in 
+```{r}
+tempToUse <- readRDS(here::here("manuscript_code/Data/temp10years_20230613.rds"))
+tempDaily <- readRDS(here::here("manuscript_code/Data/tempDaily.rds"))
+```
+
+## 1. Calculating High Stress 
+### 21-25C Thresholds
+
+Identifying Heat Stress Level (High/Med/Low) 
+Identifying "StressAllDay" = when min daily temperature >25 (could change this)
+```{r heatevents}
+# Flagging starts on day 3 of >25C
+heat <- tempDaily %>%
+  dplyr::select(-meanDaily) %>%
+  group_by(Region, Station, WY) %>%
+  mutate(Thr25 = ifelse(maxDaily > 25, 1L, 0L),
+         Thr21 = ifelse(maxDaily > 21, 1L, 0L)) %>% 
+  mutate(Stress = 
+           ifelse(Thr25 == lag(Thr25, 1) & Thr25 == lag(Thr25, 2) & Thr25 == 1, "High", 
+                            ifelse(Thr21 == lag(Thr21, 1) & Thr21 == lag(Thr21, 2) & Thr21 == 1, "Med", 
+                                   "Low"))) %>%
+  ungroup() %>%
+  group_by(Region, Station, WY, Date) %>%
+  mutate(StressAllDay = ifelse(Stress == "High" & minDaily>25, "Y", "N")) %>%
+  dplyr::select(-starts_with("Thr")) %>%
+  filter(!is.na(Stress)) # Remove NAs coming from lag term
+# saveRDS(heat, "manuscript_code/Data/heatstressDaily.rds")
+```
+
+
+ Temp variables
+```{r Models Daily Max}
+tempHeat <- filter(heat, WY > 2008 & WY < 2020)
+tempHeat$yday = yday(tempHeat$Date)
+tempHeat$Year = year(tempHeat$Date)
+tempHeat$fYear = factor(tempHeat$Year)
+tempHeat$fWY = factor(tempHeat$WY)
+tempHeat$Month = month(tempHeat$Date)
+tempHeat$fMonth = ordered(tempHeat$Month)
+tempHeat$Station = factor(tempHeat$Station)
+tempHeat$WYType2_Sac = as.factor(tempHeat$WYType2_Sac)
+tempToUse$Hour <- hour(tempToUse$Datetime)
+
+#try a sine-transformation on "month" so we can include it in linear models
+tempHeat$syday = sin(pi*tempHeat$yday/365)
+
+# Add season
+tempHeat <- tempHeat %>%
+  mutate(Season = ifelse(Month %in% c(12, 1, 2), "Winter", 
+                         ifelse(Month %in% c(3,4,5), "Spring", 
+                                ifelse(Month %in% c(6,7,8), "Summer",
+                                       "Fall"))))
+tempHeat$Season <- factor(tempHeat$Season, levels = c("Spring", "Summer", "Fall", "Winter"))
+```
+
+
+Number of days at each stress level
+```{r}
+# Calculate number of samples in a year or water year
+heatDaysSamp <- tempHeat %>%
+  group_by(Region, Station, WY, fWY) %>%
+  summarize(totalDays = n()) 
+
+# Calculate number of days and proportion of days at each stress level
+heatDays1 <- tempHeat %>%
+  group_by(Region, Station, WY, fWY, Stress) %>%
+  summarize(nDays = n()) %>%
+    ungroup() %>%
+ complete(Stress, nesting(Region, Station, WY, fWY), fill = list(nDays=0)) %>%
+  left_join(heatDaysSamp) %>%
+  mutate(propDays = round(nDays/totalDays,3)) %>%
+  ungroup()
+
+# Look at days where there is no recovery
+heatDays2 <- tempHeat %>%
+  dplyr::select(-Stress) %>%
+  group_by(Region, Station, WY,fWY, StressAllDay) %>%
+  summarize(nDays = n()) %>%  
+  ungroup() %>%
+   complete(StressAllDay, nesting(Region, Station, WY, fWY), fill = list(nDays=0)) %>%
+  left_join(heatDaysSamp) %>%
+  mutate(propDays = round(nDays/totalDays,3))%>%
+  ungroup() %>%
+  arrange(Region, Station, WY, fWY) 
+
+
+# write_csv(heatDays1, "manuscript_code/Data/heatDaysHighMedLow25_20210811.csv")
+# write_csv(heatDays2, "manuscript_code/Data/noRecovery25_20210811.csv")
+```
+
+```{r}
+tempHeat%>%
+  ggplot() + 
+  geom_boxplot(aes(x = fMonth, y = maxDaily, fill = Stress))+ facet_wrap(~Region) + scale_fill_viridis(discrete = TRUE)
+```
+
+
