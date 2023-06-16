@@ -37,7 +37,7 @@ tempDaily <- readRDS("Data/tempDaily_20210811.rds") %>%
                             Month %in% c(10,11,12) ~ "Fall",
                             TRUE~as.character(NA)))
          
-         
+LatLon <- read.csv(here::here("Data/StationsMetadata.csv"))         
 
 ```
 
