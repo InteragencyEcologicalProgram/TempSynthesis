@@ -29,7 +29,8 @@ library(here)
 tempToUse <- readRDS(here::here("Data", "temp10years_20210811.rds"))
 tempDaily <- readRDS(here::here("Data", "tempDaily_20210811.rds"))
 thresholds <- readxl::read_excel(here::here("SpeciesTables", "SpeciesThresholds.xlsx")) %>%
-  na_if(.,"NA") 
+  mutate(across(c(Suboptimum:Max_Field_Temp), na_if, "NA"))
+ 
 species0b <- readr::read_csv(here::here("SpeciesTables", "exportfishabsence_presence.csv")) 
 species0 <- readr::read_csv(here::here("SpeciesTables", "absence_presence_temp.csv")) %>%
   filter(Species %in% c("Giant Reed EAV", "Brazilian Waterweed", "Water Hyacinth FAV", "Microcystis", "Asian Clam", "Overbite Clam"))
@@ -323,13 +324,21 @@ DaysExceedanceDataUpper <- DaysExceedanceDataUpper0 %>%
 ```{r}
 # write_csv(DaysExceedanceDataUpper, "SpeciesTables/daysExceedanceUpperDataForPlotting.csv")
 DaysExceedanceDataUpper <- read_csv("SpeciesTables/daysExceedanceUpperDataForPlotting.csv")
+fieldtemps <- read_csv("SpeciesTables/surveymaxtemps_v3.csv") %>%
+  select(Taxon = Taxa,
+         LifeStage,
+         q3, maxTemp)
+lengths <- read_csv("publish_thresholds/thresholds_edi/data_objects/Lifestage_length_designations.csv") %>%
+  rename(Species = Common_name,
+         LifeStage = Assigned_life_stage) %>%
+  select(Species, LifeStage, Length_mm, Length_type)
 ```
 
 ### Table
 ```{r}
 daysExceedanceSummary <- DaysExceedanceDataUpper %>%
   group_by(Species, LifeStage) %>%
-  summarize(meanTolerance = ifelse(is.na(Tolerance_Upper), NA, round(mean(daysExceedanceTol, na.rm = TRUE),0)),
+  reframe(meanTolerance = ifelse(is.na(Tolerance_Upper), NA, round(mean(daysExceedanceTol, na.rm = TRUE),0)),
             minTolerance= ifelse(is.na(Tolerance_Upper), NA, min(daysExceedanceTol, na.rm = TRUE)),
             maxTolerance =  ifelse(is.na(Tolerance_Upper), NA, max(daysExceedanceTol, na.rm = TRUE)),
             meanSuboptimum = ifelse(is.na(Suboptimum_Upper), NA, round(mean(daysExceedanceOpt, na.rm = TRUE),0)),
@@ -337,8 +346,19 @@ daysExceedanceSummary <- DaysExceedanceDataUpper %>%
             maxSuboptimum =  ifelse(is.na(Suboptimum_Upper), NA, max(daysExceedanceOpt, na.rm = TRUE))) %>%
   mutate(outputTolerance = ifelse(is.na(meanTolerance), NA, paste0(meanTolerance, " (", minTolerance, "-", maxTolerance, ")")),
          outputSuboptimum = ifelse(is.na(meanSuboptimum), NA, paste0(meanSuboptimum, " (", minSuboptimum, "-", maxSuboptimum, ")"))) %>%
-  distinct()
+  distinct() %>%
+  left_join(thresholds %>% select(Species, LifeStage, Taxon, Suboptimum, Tolerance))
 
+summary_all <- left_join(daysExceedanceSummary, fieldtemps, by = c("Taxon", "LifeStage")) %>%
+  left_join(lengths) %>%
+ dplyr::select(Species, Taxon, LifeStage, Length_mm, Length_type,
+               `Maximum Field Detection Temperature (°C)` = maxTemp, 
+               `Suboptimum Temperature Threshold (°C)` = Suboptimum, 
+               `Tolerance Temperature Threshold (°C)` = Tolerance, 
+               outputSuboptimum, outputTolerance) %>%
+  arrange(Species, LifeStage)
+
+write_csv(summary_all, here::here("SpeciesTables","Table_AppendixB.csv"))
 write_csv(daysExceedanceSummary, here::here("SpeciesTables","Table_numDaysExceedance_v3.csv"))    
 
 daysExceedanceSummary %>%
