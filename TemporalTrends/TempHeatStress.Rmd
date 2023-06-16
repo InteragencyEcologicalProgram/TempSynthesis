@@ -19,6 +19,7 @@ library(visreg) # visualize model results
 library(lattice)
 library(lme4) # glmm
 library(lmerTest) #glmm p values
+library(here)
 ```
 
 ```{r}
@@ -32,13 +33,12 @@ theme_wtemp <- theme_classic() +
 
 ## Read in 
 ```{r}
-setwd("C:/Users/cpien/OneDrive - California Department of Water Resources/Work/ClimateChange/R_code/TempSynthesis/")
-
 #tempFilt <- readRDS("Data/tempFilt.rds") 
-tempToUse <- readRDS("Data/tempToUse_20210811.rds")
+# tempToUse <- readRDS("Data/tempToUse_20210811.rds")
+tempToUse <- readRDS(here::here("Data/temp10years_20210811.rds"))
 #tempAn <- readRDS("Data/tempAnnual.rds")
 #tempMon <- readRDS("Data/tempMonthly.rds")
-tempDaily <- readRDS("Data/tempDaily_20210811.rds")
+tempDaily <- readRDS(here::here("Data/tempDaily_20210811.rds"))
 ```
 
 ## 1. Calculating High Stress 
@@ -49,19 +49,19 @@ Identifying "StressAllDay" = when min daily temperature >25 (could change this)
 ```{r heatevents}
 # Flagging starts on day 3 of >25C
 heat <- tempDaily %>%
-  select(-meanDaily) %>%
+  dplyr::select(-meanDaily) %>%
   group_by(Region, Station, WY) %>%
   mutate(Thr25 = ifelse(maxDaily > 25, 1L, 0L),
          Thr21 = ifelse(maxDaily > 21, 1L, 0L)) %>% 
-  mutate(Stress = ifelse(Thr25 == lag(Thr25, 1) & Thr25 == lag(Thr25, 2) & Thr25 == 1, "High", 
+  mutate(Stress = 
+           ifelse(Thr25 == lag(Thr25, 1) & Thr25 == lag(Thr25, 2) & Thr25 == 1, "High", 
                             ifelse(Thr21 == lag(Thr21, 1) & Thr21 == lag(Thr21, 2) & Thr21 == 1, "Med", 
                                    "Low"))) %>%
   ungroup() %>%
   group_by(Region, Station, WY, Date) %>%
   mutate(StressAllDay = ifelse(Stress == "High" & minDaily>25, "Y", "N")) %>%
-  select(-starts_with("Thr")) %>%
+  dplyr::select(-starts_with("Thr")) %>%
   filter(!is.na(Stress)) # Remove NAs coming from lag term
-
 # saveRDS(heat, "Data/heatstressDaily.rds")
 ```
 
@@ -91,7 +91,6 @@ tempHeat <- tempHeat %>%
 tempHeat$Season <- factor(tempHeat$Season, levels = c("Spring", "Summer", "Fall", "Winter"))
 ```
 
-**Scientific Questions**  
 
 Number of days at each stress level
 ```{r}
@@ -112,7 +111,7 @@ heatDays1 <- tempHeat %>%
 
 # Look at days where there is no recovery
 heatDays2 <- tempHeat %>%
-  select(-Stress) %>%
+  dplyr::select(-Stress) %>%
   group_by(Region, Station, WY,fWY, StressAllDay) %>%
   summarize(nDays = n()) %>%  
   ungroup() %>%
@@ -123,8 +122,8 @@ heatDays2 <- tempHeat %>%
   arrange(Region, Station, WY, fWY) 
 
 
-#write.csv(heatDays1, "Data/heatDaysHighMedLow25_20210811.csv")
-#write.csv(heatDays2, "Data/noRecovery25_20210811.csv")
+# write_csv(heatDays1, "Data/heatDaysHighMedLow25_20210811.csv")
+# write_csv(heatDays2, "Data/noRecovery25_20210811.csv")
 ```
 
 ```{r}
@@ -204,14 +203,14 @@ ggplot(NoRecovery, aes(fWY, Region, fill = propDays)) + geom_tile() + scale_fill
 ```{r}
 # Flagging starts on day 3 of >21C
 tempHeat2 <- tempDaily %>%
-  select(-meanDaily) %>%
+  dplyr::select(-meanDaily) %>%
   group_by(Region, Station, WY) %>%
   mutate(Thr21 = ifelse(maxDaily > 21, 1L, 0L)) %>%
   mutate(Stress = ifelse(Thr21 == lag(Thr21, 1) & Thr21 == lag(Thr21, 2) & Thr21 == 1, "High", "Low")) %>%
   ungroup() %>%
   group_by(Region, Station, WY, Date) %>%
   mutate(StressAllDay = ifelse(Stress == "High" & minDaily>21, "Y", "N")) %>%
-  select(-starts_with("Thr")) %>%
+  dplyr::select(-starts_with("Thr")) %>%
   filter(!is.na(Stress)) # Remove NAs coming from lag term
 
 ```
@@ -272,8 +271,8 @@ stressDays2 <- tempHeat2 %>%
   ungroup()
 
 
-# write.csv(stressDays1, "Data/heatDaysHighLow21_20210904.csv")
-# write.csv(stressDays2, "Data/noRecovery21_20211118.csv")
+# write_csv(stressDays1, "Data/heatDaysHighLow21_20210904.csv")
+# write_csv(stressDays2, "Data/noRecovery21_20211118.csv")
 ```
 
 #### High Stress
