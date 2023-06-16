@@ -36,20 +36,20 @@ theme_figure <-  theme_bw() + theme(axis.title.y = element_blank(),             
 ```
 
 ```{r}
-tempDaily20 <- readRDS("Data/tempDaily20yr_20220125.rds") %>%
+tempDaily20 <- readRDS(here::here("Data/tempDaily20yr_20220125.rds")) %>%
   mutate(Region = as.character(Region)) %>%
   mutate(Region = replace(Region, Region == "Sac River", "Confluence"),
          Region = replace(Region, Region == "San Joaquin", "Central")) %>%
   rename(WYType = WYType2_Sac)
 
-tempDaily10 <- readRDS("Data/tempDaily_20210811.rds")%>%
+tempDaily10 <- readRDS(here::here("Data/tempDaily_20210811.rds"))%>%
   mutate(Region = as.character(Region)) %>%
   mutate(Region = replace(Region, Region == "Sac River", "Confluence"),
          Region = replace(Region, Region == "San Joaquin", "Central"))
 
-LatLon <- read.csv("Data/StationsMetadata.csv")
+LatLon <- read.csv(here::here("Data/StationsMetadata.csv"))
 
-Regions <- read.csv("Data/Stations_wRosiesReg.csv") %>%
+Regions <- read.csv(here::here("Data/Stations_wRosiesReg.csv")) %>%
   dplyr::select(-Latitude, -Longitude) %>%
   mutate(Region = as.character(Region)) %>%
   mutate(Region = replace(Region, Region == "Sac River", "Confluence"),
@@ -428,7 +428,8 @@ tempAnomaly10Summary <- temp10anomaly %>%
   group_by(Season, fWY, WY, WYType2_Sac) %>%
   summarize(meanmaxAnomaly = mean(maxDiff),
             meanminAnomaly = mean(minDiff),
-            sdMax = sd(maxDiff))
+            sdMax = sd(maxDiff)) %>%
+  ungroup()
 ```
 
 ## Lines
@@ -454,15 +455,20 @@ dev.off()
 
 ## Anomalies
 ```{r}
+tempAnomaly10Summary$Season <- factor(tempAnomaly10Summary$Season, levels = c("Wet Season", "Dry Season"))
 (line10yrAnomMax <- ggplot(tempAnomaly10Summary) + 
   geom_col(aes(x = WY, y = meanmaxAnomaly, fill = WYType2_Sac), size = 1.5) +
  
   facet_grid(Season~., scales = "free_y") +
   scale_x_continuous(breaks = seq(from = 1999, to = 2019, by = 1)) +
+   scale_y_continuous(breaks = seq(-1, 2, 0.5))+
   scale_fill_viridis(discrete = TRUE) +
   labs(x = "Water Year", y = "Mean Maximum Daily Temperature (°C)", fill = "Water Year Type")+
   theme_fig +
-   theme(legend.position = "top"))
+   theme(legend.position = "top",
+         axis.title.x = element_blank(),
+         panel.grid.major = element_blank(),
+         panel.grid.minor = element_blank()))
 
 (line10yrAnomMin <- ggplot(tempAnomaly10Summary) + 
   geom_col(aes(x = WY, y = meanminAnomaly), size = 1.5) +
@@ -483,8 +489,13 @@ dev.off()
 ```
 
 ```{r}
-tiff(filename=file.path("Figures/Figure_Regional_interannual_variance.tiff"), units="in",type="cairo", bg="white", height=5, 
+tiff(filename=file.path(here::here("Figures/Figure_anomaly_10year.tiff")), units="in",type="cairo", bg="white", height=7, 
      width=8, res=300, pointsize=10,compression="lzw")
+line10yrAnomMax
+dev.off()
+
+png(filename=file.path("Figures/Figure_Regional_interannual_variance.tiff"), units="in",type="cairo", bg="white", height=5, 
+     width=8, res=300, pointsize=10)
 varianceplot
 dev.off()
 ```
