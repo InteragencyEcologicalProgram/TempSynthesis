@@ -42,7 +42,7 @@ theme_figure <-  theme_bw() + theme(axis.title.y = element_blank(),             
 #          Region = replace(Region, Region == "San Joaquin", "Central")) %>%
 #   rename(WYType = WYType2_Sac)
 
-tempDaily10 <- readRDS(here::here("manuscript_code/Data/tempDaily_20210811.rds"))%>%
+tempDaily10 <- readRDS(here::here("manuscript_code/Data/tempDaily.rds"))%>%
   mutate(Region = as.character(Region)) %>%
   mutate(Region = replace(Region, Region == "Sac River", "Confluence"),
          Region = replace(Region, Region == "San Joaquin", "Central"))
@@ -50,8 +50,7 @@ tempDaily10 <- readRDS(here::here("manuscript_code/Data/tempDaily_20210811.rds")
 LatLon <- read.csv(here::here("manuscript_code/Data/StationsMetadata.csv"))
 
 Regions <- read.csv(here::here("manuscript_code/Data/stations_w_regions_20230601.csv")) %>%
-  dplyr::select(-Latitude, -Longitude) %>%
-  mutate(Region = as.character(Region)) %>%
+  mutate(Region = as.character(Regions)) %>%
   mutate(Region = replace(Region, Region == "Sac River", "Confluence"),
          Region = replace(Region, Region == "San Joaquin", "Central"))
 ```
@@ -66,7 +65,7 @@ summary10 <- tempDaily10 %>%
   left_join(Regions %>% select(Station, Region)) %>%
   select(Station, StationName, Region, Latitude, Longitude, StartDateAnalysis, EndDateAnalysis, Agency, HabitatType)
 
-#write_csv(summary10, "Tables/Stations_included_10year.csv")
+# write_csv(summary10, "Tables/Stations_included_10year.csv")
 ```
 
 # 10 year trends
@@ -184,7 +183,7 @@ meanVariabilityBySeasonRegion <- tempTotalVariability %>%
 # line10yrAnomMax
 # dev.off()
 
-png(filename=file.path("manuscript_code/Figures/Figure_Regional_interannual_variance.tiff"), units="in",type="cairo", bg="white", height=5, 
+png(filename=file.path("manuscript_code/Figures/Figure_Regional_interannual_variance.png"), units="in",type="cairo", bg="white", height=5, 
      width=8, res=300, pointsize=10)
 varianceplot
 dev.off()
