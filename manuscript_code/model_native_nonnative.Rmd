@@ -26,7 +26,11 @@ library(sjPlot)
 
 # Read data
 ```{r}
-data_exceedance0 <- read_csv("SpeciesTables/daysExceedanceUpperDataForPlotting.csv") %>%
+# data_exceedance0 <- read_csv("manuscript_code/Data/daysExceedanceUpperDataForPlotting.csv") %>%
+#   filter(!Species %in% c("Giant Reed EAV", "Brazilian Waterweed", "Water Hyacinth FAV", "Microcystis", "Asian Clam", "Overbite Clam"))
+
+# Now using days exceedance for lower tolerance
+data_exceedance0 <- read_csv("manuscript_code/Data/daysExceedanceDataForPlotting.csv") %>%
   filter(!Species %in% c("Giant Reed EAV", "Brazilian Waterweed", "Water Hyacinth FAV", "Microcystis", "Asian Clam", "Overbite Clam"))
 ```
 
@@ -62,7 +66,7 @@ data_adult_tol <- data_exceedance%>%
          sqrt_daysTol = sqrt(daysExceedanceTol)) %>%
   filter(LifeStage == "Adult" | LifeStage == "Undifferentiated", 
          !is.na(daysExceedanceTol)) %>%
-  select(Status, Lstatus, fWY, Species, daysExceedanceTol, log_daysTol, sqrt_daysTol, daysTotal, Status2, Lstatus2) %>%
+  dplyr::select(Status, Lstatus, fWY, Species, daysExceedanceTol, log_daysTol, sqrt_daysTol, daysTotal, Status2, Lstatus2) %>%
   unique()
 
 str(data_adult_tol)
@@ -73,11 +77,11 @@ Write table of species included in model
 table <- data_exceedance %>% 
   filter(LifeStage == "Adult" | LifeStage == "Undifferentiated", 
          !is.na(daysExceedanceTol)) %>%
-  select(Species, Lstatus, Tolerance_Upper) %>%
+  dplyr::select(Species, Lstatus, Tolerance_Upper) %>%
   distinct() %>%
   arrange(Species)
 
-# write_csv(table, "SpeciesTables/data_write/model_status_species_thresholds.csv")
+# write_csv(table, "manuscript_code/Data/tables/model_status_species_thresholds.csv")
 ```
 
 
@@ -96,19 +100,6 @@ ggplot(data_adult_tol, aes(x = Lstatus, y = daysExceedanceTol)) + geom_boxplot()
 
 ggplot(data_adult_tol, aes(y = daysExceedanceTol)) + geom_histogram() + facet_wrap(~Lstatus, scales = "free")
 ggplot(data_adult_tol, aes(y = sr_daysTol)) + geom_histogram() + facet_wrap(~Lstatus)
-```
-
-## t-test: significant
-```{r}
-t.test(data_adult_tol$Status2, data_adult_tol$sqrt_daysTol)
-t.test(data_adult_tol$Lstatus2, data_adult_tol$daysExceedanceTol)
-t.test(data_adult_tol$Lstatus2, data_adult_tol$sqrt_daysTol)
-```
-
-## kruskal wallis test
-```{r}
-kruskal.test(data_adult_tol$Status2, data_adult_tol$daysExceedanceTol)
-kruskal.test(data_adult_tol$Lstatus2, data_adult_tol$daysExceedanceTol)
 ```
 
 
@@ -187,10 +178,6 @@ ggplot(re_m_tolb) +
 ```
 
 ### by listed status
-```{r}
-mAdultList <- lmer(sqrt_daysTol ~ Lstatus + (1|Species), data = data_adult_tol)
-summary(mAdultList)
-```
 
 binomial
 ```{r}
@@ -250,7 +237,7 @@ data_adult_opt <- data_exceedance %>%
          sqrt_daysOpt = sqrt(daysExceedanceOpt)) %>%
   filter(LifeStage == "Adult" | LifeStage == "Undifferentiated",  
          !is.na(daysExceedanceOpt)) %>%
-  select(Status, Lstatus, Status2, Lstatus2, fWY, Species, daysExceedanceOpt, log_daysOpt, sqrt_daysOpt, daysTotal) %>%
+  dplyr::select(Status, Lstatus, Status2, Lstatus2, fWY, Species, daysExceedanceOpt, log_daysOpt, sqrt_daysOpt, daysTotal) %>%
   unique() 
 
 str(data_adult_opt)
