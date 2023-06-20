@@ -343,17 +343,16 @@ summary_all <- left_join(daysExceedanceSummary, fieldtemps, by = c("Taxon", "Lif
                outputSuboptimumUpper = outputSuboptimum, outputToleranceUpper = outputTolerance) %>%
   arrange(Species, LifeStage)
 
-
-
 summary_comb <- left_join(summary_all, summary_all0) %>%
   left_join(lengths) %>%
+  mutate(Suboptimum = ifelse(!is.na(`Lower Suboptimum Temperature Threshold (°C)`), paste0(`Lower Suboptimum Temperature Threshold (°C)`, "-", `Upper Suboptimum Temperature Threshold (°C)`), NA),
+         Tolerance = ifelse(!is.na(`Lower Tolerance Temperature Threshold (°C)`), paste0(`Lower Tolerance Temperature Threshold (°C)`, "-", `Upper Tolerance Temperature Threshold (°C)`), NA)) %>%
  dplyr::select(Species, Taxon, LifeStage, Length_mm, Length_type,
-               `Lower Suboptimum Temperature Threshold (°C)`, 
-               `Upper Suboptimum Temperature Threshold (°C)`, 
-                `Lower Tolerance Temperature Threshold (°C)`, 
-               `Upper Tolerance Temperature Threshold (°C)`, 
+               `Maximum Field Detection Temperature (°C)`,
+              `Suboptimum Threshold Range (°C)` = Suboptimum, 
+              `Tolerance Threshold Range (°C)` = Tolerance,
                outputSuboptimum, outputSuboptimumUpper, outputTolerance, outputToleranceUpper) %>%
-  arrange(Species, LifeStage)
+  arrange(Taxon, LifeStage)
 
 write_csv(summary_all, here::here("manuscript_code","Data", "tables", "Table_AppendixB_Upper.csv"))
 write_csv(daysExceedanceSummary, here::here("manuscript_code","Data", "tables", "Table_numDaysExceedance_v3.csv"))    
