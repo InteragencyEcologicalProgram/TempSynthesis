@@ -7,7 +7,7 @@ editor_options:
   chunk_output_type: console
 ---
 # Days Exceedance
-Last updated 1/11/2022 by C. Pien
+Last updated 6/19/2023 by C. Pien
 
 Calculate days exceedance for temperature suitability based on tolerance and optimum temperatures in species table
 
@@ -147,6 +147,7 @@ DaysExceedanceData <- DaysExceedanceData0 %>%
          daysExceedanceTol = replace(daysExceedanceTol, is.na(Tolerance), NA)) %>%
   dplyr::mutate(Species = factor(Species, levels = level_order))
 
+# write_csv(DaysExceedanceData, "manuscript_code/Data/daysExceedanceDataForPlotting.csv")
 ```
 
 
@@ -183,7 +184,7 @@ f_threshold_plot <- function(df, var) {
       geom_rect(xmin = 18.5, xmax = 19.5, ymin = -Inf, ymax = Inf, fill = "gray85") +
       geom_rect(xmin = 20.5, xmax = 21.5, ymin = -Inf, ymax = Inf, fill = "gray85") +
       geom_rect(xmin = 22.5, xmax = 23.5, ymin = -Inf, ymax = Inf, fill = "gray85") +
-   geom_vline(aes(xintercept = stage(Species, after_scale = 18.5)), linetype = "dashed", size = 0.5, color = "orangered2") +
+   geom_vline(aes(xintercept = stage(Species, after_scale = 18.5)), linetype = "dashed", linewidth = 0.5, color = "orangered2") +
     geom_boxplot(aes_string(x = "Species",  y = var, fill = "LifeStage"), position = position_dodge(preserve = "single"), color = "gray50", size = 0.3) +
    annotate(geom = "text", x = 10, y = 300, label = "Fish", vjust = 1, hjust = 0.5, size = 4) +
    annotate(geom = "text", x = 21.5, y = 300, label = "Vegetation & Clams", vjust = 1, size = 4) +
@@ -285,17 +286,40 @@ DaysExceedanceDataUpper <- DaysExceedanceDataUpper0 %>%
 ```{r}
 write_csv(DaysExceedanceDataUpper, "manuscript_code/Data/daysExceedanceUpperDataForPlotting.csv")
 DaysExceedanceDataUpper <- read_csv("manuscript_code/Data/daysExceedanceUpperDataForPlotting.csv")
-fieldtemps <- read_csv("SpeciesTables/surveymaxtemps.csv") %>%
-  select(Taxon = Taxa,
+fieldtemps <- read_csv("manuscript_code/Data/fish/surveymaxtemps.csv") %>%
+  dplyr::select(Taxon = Taxa,
          LifeStage,
          q3, maxTemp)
 lengths <- read_csv("publish_thresholds/thresholds_edi/data_objects/Lifestage_length_designations.csv") %>%
   rename(Species = Common_name,
          LifeStage = Assigned_life_stage) %>%
-  select(Species, LifeStage, Length_mm, Length_type)
+  dplyr::select(Species, LifeStage, Length_mm, Length_type)
 ```
 
 ### Table
+```{r}
+daysExceedanceSummary0 <- DaysExceedanceData %>%
+  group_by(Species, LifeStage) %>%
+  reframe(meanTolerance = ifelse(is.na(Tolerance), NA, round(mean(daysExceedanceTol, na.rm = TRUE),0)),
+            minTolerance= ifelse(is.na(Tolerance), NA, min(daysExceedanceTol, na.rm = TRUE)),
+            maxTolerance =  ifelse(is.na(Tolerance), NA, max(daysExceedanceTol, na.rm = TRUE)),
+            meanSuboptimum = ifelse(is.na(Suboptimum), NA, round(mean(daysExceedanceOpt, na.rm = TRUE),0)),
+            minSuboptimum= ifelse(is.na(Suboptimum), NA, min(daysExceedanceOpt, na.rm = TRUE)),
+            maxSuboptimum =  ifelse(is.na(Suboptimum), NA, max(daysExceedanceOpt, na.rm = TRUE))) %>%
+  mutate(outputTolerance = ifelse(is.na(meanTolerance), NA, paste0(meanTolerance, " (", minTolerance, "-", maxTolerance, ")")),
+         outputSuboptimum = ifelse(is.na(meanSuboptimum), NA, paste0(meanSuboptimum, " (", minSuboptimum, "-", maxSuboptimum, ")"))) %>%
+  distinct() %>%
+  left_join(thresholds %>% dplyr::select(Species, LifeStage, Taxon, Suboptimum, Tolerance))
+
+summary_all0 <- left_join(daysExceedanceSummary0, fieldtemps, by = c("Taxon", "LifeStage")) %>%
+  left_join(lengths) %>%
+ dplyr::select(Species, LifeStage,    
+               `Lower Suboptimum Temperature Threshold (°C)` = Suboptimum, 
+               `Lower Tolerance Temperature Threshold (°C)` = Tolerance, 
+               outputSuboptimum, outputTolerance) %>%
+  arrange(Species, LifeStage) 
+```
+
 ```{r}
 daysExceedanceSummary <- DaysExceedanceDataUpper %>%
   group_by(Species, LifeStage) %>%
@@ -308,7 +332,7 @@ daysExceedanceSummary <- DaysExceedanceDataUpper %>%
   mutate(outputTolerance = ifelse(is.na(meanTolerance), NA, paste0(meanTolerance, " (", minTolerance, "-", maxTolerance, ")")),
          outputSuboptimum = ifelse(is.na(meanSuboptimum), NA, paste0(meanSuboptimum, " (", minSuboptimum, "-", maxSuboptimum, ")"))) %>%
   distinct() %>%
-  left_join(thresholds %>% select(Species, LifeStage, Taxon, Suboptimum_Upper, Tolerance_Upper))
+  left_join(thresholds %>% dplyr::select(Species, LifeStage, Taxon, Suboptimum_Upper, Tolerance_Upper))
 
 summary_all <- left_join(daysExceedanceSummary, fieldtemps, by = c("Taxon", "LifeStage")) %>%
   left_join(lengths) %>%
@@ -316,11 +340,24 @@ summary_all <- left_join(daysExceedanceSummary, fieldtemps, by = c("Taxon", "Lif
                `Maximum Field Detection Temperature (°C)` = maxTemp, 
                `Upper Suboptimum Temperature Threshold (°C)` = Suboptimum_Upper, 
                `Upper Tolerance Temperature Threshold (°C)` = Tolerance_Upper, 
-               outputSuboptimum, outputTolerance) %>%
+               outputSuboptimumUpper = outputSuboptimum, outputToleranceUpper = outputTolerance) %>%
   arrange(Species, LifeStage)
 
-write_csv(summary_all, here::here("manuscript_code","Data", "tables", "Table_AppendixB.csv"))
+
+
+summary_comb <- left_join(summary_all, summary_all0) %>%
+  left_join(lengths) %>%
+ dplyr::select(Species, Taxon, LifeStage, Length_mm, Length_type,
+               `Lower Suboptimum Temperature Threshold (°C)`, 
+               `Upper Suboptimum Temperature Threshold (°C)`, 
+                `Lower Tolerance Temperature Threshold (°C)`, 
+               `Upper Tolerance Temperature Threshold (°C)`, 
+               outputSuboptimum, outputSuboptimumUpper, outputTolerance, outputToleranceUpper) %>%
+  arrange(Species, LifeStage)
+
+write_csv(summary_all, here::here("manuscript_code","Data", "tables", "Table_AppendixB_Upper.csv"))
 write_csv(daysExceedanceSummary, here::here("manuscript_code","Data", "tables", "Table_numDaysExceedance_v3.csv"))    
+write_csv(summary_comb, here::here("manuscript_code","Data", "tables", "Table_AppendixB.csv"))
 
 daysExceedanceSummary %>%
   ungroup() %>%
