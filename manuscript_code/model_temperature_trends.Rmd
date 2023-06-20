@@ -47,7 +47,7 @@ tempTable <- tempDaily %>% left_join(LatLon) %>%
   mutate(Region = case_when(Region == "Sac River" ~ "Confluence",
                             Region == "San Joaquin" ~ "Central",
                             TRUE ~ Region))
-write_csv(tempTable, "manuscript_code/Data/tables/Stations_included_10year.csv")
+# write_csv(tempTable, "manuscript_code/Data/tables/Stations_included_10year.csv")
 ```
 
 ```{r}
@@ -142,7 +142,6 @@ dev.off()
 ### 10 year
 ```{r}
 temp <- tempMonthly  %>%
-  filter(!Station %in% c("VER", "RPN", "RIP")) %>%
   dplyr::select(Region, Station, HabitatType,Year,  WY, WYType2_Sac, Index_c, Month, maxTemp, maxAvTemp, minAvTemp, everything())%>%
   mutate(fWY = factor(WY),
          fMonth = factor(Month),
@@ -371,12 +370,12 @@ ggplot(re_m.means) +
 max9.emm <- emmeans(m.maxs9, "fWY")
 plot(max9.emm, comparisons = TRUE) + theme_bw()
 #save a dataframe of all the things the plotting function uses so we can plot with ggplot later
-plotmax9 = plot(max9.emm, comparisons = TRUE, plotit = F, adjust = "bonferroni", alpha = 0.001)
-results_max92 = cld(max9.emm, Letters = LETTERS, alpha = 0.001, p.adj.methods = "bonferroni") %>%
+plotmax9 = plot(max9.emm, comparisons = TRUE, plotit = F, adjust = "bonferroni", alpha = 0.01)
+results_max92 = cld(max9.emm, Letters = LETTERS, alpha = 0.01, p.adj.methods = "bonferroni") %>%
   left_join(plotmax9) %>%
   mutate(.group = gsub(" ", "", .group))
 
-results_max9.emm = as.data.frame(pairs(max9.emm, adjust = "bonferroni", alpha = 0.001)) %>%
+results_max9.emm = as.data.frame(pairs(max9.emm, adjust = "bonferroni", alpha = 0.01)) %>%
   mutate(sig = ifelse(p.value<0.01, "yes",  "no")) %>%
   arrange(p.value)
 
@@ -386,7 +385,7 @@ max9.emm2 <- emmeans(m.maxs9, specs = pairwise ~ Region2:Season)
 # plotmax9.rs = plot(max9.emm2, comparisons = TRUE, plotit = F, adjust = "bonferroni", alpha = 0.001)
 
 # add letters
-letters.rs <- cld(max9.emm2, Letters = LETTERS, alpha = 0.001, p.adj.methods = "bonferroni")%>%
+letters.rs <- cld(max9.emm2, Letters = LETTERS, alpha = 0.01, p.adj.methods = "bonferroni")%>%
   mutate(.group = gsub(" ", "", .group))
 ci_max9_rs <- as.data.frame(max9.emm2$emmeans) %>%
   left_join(letters.rs) %>%
@@ -395,7 +394,7 @@ ci_max9_rs <- as.data.frame(max9.emm2$emmeans) %>%
   
 # other suggested plots but a bit too crazy
 emmip(m.maxs9, Region2~Season, CI = TRUE, plotit = FALSE)
-plotmax9.rs <- emmeans(m.maxs9, ~ Region2*Season, adjust = "bonferroni", alpha = 0.001)
+plotmax9.rs <- emmeans(m.maxs9, ~ Region2*Season, adjust = "bonferroni", alpha = 0.01)
 (data <- pwpp(plotmax9.rs, type = "response", adjust = "bonferroni", plotit = F))
 rs <- data$data
 pwpp(plotmax9.rs, type = "response", adjust = "bonferroni", by = "Season")
@@ -567,39 +566,6 @@ dev.off()
 ```
 
 
-
-### Other code I tried but did not use in the end
-```{r}
-library(sjPlot)
-plot_model(m.maxs9, type = "int") + labs(title = "Max") + theme_bw()
-plot_model(m.maxs9, show.values = TRUE, show.p = TRUE)
-plot_model(m.mins9, type = "int") + labs(title = "Min")+ theme_bw()
-plot_model(m.mins9)
-plot_model(m.means9, type = "int") + labs(title = "Mean")+ theme_bw()
-plot_model(m.means9)
-```
-
-#### Predict results
-```{r}
-newdata <- expand.grid(
-  Region2 = unique(temp$Region2),
-  Season = unique(temp$Season),
-  fWY = unique(temp$fWY),
-  Station = unique(temp$Station),
-  fMonth = unique(temp$fMonth)
-)
-
-newdata$Predicted_maxtemp <- predict(m.maxs9, newdata = newdata)
-confint <- confint(m.maxs9)
-```
-
-#### Table of results
-```{r}
-sjPlot:: tab_model(m.maxs9)
-sjPlot:: tab_model(m.mins)
-sjPlot:: tab_model(m.means)
-```
-
 #### Effects
 ```{r}
 effects_max9 <- effects::effect(term = "Region2", mod = m.maxs9)
@@ -624,13 +590,13 @@ plot(allEffects(m.maxs9, residuals = TRUE, se = list(type = "scheffe")))
 min9.emm <- emmeans(m.mins9, "fWY")
 plot(min9.emm, comparisons = TRUE) + theme_bw()
 #save a dataframe of all the things the plotting function uses so we can plot with ggplot later
-plotmin9 = plot(min9.emm, comparisons = TRUE, plotit = F, adjust = "bonferroni", alpha = 0.001)
-results_min92 = cld(min9.emm, Letters = LETTERS, alpha = 0.001, p.adj.methods = "bonferroni") %>%
+plotmin9 = plot(min9.emm, comparisons = TRUE, plotit = F, adjust = "bonferroni", alpha = 0.01)
+results_min92 = cld(min9.emm, Letters = LETTERS, alpha = 0.01, p.adj.methods = "bonferroni") %>%
   left_join(plotmin9) %>%
   mutate(.group = gsub(" ", "", .group))%>%
    mutate(across(emmean:asymp.UCL,~round(.x, 3))) 
 
-results_min9.emm = as.data.frame(pairs(min9.emm, adjust = "bonferroni", alpha = 0.001)) %>%
+results_min9.emm = as.data.frame(pairs(min9.emm, adjust = "bonferroni", alpha = 0.01)) %>%
   mutate(sig = ifelse(p.value<0.01, "yes",  "no")) %>%
   arrange(p.value)
 
@@ -639,7 +605,7 @@ min9.emm2 <- emmeans(m.mins9, specs = pairwise ~ Region2:Season)
 # min9.emm2 <- emmeans(m.mins9, Region2:Season)
 # plotmin9.rs = plot(min9.emm2, comparisons = TRUE, plotit = F, adjust = "bonferroni", alpha = 0.001)
 
-letters.rs.min <- cld(min9.emm2, Letters = LETTERS, alpha = 0.05, p.adj.methods = "bonferroni")%>%
+letters.rs.min <- cld(min9.emm2, Letters = LETTERS, alpha = 0.01, p.adj.methods = "bonferroni")%>%
   mutate(.group = gsub(" ", "", .group))
 ci_min9_rs <- as.data.frame(min9.emm2$emmeans) %>%
   left_join(letters.rs.min) %>%
@@ -648,37 +614,6 @@ ci_min9_rs <- as.data.frame(min9.emm2$emmeans) %>%
   mutate(Season = factor(Season, levels = c("Wet Season", "Dry Season")))
 ```
 
-
-```{r}
-min9.emm <- emmeans(m.mins9, "fWY")
-pairs(min9.emm, adjust = "tukey")
-plot(min9.emm, comparisons = TRUE) + theme_bw()
-ci_min9_wy <- confint(min9.emm) %>%
-   mutate(across(c(emmean, SE, asymp.UCL, asymp.LCL),~round(.x, 3)))
-results_min9.emm = as.data.frame(pairs(min9.emm)) %>%
-  mutate(sig = ifelse(p.value<0.01, "yes",  "no")) %>%
-  arrange(p.value) %>%
-   mutate(across(estimate:p.value,~round(.x, 3))) 
-
-# ci_min9_wy <- as.data.frame(confint(min9.emm))
-# ci_min9_wy <- ci_min9_wy %>%
-#   mutate(Label = c("a", "b", "ac", "d", "e", "g", "e", "f", "h", "cf"))
-
-
-min9.emm2 <- emmeans(m.mins9, specs = pairwise ~ Region2:Season)
-pairs(min9.emm2, adjust = "bonferroni")
-results_min9.emm2 = as.data.frame(pairs(min9.emm2)) %>%
-  mutate(sig = ifelse(p.value<0.01, "yes",  "no")) %>%
-  arrange(p.value)
-#multcomp::cld(pairs(min9.emm2, adjust = "bonferroni"))
-
-# ci_min9_rs0 <- as.data.frame(min9.emm2$emmeans)
-# ci_min9_rs <- ci_min9_rs0 %>%
-#   mutate(Label = c("ab", "a", "bc", "abc", "abc", "c", "de", "d", "f", "ef", "g", "d")) %>%
-#   mutate(Season = ifelse(Season == "Wet", "Wet Season", ifelse(Season == "Dry", "Dry Season", NA))) %>%
-#   mutate(Season = factor(Season, levels = c("Wet Season", "Dry Season")))
-
-```
 
 ### Year plot
 ```{r}
@@ -759,23 +694,23 @@ dev.off()
 mean9.emm <- emmeans(m.means9, "fWY")
 plot(mean9.emm, comparisons = TRUE) + theme_bw()
 #save a dataframe of all the things the plotting function uses so we can plot with ggplot later
-plotmean9 = plot(mean9.emm, comparisons = TRUE, plotit = F, adjust = "bonferroni", alpha = 0.001)
-results_mean92 = cld(mean9.emm, Letters = LETTERS, alpha = 0.001, p.adj.methods = "bonferroni") %>%
+plotmean9 = plot(mean9.emm, comparisons = TRUE, plotit = F, adjust = "bonferroni", alpha = 0.01)
+results_mean92 = cld(mean9.emm, Letters = LETTERS, alpha = 0.01, p.adj.methods = "bonferroni") %>%
   left_join(plotmean9) %>%
   mutate(.group = gsub(" ", "", .group))%>%
    mutate(across(emmean:asymp.UCL,~round(.x, 3))) 
 
-results_mean9.emm = as.data.frame(pairs(mean9.emm, adjust = "bonferroni", alpha = 0.001)) %>%
+results_mean9.emm = as.data.frame(pairs(mean9.emm, adjust = "bonferroni", alpha = 0.01)) %>%
   mutate(sig = ifelse(p.value<0.01, "yes",  "no")) %>%
   arrange(p.value)
 
 # Region/Season ------------------------------
 mean9.emm2 <- emmeans(m.means9, specs = pairwise ~ Region2:Season)
 # mean9.emm2 <- emmeans(m.means9, Region2:Season)
-plotmean9.rs = plot(mean9.emm2, comparisons = TRUE, plotit = F, adjust = "bonferroni", alpha = 0.001)
+plotmean9.rs = plot(mean9.emm2, comparisons = TRUE, plotit = F, adjust = "bonferroni", alpha = 0.01)
 
 # add letters
-letters.rs <- cld(mean9.emm2, Letters = LETTERS, alpha = 0.05, p.adj.methods = "bonferroni")%>%
+letters.rs <- cld(mean9.emm2, Letters = LETTERS, alpha = 0.01, p.adj.methods = "bonferroni")%>%
   mutate(.group = gsub(" ", "", .group))
 ci_mean9_rs <- as.data.frame(mean9.emm2$emmeans) %>%
   left_join(letters.rs) %>%
@@ -785,35 +720,6 @@ ci_mean9_rs <- as.data.frame(mean9.emm2$emmeans) %>%
   
 ```
 
-Don't use this one
-```{r}
-mean9.emm <- emmeans(m.means9, "fWY")
-pairs(mean9.emm, adjust = "tukey")
-plot(mean9.emm, comparisons = TRUE) + theme_bw()
-ci_mean9_wy <- confint(mean9.emm)
-results_mean9.emm = as.data.frame(pairs(mean9.emm)) %>%
-  mutate(sig = ifelse(p.value<0.01, "yes",  "no")) %>%
-  arrange(p.value)
-# 
-# ci_mean9_wy <- as.data.frame(confint(mean9.emm))
-# ci_mean9_wy <- ci_mean9_wy %>%
-#   mutate(Label = c("a", "b", "ac", "d", "e", "g", "e", "f", "h", "cf"))
-
-
-mean9.emm2 <- emmeans(m.means9, specs = pairwise ~ Region2:Season)
-pairs(mean9.emm2, adjust = "bonferroni")
-results_mean9.emm2 = as.data.frame(pairs(mean9.emm2)) %>%
-  mutate(sig = ifelse(p.value<0.01, "yes",  "no")) %>%
-  arrange(p.value)
-#multcomp::cld(pairs(mean9.emm2, adjust = "bonferroni"))
-
-ci_mean9_rs0 <- as.data.frame(mean9.emm2$emmeans)
-ci_mean9_rs <- ci_mean9_rs0 %>%
-  mutate(Label = c("ab", "a", "bc", "abc", "abc", "c", "de", "d", "f", "ef", "g", "d")) %>%
-  mutate(Season = ifelse(Season == "Wet", "Wet Season", ifelse(Season == "Dry", "Dry Season", NA))) %>%
-  mutate(Season = factor(Season, levels = c("Wet Season", "Dry Season")))
-
-```
 
 ### Year plot
 ```{r}
