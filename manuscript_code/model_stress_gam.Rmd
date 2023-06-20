@@ -1143,7 +1143,7 @@ Range <- Info25 %>%
 
 ```{r}
 png(filename=file.path("manuscript_code/Figures/Anomaly25NRPlot_updated.png"), units="in",type="cairo", bg="white", height=4, 
-     width=6, res=300, pointsize=10,compression="lzw")
+     width=6, res=300, pointsize=10)
 
 Anomaly25NRPlot
 dev.off()
