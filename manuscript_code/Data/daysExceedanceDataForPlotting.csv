@@ -1,0 +1,411 @@
+WY,Species,LifeStage,Tolerance,daysExceedanceTol,daysExceedanceOpt,Suboptimum
+2010,Asian Clam,Undifferentiated,37,64,64,30
+2011,Asian Clam,Undifferentiated,37,70,70,30
+2012,Asian Clam,Undifferentiated,37,61,61,30
+2013,Asian Clam,Undifferentiated,37,56,59,30
+2014,Asian Clam,Undifferentiated,37,51,51,30
+2015,Asian Clam,Undifferentiated,37,22,22,30
+2016,Asian Clam,Undifferentiated,37,48,48,30
+2017,Asian Clam,Undifferentiated,37,74,74,30
+2018,Asian Clam,Undifferentiated,37,34,34,30
+2019,Asian Clam,Undifferentiated,37,41,41,30
+2010,Brazilian Waterweed,Undifferentiated,20,201,77,26
+2011,Brazilian Waterweed,Undifferentiated,20,215,77,26
+2012,Brazilian Waterweed,Undifferentiated,20,234,97,26
+2013,Brazilian Waterweed,Undifferentiated,20,246,107,26
+2014,Brazilian Waterweed,Undifferentiated,20,229,119,26
+2015,Brazilian Waterweed,Undifferentiated,20,222,86,26
+2016,Brazilian Waterweed,Undifferentiated,20,244,103,26
+2017,Brazilian Waterweed,Undifferentiated,20,237,95,26
+2018,Brazilian Waterweed,Undifferentiated,20,192,89,26
+2019,Brazilian Waterweed,Undifferentiated,20,207,76,26
+2010,Chinook Salmon,Adult,23,81,173,21
+2011,Chinook Salmon,Adult,23,49,150,21
+2012,Chinook Salmon,Adult,23,83,173,21
+2013,Chinook Salmon,Adult,23,91,186,21
+2014,Chinook Salmon,Adult,23,156,200,21
+2015,Chinook Salmon,Adult,23,121,174,21
+2016,Chinook Salmon,Adult,23,65,173,21
+2017,Chinook Salmon,Adult,23,120,158,21
+2018,Chinook Salmon,Adult,23,48,125,21
+2019,Chinook Salmon,Adult,23,86,148,21
+2010,Chinook Salmon,Juvenile,24,140,296,16
+2011,Chinook Salmon,Juvenile,24,142,296,16
+2012,Chinook Salmon,Juvenile,24,147,284,16
+2013,Chinook Salmon,Juvenile,24,157,302,16
+2014,Chinook Salmon,Juvenile,24,171,299,16
+2015,Chinook Salmon,Juvenile,24,127,288,16
+2016,Chinook Salmon,Juvenile,24,154,305,16
+2017,Chinook Salmon,Juvenile,24,171,325,16
+2018,Chinook Salmon,Juvenile,24,126,266,16
+2019,Chinook Salmon,Juvenile,24,131,273,16
+2010,Chinook Salmon,Larvae,16.7,189,260,13
+2011,Chinook Salmon,Larvae,16.7,184,235,13
+2012,Chinook Salmon,Larvae,16.7,177,247,13
+2013,Chinook Salmon,Larvae,16.7,203,255,13
+2014,Chinook Salmon,Larvae,16.7,193,252,13
+2015,Chinook Salmon,Larvae,16.7,187,253,13
+2016,Chinook Salmon,Larvae,16.7,202,250,13
+2017,Chinook Salmon,Larvae,16.7,205,260,13
+2018,Chinook Salmon,Larvae,16.7,158,221,13
+2019,Chinook Salmon,Larvae,16.7,166,228,13
+2010,Delta Smelt,Adult,26.5,72,227,19
+2011,Delta Smelt,Adult,26.5,71,227,19
+2012,Delta Smelt,Adult,26.5,85,250,19
+2013,Delta Smelt,Adult,26.5,99,259,19
+2014,Delta Smelt,Adult,26.5,104,238,19
+2015,Delta Smelt,Adult,26.5,65,242,19
+2016,Delta Smelt,Adult,26.5,91,266,19
+2017,Delta Smelt,Adult,26.5,81,255,19
+2018,Delta Smelt,Adult,26.5,79,208,19
+2019,Delta Smelt,Adult,26.5,54,219,19
+2010,Delta Smelt,Juvenile,27,68,199,20
+2011,Delta Smelt,Juvenile,27,69,209,20
+2012,Delta Smelt,Juvenile,27,77,232,20
+2013,Delta Smelt,Juvenile,27,85,236,20
+2014,Delta Smelt,Juvenile,27,86,226,20
+2015,Delta Smelt,Juvenile,27,46,221,20
+2016,Delta Smelt,Juvenile,27,79,240,20
+2017,Delta Smelt,Juvenile,27,75,232,20
+2018,Delta Smelt,Juvenile,27,52,185,20
+2019,Delta Smelt,Juvenile,27,46,200,20
+2010,Delta Smelt,Larvae,27.6,33,165,20
+2011,Delta Smelt,Larvae,27.6,59,184,20
+2012,Delta Smelt,Larvae,27.6,38,192,20
+2013,Delta Smelt,Larvae,27.6,55,212,20
+2014,Delta Smelt,Larvae,27.6,40,198,20
+2015,Delta Smelt,Larvae,27.6,29,190,20
+2016,Delta Smelt,Larvae,27.6,43,191,20
+2017,Delta Smelt,Larvae,27.6,54,208,20
+2018,Delta Smelt,Larvae,27.6,21,165,20
+2019,Delta Smelt,Larvae,27.6,37,190,20
+2010,Giant Reed EAV,Undifferentiated,32,64,64,30
+2011,Giant Reed EAV,Undifferentiated,32,70,70,30
+2012,Giant Reed EAV,Undifferentiated,32,61,61,30
+2013,Giant Reed EAV,Undifferentiated,32,56,59,30
+2014,Giant Reed EAV,Undifferentiated,32,51,51,30
+2015,Giant Reed EAV,Undifferentiated,32,22,22,30
+2016,Giant Reed EAV,Undifferentiated,32,48,48,30
+2017,Giant Reed EAV,Undifferentiated,32,74,74,30
+2018,Giant Reed EAV,Undifferentiated,32,34,34,30
+2019,Giant Reed EAV,Undifferentiated,32,41,41,30
+2010,Green Sturgeon,Juvenile,30,60,189,20
+2011,Green Sturgeon,Juvenile,30,53,187,20
+2012,Green Sturgeon,Juvenile,30,60,230,20
+2013,Green Sturgeon,Juvenile,30,54,235,20
+2014,Green Sturgeon,Juvenile,30,50,220,20
+2015,Green Sturgeon,Juvenile,30,21,216,20
+2016,Green Sturgeon,Juvenile,30,42,235,20
+2017,Green Sturgeon,Juvenile,30,45,194,20
+2018,Green Sturgeon,Juvenile,30,29,184,20
+2019,Green Sturgeon,Juvenile,30,33,192,20
+2010,Hitch,Adult,38,64,64,29
+2011,Hitch,Adult,38,69,69,29
+2012,Hitch,Adult,38,61,61,29
+2013,Hitch,Adult,38,56,57,29
+2014,Hitch,Adult,38,50,50,29
+2015,Hitch,Adult,38,22,22,29
+2016,Hitch,Adult,38,46,46,29
+2017,Hitch,Adult,38,74,74,29
+2018,Hitch,Adult,38,27,27,29
+2019,Hitch,Adult,38,41,41,29
+2010,Largemouth Bass,Adult,33,64,NA,NA
+2011,Largemouth Bass,Adult,33,70,NA,NA
+2012,Largemouth Bass,Adult,33,61,NA,NA
+2013,Largemouth Bass,Adult,33,56,NA,NA
+2014,Largemouth Bass,Adult,33,51,NA,NA
+2015,Largemouth Bass,Adult,33,22,NA,NA
+2016,Largemouth Bass,Adult,33,48,NA,NA
+2017,Largemouth Bass,Adult,33,74,NA,NA
+2018,Largemouth Bass,Adult,33,34,NA,NA
+2019,Largemouth Bass,Adult,33,40,NA,NA
+2010,Largemouth Bass,Juvenile,33,64,68,27
+2011,Largemouth Bass,Juvenile,33,70,70,27
+2012,Largemouth Bass,Juvenile,33,61,77,27
+2013,Largemouth Bass,Juvenile,33,56,85,27
+2014,Largemouth Bass,Juvenile,33,51,87,27
+2015,Largemouth Bass,Juvenile,33,22,46,27
+2016,Largemouth Bass,Juvenile,33,48,81,27
+2017,Largemouth Bass,Juvenile,33,74,74,27
+2018,Largemouth Bass,Juvenile,33,34,59,27
+2019,Largemouth Bass,Juvenile,33,40,43,27
+2010,Longfin Smelt,Adult,25.6,64,308,15
+2011,Longfin Smelt,Adult,25.6,78,308,15
+2012,Longfin Smelt,Adult,25.6,61,291,15
+2013,Longfin Smelt,Adult,25.6,63,315,15
+2014,Longfin Smelt,Adult,25.6,51,323,15
+2015,Longfin Smelt,Adult,25.6,22,312,15
+2016,Longfin Smelt,Adult,25.6,49,325,15
+2017,Longfin Smelt,Adult,25.6,82,335,15
+2018,Longfin Smelt,Adult,25.6,34,291,15
+2019,Longfin Smelt,Adult,25.6,47,284,15
+2010,Longfin Smelt,Juvenile,26.4,72,309,15
+2011,Longfin Smelt,Juvenile,26.4,71,308,15
+2012,Longfin Smelt,Juvenile,26.4,86,295,15
+2013,Longfin Smelt,Juvenile,26.4,100,315,15
+2014,Longfin Smelt,Juvenile,26.4,105,323,15
+2015,Longfin Smelt,Juvenile,26.4,67,312,15
+2016,Longfin Smelt,Juvenile,26.4,91,325,15
+2017,Longfin Smelt,Juvenile,26.4,81,335,15
+2018,Longfin Smelt,Juvenile,26.4,81,291,15
+2019,Longfin Smelt,Juvenile,26.4,54,284,15
+2010,Longfin Smelt,Larvae,24.8,38,140,15
+2011,Longfin Smelt,Larvae,24.8,63,155,15
+2012,Longfin Smelt,Larvae,24.8,35,126,15
+2013,Longfin Smelt,Larvae,24.8,46,156,15
+2014,Longfin Smelt,Larvae,24.8,32,149,15
+2015,Longfin Smelt,Larvae,24.8,41,154,15
+2016,Longfin Smelt,Larvae,24.8,35,156,15
+2017,Longfin Smelt,Larvae,24.8,70,167,15
+2018,Longfin Smelt,Larvae,24.8,19,117,15
+2019,Longfin Smelt,Larvae,24.8,43,144,15
+2010,Microcystis,Undifferentiated,36,31,81,25
+2011,Microcystis,Undifferentiated,36,11,24,25
+2012,Microcystis,Undifferentiated,36,29,84,25
+2013,Microcystis,Undifferentiated,36,16,87,25
+2014,Microcystis,Undifferentiated,36,27,107,25
+2015,Microcystis,Undifferentiated,36,3,67,25
+2016,Microcystis,Undifferentiated,36,25,88,25
+2017,Microcystis,Undifferentiated,36,21,77,25
+2018,Microcystis,Undifferentiated,36,25,86,25
+2019,Microcystis,Undifferentiated,36,4,60,25
+2010,Mississippi Silverside,Adult,31,64,NA,NA
+2011,Mississippi Silverside,Adult,31,70,NA,NA
+2012,Mississippi Silverside,Adult,31,61,NA,NA
+2013,Mississippi Silverside,Adult,31,56,NA,NA
+2014,Mississippi Silverside,Adult,31,51,NA,NA
+2015,Mississippi Silverside,Adult,31,22,NA,NA
+2016,Mississippi Silverside,Adult,31,48,NA,NA
+2017,Mississippi Silverside,Adult,31,74,NA,NA
+2018,Mississippi Silverside,Adult,31,34,NA,NA
+2019,Mississippi Silverside,Adult,31,41,NA,NA
+2010,Mississippi Silverside,Juvenile,35,64,77,26
+2011,Mississippi Silverside,Juvenile,35,70,77,26
+2012,Mississippi Silverside,Juvenile,35,61,97,26
+2013,Mississippi Silverside,Juvenile,35,56,107,26
+2014,Mississippi Silverside,Juvenile,35,51,119,26
+2015,Mississippi Silverside,Juvenile,35,22,86,26
+2016,Mississippi Silverside,Juvenile,35,48,103,26
+2017,Mississippi Silverside,Juvenile,35,74,95,26
+2018,Mississippi Silverside,Juvenile,35,34,89,26
+2019,Mississippi Silverside,Juvenile,35,41,76,26
+2010,Overbite Clam,Undifferentiated,NA,NA,58,28
+2011,Overbite Clam,Undifferentiated,NA,NA,55,28
+2012,Overbite Clam,Undifferentiated,NA,NA,61,28
+2013,Overbite Clam,Undifferentiated,NA,NA,49,28
+2014,Overbite Clam,Undifferentiated,NA,NA,50,28
+2015,Overbite Clam,Undifferentiated,NA,NA,19,28
+2016,Overbite Clam,Undifferentiated,NA,NA,36,28
+2017,Overbite Clam,Undifferentiated,NA,NA,48,28
+2018,Overbite Clam,Undifferentiated,NA,NA,20,28
+2019,Overbite Clam,Undifferentiated,NA,NA,40,28
+2010,Prickly Sculpin,Adult,NA,NA,184,22
+2011,Prickly Sculpin,Adult,NA,NA,183,22
+2012,Prickly Sculpin,Adult,NA,NA,202,22
+2013,Prickly Sculpin,Adult,NA,NA,197,22
+2014,Prickly Sculpin,Adult,NA,NA,201,22
+2015,Prickly Sculpin,Adult,NA,NA,171,22
+2016,Prickly Sculpin,Adult,NA,NA,196,22
+2017,Prickly Sculpin,Adult,NA,NA,195,22
+2018,Prickly Sculpin,Adult,NA,NA,154,22
+2019,Prickly Sculpin,Adult,NA,NA,168,22
+2010,Sacramento Blackfish,Adult,32,62,NA,NA
+2011,Sacramento Blackfish,Adult,32,70,NA,NA
+2012,Sacramento Blackfish,Adult,32,60,NA,NA
+2013,Sacramento Blackfish,Adult,32,56,NA,NA
+2014,Sacramento Blackfish,Adult,32,50,NA,NA
+2015,Sacramento Blackfish,Adult,32,22,NA,NA
+2016,Sacramento Blackfish,Adult,32,48,NA,NA
+2017,Sacramento Blackfish,Adult,32,74,NA,NA
+2018,Sacramento Blackfish,Adult,32,33,NA,NA
+2019,Sacramento Blackfish,Adult,32,38,NA,NA
+2010,Sacramento Blackfish,Juvenile-Larvae,32,64,140,24
+2011,Sacramento Blackfish,Juvenile-Larvae,32,70,142,24
+2012,Sacramento Blackfish,Juvenile-Larvae,32,61,147,24
+2013,Sacramento Blackfish,Juvenile-Larvae,32,56,157,24
+2014,Sacramento Blackfish,Juvenile-Larvae,32,51,171,24
+2015,Sacramento Blackfish,Juvenile-Larvae,32,22,127,24
+2016,Sacramento Blackfish,Juvenile-Larvae,32,48,154,24
+2017,Sacramento Blackfish,Juvenile-Larvae,32,74,171,24
+2018,Sacramento Blackfish,Juvenile-Larvae,32,34,126,24
+2019,Sacramento Blackfish,Juvenile-Larvae,32,41,131,24
+2010,Sacramento Pikeminnow,Adult,35,64,184,22
+2011,Sacramento Pikeminnow,Adult,35,69,181,22
+2012,Sacramento Pikeminnow,Adult,35,61,202,22
+2013,Sacramento Pikeminnow,Adult,35,56,196,22
+2014,Sacramento Pikeminnow,Adult,35,50,200,22
+2015,Sacramento Pikeminnow,Adult,35,22,171,22
+2016,Sacramento Pikeminnow,Adult,35,46,193,22
+2017,Sacramento Pikeminnow,Adult,35,74,194,22
+2018,Sacramento Pikeminnow,Adult,35,27,147,22
+2019,Sacramento Pikeminnow,Adult,35,41,164,22
+2010,Sacramento Splittail,Adult,29,64,140,24
+2011,Sacramento Splittail,Adult,29,70,142,24
+2012,Sacramento Splittail,Adult,29,61,147,24
+2013,Sacramento Splittail,Adult,29,62,157,24
+2014,Sacramento Splittail,Adult,29,51,171,24
+2015,Sacramento Splittail,Adult,29,22,127,24
+2016,Sacramento Splittail,Adult,29,50,154,24
+2017,Sacramento Splittail,Adult,29,74,171,24
+2018,Sacramento Splittail,Adult,29,34,126,24
+2019,Sacramento Splittail,Adult,29,41,131,24
+2010,Sacramento Splittail,Juvenile,28,64,194,21
+2011,Sacramento Splittail,Juvenile,28,70,202,21
+2012,Sacramento Splittail,Juvenile,28,66,219,21
+2013,Sacramento Splittail,Juvenile,28,66,213,21
+2014,Sacramento Splittail,Juvenile,28,59,220,21
+2015,Sacramento Splittail,Juvenile,28,24,195,21
+2016,Sacramento Splittail,Juvenile,28,58,217,21
+2017,Sacramento Splittail,Juvenile,28,74,213,21
+2018,Sacramento Splittail,Juvenile,28,42,173,21
+2019,Sacramento Splittail,Juvenile,28,41,181,21
+2010,Sacramento Splittail,Larvae,32,33,153,22
+2011,Sacramento Splittail,Larvae,32,59,168,22
+2012,Sacramento Splittail,Larvae,32,32,172,22
+2013,Sacramento Splittail,Larvae,32,40,175,22
+2014,Sacramento Splittail,Larvae,32,24,174,22
+2015,Sacramento Splittail,Larvae,32,19,156,22
+2016,Sacramento Splittail,Larvae,32,23,157,22
+2017,Sacramento Splittail,Larvae,32,53,173,22
+2018,Sacramento Splittail,Larvae,32,9,129,22
+2019,Sacramento Splittail,Larvae,32,37,160,22
+2010,Sacramento Sucker,Adult,30,64,201,20
+2011,Sacramento Sucker,Adult,30,70,212,20
+2012,Sacramento Sucker,Adult,30,60,231,20
+2013,Sacramento Sucker,Adult,30,59,239,20
+2014,Sacramento Sucker,Adult,30,50,227,20
+2015,Sacramento Sucker,Adult,30,22,221,20
+2016,Sacramento Sucker,Adult,30,48,244,20
+2017,Sacramento Sucker,Adult,30,74,237,20
+2018,Sacramento Sucker,Adult,30,33,191,20
+2019,Sacramento Sucker,Adult,30,41,207,20
+2010,Steelhead/Rainbow Trout,Adult,25.5,98,196,20
+2011,Steelhead/Rainbow Trout,Adult,25.5,76,204,20
+2012,Steelhead/Rainbow Trout,Adult,25.5,109,233,20
+2013,Steelhead/Rainbow Trout,Adult,25.5,126,242,20
+2014,Steelhead/Rainbow Trout,Adult,25.5,133,227,20
+2015,Steelhead/Rainbow Trout,Adult,25.5,104,220,20
+2016,Steelhead/Rainbow Trout,Adult,25.5,118,242,20
+2017,Steelhead/Rainbow Trout,Adult,25.5,123,224,20
+2018,Steelhead/Rainbow Trout,Adult,25.5,95,188,20
+2019,Steelhead/Rainbow Trout,Adult,25.5,85,200,20
+2010,Steelhead/Rainbow Trout,Juvenile,24,136,275,17
+2011,Steelhead/Rainbow Trout,Juvenile,24,140,271,17
+2012,Steelhead/Rainbow Trout,Juvenile,24,143,268,17
+2013,Steelhead/Rainbow Trout,Juvenile,24,156,295,17
+2014,Steelhead/Rainbow Trout,Juvenile,24,170,283,17
+2015,Steelhead/Rainbow Trout,Juvenile,24,127,278,17
+2016,Steelhead/Rainbow Trout,Juvenile,24,154,294,17
+2017,Steelhead/Rainbow Trout,Juvenile,24,164,293,17
+2018,Steelhead/Rainbow Trout,Juvenile,24,125,253,17
+2019,Steelhead/Rainbow Trout,Juvenile,24,129,250,17
+2010,Steelhead/Rainbow Trout,Larvae,15,87,91,10
+2011,Steelhead/Rainbow Trout,Larvae,15,68,91,10
+2012,Steelhead/Rainbow Trout,Larvae,15,83,91,10
+2013,Steelhead/Rainbow Trout,Larvae,15,91,91,10
+2014,Steelhead/Rainbow Trout,Larvae,15,88,91,10
+2015,Steelhead/Rainbow Trout,Larvae,15,91,91,10
+2016,Steelhead/Rainbow Trout,Larvae,15,91,91,10
+2017,Steelhead/Rainbow Trout,Larvae,15,88,91,10
+2018,Steelhead/Rainbow Trout,Larvae,15,91,91,10
+2019,Steelhead/Rainbow Trout,Larvae,15,84,91,10
+2010,Striped Bass,Adult,28,64,140,24
+2011,Striped Bass,Adult,28,70,142,24
+2012,Striped Bass,Adult,28,66,147,24
+2013,Striped Bass,Adult,28,66,157,24
+2014,Striped Bass,Adult,28,59,171,24
+2015,Striped Bass,Adult,28,24,127,24
+2016,Striped Bass,Adult,28,58,154,24
+2017,Striped Bass,Adult,28,74,171,24
+2018,Striped Bass,Adult,28,42,126,24
+2019,Striped Bass,Adult,28,41,131,24
+2010,Striped Bass,Juvenile,32,64,119,25
+2011,Striped Bass,Juvenile,32,70,87,25
+2012,Striped Bass,Juvenile,32,61,122,25
+2013,Striped Bass,Juvenile,32,56,145,25
+2014,Striped Bass,Juvenile,32,51,151,25
+2015,Striped Bass,Juvenile,32,22,111,25
+2016,Striped Bass,Juvenile,32,48,130,25
+2017,Striped Bass,Juvenile,32,74,143,25
+2018,Striped Bass,Juvenile,32,34,104,25
+2019,Striped Bass,Juvenile,32,41,102,25
+2010,Striped Bass,Larvae,NA,NA,38,25
+2011,Striped Bass,Larvae,NA,NA,52,25
+2012,Striped Bass,Larvae,NA,NA,33,25
+2013,Striped Bass,Larvae,NA,NA,41,25
+2014,Striped Bass,Larvae,NA,NA,31,25
+2015,Striped Bass,Larvae,NA,NA,40,25
+2016,Striped Bass,Larvae,NA,NA,28,25
+2017,Striped Bass,Larvae,NA,NA,45,25
+2018,Striped Bass,Larvae,NA,NA,14,25
+2019,Striped Bass,Larvae,NA,NA,41,25
+2010,Threespine Stickleback,Adult,26,64,NA,NA
+2011,Threespine Stickleback,Adult,26,75,NA,NA
+2012,Threespine Stickleback,Adult,26,62,NA,NA
+2013,Threespine Stickleback,Adult,26,67,NA,NA
+2014,Threespine Stickleback,Adult,26,58,NA,NA
+2015,Threespine Stickleback,Adult,26,44,NA,NA
+2016,Threespine Stickleback,Adult,26,58,NA,NA
+2017,Threespine Stickleback,Adult,26,83,NA,NA
+2018,Threespine Stickleback,Adult,26,39,NA,NA
+2019,Threespine Stickleback,Adult,26,47,NA,NA
+2010,Threespine Stickleback,Juvenile-Larvae,25,71,NA,NA
+2011,Threespine Stickleback,Juvenile-Larvae,25,81,NA,NA
+2012,Threespine Stickleback,Juvenile-Larvae,25,70,NA,NA
+2013,Threespine Stickleback,Juvenile-Larvae,25,80,NA,NA
+2014,Threespine Stickleback,Juvenile-Larvae,25,82,NA,NA
+2015,Threespine Stickleback,Juvenile-Larvae,25,69,NA,NA
+2016,Threespine Stickleback,Juvenile-Larvae,25,71,NA,NA
+2017,Threespine Stickleback,Juvenile-Larvae,25,95,NA,NA
+2018,Threespine Stickleback,Juvenile-Larvae,25,43,NA,NA
+2019,Threespine Stickleback,Juvenile-Larvae,25,58,NA,NA
+2010,Tule Perch,Adult,34,64,193,21
+2011,Tule Perch,Adult,34,70,195,21
+2012,Tule Perch,Adult,34,61,216,21
+2013,Tule Perch,Adult,34,55,212,21
+2014,Tule Perch,Adult,34,51,220,21
+2015,Tule Perch,Adult,34,21,194,21
+2016,Tule Perch,Adult,34,48,216,21
+2017,Tule Perch,Adult,34,74,213,21
+2018,Tule Perch,Adult,34,34,173,21
+2019,Tule Perch,Adult,34,41,181,21
+2010,Wakasagi,Juvenile,29.1,54,NA,NA
+2011,Wakasagi,Juvenile,29.1,69,NA,NA
+2012,Wakasagi,Juvenile,29.1,59,NA,NA
+2013,Wakasagi,Juvenile,29.1,59,NA,NA
+2014,Wakasagi,Juvenile,29.1,49,NA,NA
+2015,Wakasagi,Juvenile,29.1,16,NA,NA
+2016,Wakasagi,Juvenile,29.1,43,NA,NA
+2017,Wakasagi,Juvenile,29.1,74,NA,NA
+2018,Wakasagi,Juvenile,29.1,25,NA,NA
+2019,Wakasagi,Juvenile,29.1,36,NA,NA
+2010,Water Hyacinth FAV,Undifferentiated,34,64,64,30
+2011,Water Hyacinth FAV,Undifferentiated,34,70,70,30
+2012,Water Hyacinth FAV,Undifferentiated,34,61,61,30
+2013,Water Hyacinth FAV,Undifferentiated,34,56,59,30
+2014,Water Hyacinth FAV,Undifferentiated,34,51,51,30
+2015,Water Hyacinth FAV,Undifferentiated,34,22,22,30
+2016,Water Hyacinth FAV,Undifferentiated,34,48,48,30
+2017,Water Hyacinth FAV,Undifferentiated,34,74,74,30
+2018,Water Hyacinth FAV,Undifferentiated,34,34,34,30
+2019,Water Hyacinth FAV,Undifferentiated,34,41,41,30
+2010,White Sturgeon,Juvenile,31,60,190,21
+2011,White Sturgeon,Juvenile,31,58,190,21
+2012,White Sturgeon,Juvenile,31,61,218,21
+2013,White Sturgeon,Juvenile,31,51,207,21
+2014,White Sturgeon,Juvenile,31,51,214,21
+2015,White Sturgeon,Juvenile,31,21,193,21
+2016,White Sturgeon,Juvenile,31,43,211,21
+2017,White Sturgeon,Juvenile,31,48,187,21
+2018,White Sturgeon,Juvenile,31,30,169,21
+2019,White Sturgeon,Juvenile,31,40,180,21
+2010,White Sturgeon,Larvae,27,56,190,20
+2011,White Sturgeon,Larvae,27,61,195,20
+2012,White Sturgeon,Larvae,27,51,214,20
+2013,White Sturgeon,Larvae,27,56,223,20
+2014,White Sturgeon,Larvae,27,49,220,20
+2015,White Sturgeon,Larvae,27,25,207,20
+2016,White Sturgeon,Larvae,27,32,220,20
+2017,White Sturgeon,Larvae,27,67,223,20
+2018,White Sturgeon,Larvae,27,17,173,20
+2019,White Sturgeon,Larvae,27,39,192,20

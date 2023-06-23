@@ -1,0 +1,1063 @@
+Region,Species,LifeStage,Season,maxWaterTemp
+North Delta,Giant Reed EAV,NA,Spring,NA
+North Delta,Giant Reed EAV,NA,Summer,NA
+North Delta,Giant Reed EAV,NA,Fall,NA
+North Delta,Giant Reed EAV,NA,Winter,NA
+South,Giant Reed EAV,NA,Spring,NA
+South,Giant Reed EAV,NA,Summer,NA
+South,Giant Reed EAV,NA,Fall,NA
+South,Giant Reed EAV,NA,Winter,NA
+Central,Giant Reed EAV,NA,Spring,NA
+Central,Giant Reed EAV,NA,Summer,NA
+Central,Giant Reed EAV,NA,Fall,NA
+Central,Giant Reed EAV,NA,Winter,NA
+Suisun Bay,Giant Reed EAV,NA,Spring,NA
+Suisun Bay,Giant Reed EAV,NA,Summer,NA
+Suisun Bay,Giant Reed EAV,NA,Fall,NA
+Suisun Bay,Giant Reed EAV,NA,Winter,NA
+Suisun Marsh,Giant Reed EAV,NA,Spring,NA
+Suisun Marsh,Giant Reed EAV,NA,Summer,NA
+Suisun Marsh,Giant Reed EAV,NA,Fall,NA
+Suisun Marsh,Giant Reed EAV,NA,Winter,NA
+Confluence,Giant Reed EAV,NA,Spring,NA
+Confluence,Giant Reed EAV,NA,Summer,NA
+Confluence,Giant Reed EAV,NA,Fall,NA
+Confluence,Giant Reed EAV,NA,Winter,NA
+North Delta,Brazilian Waterweed,NA,Spring,NA
+North Delta,Brazilian Waterweed,NA,Summer,NA
+North Delta,Brazilian Waterweed,NA,Fall,NA
+North Delta,Brazilian Waterweed,NA,Winter,NA
+South,Brazilian Waterweed,NA,Spring,NA
+South,Brazilian Waterweed,NA,Summer,NA
+South,Brazilian Waterweed,NA,Fall,NA
+South,Brazilian Waterweed,NA,Winter,NA
+Central,Brazilian Waterweed,NA,Spring,NA
+Central,Brazilian Waterweed,NA,Summer,NA
+Central,Brazilian Waterweed,NA,Fall,NA
+Central,Brazilian Waterweed,NA,Winter,NA
+Suisun Bay,Brazilian Waterweed,NA,Spring,NA
+Suisun Bay,Brazilian Waterweed,NA,Summer,NA
+Suisun Bay,Brazilian Waterweed,NA,Fall,NA
+Suisun Bay,Brazilian Waterweed,NA,Winter,NA
+Suisun Marsh,Brazilian Waterweed,NA,Spring,NA
+Suisun Marsh,Brazilian Waterweed,NA,Summer,NA
+Suisun Marsh,Brazilian Waterweed,NA,Fall,NA
+Suisun Marsh,Brazilian Waterweed,NA,Winter,NA
+Confluence,Brazilian Waterweed,NA,Spring,NA
+Confluence,Brazilian Waterweed,NA,Summer,NA
+Confluence,Brazilian Waterweed,NA,Fall,NA
+Confluence,Brazilian Waterweed,NA,Winter,NA
+North Delta,Water Hyacinth FAV,NA,Spring,NA
+North Delta,Water Hyacinth FAV,NA,Summer,NA
+North Delta,Water Hyacinth FAV,NA,Fall,NA
+North Delta,Water Hyacinth FAV,NA,Winter,NA
+South,Water Hyacinth FAV,NA,Spring,NA
+South,Water Hyacinth FAV,NA,Summer,NA
+South,Water Hyacinth FAV,NA,Fall,NA
+South,Water Hyacinth FAV,NA,Winter,NA
+Central,Water Hyacinth FAV,NA,Spring,NA
+Central,Water Hyacinth FAV,NA,Summer,NA
+Central,Water Hyacinth FAV,NA,Fall,NA
+Central,Water Hyacinth FAV,NA,Winter,NA
+Suisun Bay,Water Hyacinth FAV,NA,Spring,NA
+Suisun Bay,Water Hyacinth FAV,NA,Summer,NA
+Suisun Bay,Water Hyacinth FAV,NA,Fall,NA
+Suisun Bay,Water Hyacinth FAV,NA,Winter,NA
+Suisun Marsh,Water Hyacinth FAV,NA,Spring,NA
+Suisun Marsh,Water Hyacinth FAV,NA,Summer,NA
+Suisun Marsh,Water Hyacinth FAV,NA,Fall,NA
+Suisun Marsh,Water Hyacinth FAV,NA,Winter,NA
+Confluence,Water Hyacinth FAV,NA,Spring,NA
+Confluence,Water Hyacinth FAV,NA,Summer,NA
+Confluence,Water Hyacinth FAV,NA,Fall,NA
+Confluence,Water Hyacinth FAV,NA,Winter,NA
+North Delta,Microcystis,NA,Summer,NA
+North Delta,Microcystis,NA,Fall,NA
+South,Microcystis,NA,Summer,NA
+South,Microcystis,NA,Fall,NA
+Central,Microcystis,NA,Summer,NA
+Central,Microcystis,NA,Fall,NA
+Suisun Bay,Microcystis,NA,Summer,NA
+Suisun Bay,Microcystis,NA,Fall,NA
+Suisun Marsh,Microcystis,NA,Summer,NA
+Suisun Marsh,Microcystis,NA,Fall,NA
+Confluence,Microcystis,NA,Summer,NA
+Confluence,Microcystis,NA,Fall,NA
+Suisun Bay,Overbite Clam,NA,Summer,NA
+Suisun Bay,Overbite Clam,NA,Fall,NA
+Suisun Bay,Overbite Clam,NA,Spring,NA
+Suisun Bay,Overbite Clam,NA,Winter,NA
+Suisun Marsh,Overbite Clam,NA,Summer,NA
+Suisun Marsh,Overbite Clam,NA,Fall,NA
+Suisun Marsh,Overbite Clam,NA,Spring,NA
+Suisun Marsh,Overbite Clam,NA,Winter,NA
+Confluence,Overbite Clam,NA,Summer,NA
+Confluence,Overbite Clam,NA,Fall,NA
+Confluence,Overbite Clam,NA,Spring,NA
+Confluence,Overbite Clam,NA,Winter,NA
+North Delta,Asian Clam,NA,Spring,NA
+North Delta,Asian Clam,NA,Summer,NA
+North Delta,Asian Clam,NA,Fall,NA
+North Delta,Asian Clam,NA,Winter,NA
+South,Asian Clam,NA,Spring,NA
+South,Asian Clam,NA,Summer,NA
+South,Asian Clam,NA,Fall,NA
+South,Asian Clam,NA,Winter,NA
+Central,Asian Clam,NA,Spring,NA
+Central,Asian Clam,NA,Summer,NA
+Central,Asian Clam,NA,Fall,NA
+Central,Asian Clam,NA,Winter,NA
+Suisun Bay,Asian Clam,NA,Spring,NA
+Suisun Bay,Asian Clam,NA,Summer,NA
+Suisun Bay,Asian Clam,NA,Fall,NA
+Suisun Bay,Asian Clam,NA,Winter,NA
+Suisun Marsh,Asian Clam,NA,Spring,NA
+Suisun Marsh,Asian Clam,NA,Summer,NA
+Suisun Marsh,Asian Clam,NA,Fall,NA
+Suisun Marsh,Asian Clam,NA,Winter,NA
+Confluence,Asian Clam,NA,Spring,NA
+Confluence,Asian Clam,NA,Summer,NA
+Confluence,Asian Clam,NA,Fall,NA
+Confluence,Asian Clam,NA,Winter,NA
+Central,Green Sturgeon,Juvenile,Winter,16.11111111111111
+Central,White Sturgeon,Juvenile,Winter,17.77777777777778
+Central,Sacramento Sucker,Adult,Winter,15
+Central,Sacramento Sucker,Juvenile,Winter,18
+Central,Prickly Sculpin,Adult,Winter,21
+Central,Prickly Sculpin,Juvenile-Larvae,Winter,18.299999237060547
+Central,Threespine Stickleback,Adult,Winter,16.666666666666668
+Central,Threespine Stickleback,Juvenile-Larvae,Winter,15
+Central,Wakasagi,Adult,Winter,16.11111111111111
+Central,Delta Smelt,Adult,Winter,18.88888888888889
+Central,Delta Smelt,Juvenile,Winter,17.77777777777778
+Central,Delta Smelt,Larvae,Winter,16.5
+Central,Hitch,Adult,Winter,15
+Central,Hitch,Juvenile-Larvae,Winter,15.555557250976564
+Central,Mississippi Silverside,Adult,Winter,21
+Central,Mississippi Silverside,Juvenile,Winter,19.899999618530273
+Central,Largemouth Bass,Adult,Winter,17.83333333333333
+Central,Largemouth Bass,Juvenile,Winter,20.100000381469727
+Central,Striped Bass,Adult,Winter,18.000000000000004
+Central,Striped Bass,Juvenile,Winter,21
+Central,Steelhead/Rainbow Trout,Adult,Winter,17.77777777777778
+Central,Steelhead/Rainbow Trout,Juvenile,Winter,21.11111111111111
+Central,Chinook Salmon,Juvenile,Winter,20.555555555555557
+Central,Chinook Salmon,Larvae,Winter,16.666666666666668
+Central,Sacramento Blackfish,Adult,Winter,16.666666666666668
+Central,Sacramento Blackfish,Juvenile-Larvae,Winter,17.333333333333332
+Central,Sacramento Splittail,Adult,Winter,20
+Central,Sacramento Splittail,Juvenile,Winter,18.88888888888889
+Central,Sacramento Splittail,Larvae,Winter,15.899999618530272
+Central,Sacramento Pikeminnow,Adult,Winter,14.300000190734863
+Central,Sacramento Pikeminnow,Juvenile-Larvae,Winter,19.166667938232425
+Central,Longfin Smelt,Adult,Winter,12.833333333333334
+Central,Longfin Smelt,Juvenile,Winter,20
+Central,Longfin Smelt,Larvae,Winter,15.600000381469728
+Confluence,White Sturgeon,Juvenile,Winter,8.600000381469727
+Confluence,Sacramento Sucker,Juvenile,Winter,17.22222328186035
+Confluence,Prickly Sculpin,Adult,Winter,17.600000381469727
+Confluence,Prickly Sculpin,Juvenile-Larvae,Winter,18.100000381469727
+Confluence,Threespine Stickleback,Adult,Winter,13.800000190734863
+Confluence,Threespine Stickleback,Juvenile-Larvae,Winter,19.600000381469727
+Confluence,Wakasagi,Adult,Winter,12.199999809265137
+Confluence,Wakasagi,Juvenile,Winter,9.899999618530272
+Confluence,Wakasagi,Larvae,Winter,16.399999618530273
+Confluence,Delta Smelt,Adult,Winter,19.444446563720703
+Confluence,Delta Smelt,Juvenile,Winter,16.111112594604492
+Confluence,Delta Smelt,Larvae,Winter,17
+Confluence,Tule Perch,Adult,Winter,19.444446563720703
+Confluence,Tule Perch,Juvenile-Larvae,Winter,19.444446563720703
+Confluence,Hitch,Adult,Winter,16.399999618530273
+Confluence,Hitch,Juvenile-Larvae,Winter,17.600000381469727
+Confluence,Mississippi Silverside,Adult,Winter,19.600000381469727
+Confluence,Mississippi Silverside,Juvenile,Winter,19.444446563720703
+Confluence,Largemouth Bass,Adult,Winter,17.600000381469727
+Confluence,Largemouth Bass,Juvenile,Winter,18.399999618530273
+Confluence,Striped Bass,Adult,Winter,14.399999618530272
+Confluence,Striped Bass,Juvenile,Winter,18.100000381469727
+Confluence,Striped Bass,Larvae,Winter,18
+Confluence,Steelhead/Rainbow Trout,Juvenile,Winter,17.200000762939453
+Confluence,Chinook Salmon,Juvenile,Winter,19.600000381469727
+Confluence,Chinook Salmon,Larvae,Winter,17.77777862548828
+Confluence,Sacramento Blackfish,Juvenile-Larvae,Winter,16.111112594604492
+Confluence,Sacramento Splittail,Adult,Winter,15.300000190734863
+Confluence,Sacramento Splittail,Juvenile,Winter,17
+Confluence,Sacramento Splittail,Larvae,Winter,13.600000381469728
+Confluence,Sacramento Pikeminnow,Adult,Winter,15.699999809265137
+Confluence,Sacramento Pikeminnow,Juvenile-Larvae,Winter,19.444446563720703
+Confluence,Longfin Smelt,Adult,Winter,15
+Confluence,Longfin Smelt,Juvenile,Winter,14.5
+Confluence,Longfin Smelt,Larvae,Winter,18
+Far North,White Sturgeon,Adult,Winter,19.60000038
+Far North,White Sturgeon,Juvenile,Winter,16.200000760000002
+Far North,Sacramento Sucker,Adult,Winter,20.83333397
+Far North,Sacramento Sucker,Juvenile,Winter,23
+Far North,Prickly Sculpin,Adult,Winter,14.100000381469728
+Far North,Prickly Sculpin,Juvenile-Larvae,Winter,17.799999239999998
+Far North,Threespine Stickleback,Juvenile-Larvae,Winter,18
+Far North,Wakasagi,Adult,Winter,16
+Far North,Wakasagi,Juvenile,Winter,17.5
+Far North,Delta Smelt,Adult,Winter,16.799999237060547
+Far North,Delta Smelt,Juvenile,Winter,12.222223281860352
+Far North,Tule Perch,Adult,Winter,16.111112594604492
+Far North,Tule Perch,Juvenile-Larvae,Winter,16.111112594604492
+Far North,Hitch,Adult,Winter,20
+Far North,Hitch,Juvenile-Larvae,Winter,22.22222137
+Far North,Mississippi Silverside,Adult,Winter,22.22222137
+Far North,Mississippi Silverside,Juvenile,Winter,20.39999962
+Far North,Largemouth Bass,Adult,Winter,18.33333397
+Far North,Largemouth Bass,Juvenile,Winter,21
+Far North,Striped Bass,Adult,Winter,21
+Far North,Striped Bass,Juvenile,Winter,21
+Far North,Steelhead/Rainbow Trout,Adult,Winter,16.5
+Far North,Steelhead/Rainbow Trout,Juvenile,Winter,18.33333397
+Far North,Chinook Salmon,Adult,Winter,20
+Far North,Chinook Salmon,Juvenile,Winter,22.22222137
+Far North,Chinook Salmon,Larvae,Winter,21
+Far North,Sacramento Blackfish,Adult,Winter,21
+Far North,Sacramento Blackfish,Juvenile-Larvae,Winter,21.5
+Far North,Sacramento Splittail,Adult,Winter,20.83333397
+Far North,Sacramento Splittail,Juvenile,Winter,17.799999237060547
+Far North,Sacramento Splittail,Larvae,Winter,17.5
+Far North,Sacramento Pikeminnow,Adult,Winter,20.200000760000002
+Far North,Sacramento Pikeminnow,Juvenile-Larvae,Winter,23
+Far North,Longfin Smelt,Adult,Winter,12.899999618530272
+Far North,Longfin Smelt,Juvenile,Winter,10.27777862548828
+North Delta,White Sturgeon,Larvae,Winter,10.600000381469728
+North Delta,Sacramento Sucker,Adult,Winter,18.200000760000002
+North Delta,Sacramento Sucker,Juvenile,Winter,19.399999618530273
+North Delta,Prickly Sculpin,Adult,Winter,17.600000381469727
+North Delta,Prickly Sculpin,Juvenile-Larvae,Winter,17.700000762939453
+North Delta,Threespine Stickleback,Adult,Winter,18.10000038
+North Delta,Threespine Stickleback,Juvenile-Larvae,Winter,18.700000760000002
+North Delta,Wakasagi,Adult,Winter,14.800000190734863
+North Delta,Wakasagi,Juvenile,Winter,12.5
+North Delta,Wakasagi,Larvae,Winter,15.899999618530272
+North Delta,Delta Smelt,Adult,Winter,19.5
+North Delta,Delta Smelt,Juvenile,Winter,19.5
+North Delta,Delta Smelt,Larvae,Winter,17.299999237060547
+North Delta,Tule Perch,Adult,Winter,18.60000038
+North Delta,Tule Perch,Juvenile-Larvae,Winter,17.77777862548828
+North Delta,Hitch,Adult,Winter,14.5
+North Delta,Hitch,Juvenile-Larvae,Winter,16.111112594604492
+North Delta,Mississippi Silverside,Adult,Winter,20.27777863
+North Delta,Mississippi Silverside,Juvenile,Winter,20
+North Delta,Largemouth Bass,Adult,Winter,19
+North Delta,Largemouth Bass,Juvenile,Winter,19.600000381469727
+North Delta,Striped Bass,Adult,Winter,15.600000381469728
+North Delta,Striped Bass,Juvenile,Winter,16.700000762939453
+North Delta,Striped Bass,Larvae,Winter,17.399999618530273
+North Delta,Steelhead/Rainbow Trout,Adult,Winter,9.100000381469728
+North Delta,Steelhead/Rainbow Trout,Juvenile,Winter,20.200000760000002
+North Delta,Chinook Salmon,Juvenile,Winter,20.60000038
+North Delta,Chinook Salmon,Larvae,Winter,16.666667938232422
+North Delta,Sacramento Blackfish,Adult,Winter,11.5
+North Delta,Sacramento Blackfish,Juvenile-Larvae,Winter,19.10000038
+North Delta,Sacramento Splittail,Adult,Winter,20.200000760000002
+North Delta,Sacramento Splittail,Juvenile,Winter,19.10000038
+North Delta,Sacramento Pikeminnow,Adult,Winter,18
+North Delta,Sacramento Pikeminnow,Juvenile-Larvae,Winter,20.60000038
+North Delta,Longfin Smelt,Adult,Winter,15.199999809265137
+North Delta,Longfin Smelt,Juvenile,Winter,9.399999618530272
+North Delta,Longfin Smelt,Larvae,Winter,17.700000762939453
+South,Green Sturgeon,Juvenile,Winter,16.11111111111111
+South,White Sturgeon,Juvenile,Winter,17.77777777777778
+South,Sacramento Sucker,Adult,Winter,16.5
+South,Sacramento Sucker,Juvenile,Winter,19.200000762939453
+South,Prickly Sculpin,Adult,Winter,19.88888888888889
+South,Prickly Sculpin,Juvenile-Larvae,Winter,18
+South,Threespine Stickleback,Adult,Winter,16.666666666666668
+South,Threespine Stickleback,Juvenile-Larvae,Winter,15
+South,Wakasagi,Adult,Winter,16.11111111111111
+South,Delta Smelt,Adult,Winter,18.88888888888889
+South,Delta Smelt,Juvenile,Winter,17.77777777777778
+South,Tule Perch,Adult,Winter,15.300000190734863
+South,Hitch,Adult,Winter,20.5
+South,Hitch,Juvenile-Larvae,Winter,15
+South,Mississippi Silverside,Adult,Winter,22
+South,Mississippi Silverside,Juvenile,Winter,22
+South,Largemouth Bass,Adult,Winter,19.200000762939453
+South,Largemouth Bass,Juvenile,Winter,21
+South,Striped Bass,Adult,Winter,18.000000000000004
+South,Striped Bass,Juvenile,Winter,20
+South,Steelhead/Rainbow Trout,Adult,Winter,17.77777777777778
+South,Steelhead/Rainbow Trout,Juvenile,Winter,21.11111111111111
+South,Chinook Salmon,Juvenile,Winter,21
+South,Chinook Salmon,Larvae,Winter,16.666666666666668
+South,Sacramento Blackfish,Adult,Winter,16.666666666666668
+South,Sacramento Blackfish,Juvenile-Larvae,Winter,17.333333333333332
+South,Sacramento Splittail,Adult,Winter,20
+South,Sacramento Splittail,Juvenile,Winter,18.88888888888889
+South,Sacramento Pikeminnow,Juvenile-Larvae,Winter,18.5
+South,Longfin Smelt,Adult,Winter,12.833333333333334
+South,Longfin Smelt,Juvenile,Winter,20
+Suisun Bay,Green Sturgeon,Juvenile,Winter,15.199999809265137
+Suisun Bay,White Sturgeon,Adult,Winter,10.199999809265137
+Suisun Bay,White Sturgeon,Juvenile,Winter,15.100000381469728
+Suisun Bay,White Sturgeon,Larvae,Winter,11.300000190734863
+Suisun Bay,Sacramento Sucker,Adult,Winter,14
+Suisun Bay,Sacramento Sucker,Juvenile,Winter,16.700000762939453
+Suisun Bay,Prickly Sculpin,Adult,Winter,15.800000190734863
+Suisun Bay,Prickly Sculpin,Juvenile-Larvae,Winter,17.600000381469727
+Suisun Bay,Threespine Stickleback,Adult,Winter,18
+Suisun Bay,Threespine Stickleback,Juvenile-Larvae,Winter,17.200000762939453
+Suisun Bay,Wakasagi,Adult,Winter,13.800000190734863
+Suisun Bay,Wakasagi,Larvae,Winter,12.899999618530272
+Suisun Bay,Delta Smelt,Adult,Winter,17
+Suisun Bay,Delta Smelt,Juvenile,Winter,15.500001907348633
+Suisun Bay,Delta Smelt,Larvae,Winter,15.100000381469728
+Suisun Bay,Tule Perch,Adult,Winter,17.399999618530273
+Suisun Bay,Tule Perch,Juvenile-Larvae,Winter,17.399999618530273
+Suisun Bay,Hitch,Adult,Winter,12.77777862548828
+Suisun Bay,Hitch,Juvenile-Larvae,Winter,12.399999618530272
+Suisun Bay,Mississippi Silverside,Adult,Winter,15.5
+Suisun Bay,Largemouth Bass,Juvenile,Winter,14.5
+Suisun Bay,Striped Bass,Adult,Winter,17
+Suisun Bay,Striped Bass,Juvenile,Winter,18.100000381469727
+Suisun Bay,Striped Bass,Larvae,Winter,17.200000762939453
+Suisun Bay,Steelhead/Rainbow Trout,Adult,Winter,15.5
+Suisun Bay,Steelhead/Rainbow Trout,Juvenile,Winter,17.200000762939453
+Suisun Bay,Chinook Salmon,Adult,Winter,11.399999618530272
+Suisun Bay,Chinook Salmon,Juvenile,Winter,18.5
+Suisun Bay,Chinook Salmon,Larvae,Winter,14.199999809265137
+Suisun Bay,Sacramento Splittail,Adult,Winter,17.399999618530273
+Suisun Bay,Sacramento Splittail,Juvenile,Winter,17.399999618530273
+Suisun Bay,Sacramento Pikeminnow,Adult,Winter,15.300000190734863
+Suisun Bay,Sacramento Pikeminnow,Juvenile-Larvae,Winter,15.5
+Suisun Bay,Longfin Smelt,Adult,Winter,17.200000762939453
+Suisun Bay,Longfin Smelt,Juvenile,Winter,18
+Suisun Bay,Longfin Smelt,Larvae,Winter,17.600000381469727
+Suisun Marsh,White Sturgeon,Juvenile,Winter,16.700000762939453
+Suisun Marsh,Sacramento Sucker,Adult,Winter,19
+Suisun Marsh,Sacramento Sucker,Juvenile,Winter,19
+Suisun Marsh,Prickly Sculpin,Adult,Winter,18.5
+Suisun Marsh,Prickly Sculpin,Juvenile-Larvae,Winter,20
+Suisun Marsh,Threespine Stickleback,Adult,Winter,19.200000762939453
+Suisun Marsh,Threespine Stickleback,Juvenile-Larvae,Winter,20
+Suisun Marsh,Wakasagi,Adult,Winter,12.5
+Suisun Marsh,Delta Smelt,Adult,Winter,18.299999237060547
+Suisun Marsh,Delta Smelt,Juvenile,Winter,18
+Suisun Marsh,Tule Perch,Adult,Winter,19.600000381469727
+Suisun Marsh,Tule Perch,Juvenile-Larvae,Winter,20
+Suisun Marsh,Hitch,Adult,Winter,15.199999809265137
+Suisun Marsh,Hitch,Juvenile-Larvae,Winter,18.399999618530273
+Suisun Marsh,Mississippi Silverside,Adult,Winter,19.899999618530273
+Suisun Marsh,Mississippi Silverside,Juvenile,Winter,16
+Suisun Marsh,Striped Bass,Adult,Winter,17.100000381469727
+Suisun Marsh,Striped Bass,Juvenile,Winter,20
+Suisun Marsh,Striped Bass,Larvae,Winter,17.600000381469727
+Suisun Marsh,Steelhead/Rainbow Trout,Adult,Winter,8.399999618530273
+Suisun Marsh,Steelhead/Rainbow Trout,Juvenile,Winter,15.199999809265137
+Suisun Marsh,Chinook Salmon,Juvenile,Winter,18.299999237060547
+Suisun Marsh,Chinook Salmon,Larvae,Winter,17.100000381469727
+Suisun Marsh,Sacramento Blackfish,Adult,Winter,10.600000381469728
+Suisun Marsh,Sacramento Blackfish,Juvenile-Larvae,Winter,15
+Suisun Marsh,Sacramento Splittail,Adult,Winter,20
+Suisun Marsh,Sacramento Splittail,Juvenile,Winter,20
+Suisun Marsh,Sacramento Pikeminnow,Adult,Winter,16.799999237060547
+Suisun Marsh,Sacramento Pikeminnow,Juvenile-Larvae,Winter,19
+Suisun Marsh,Longfin Smelt,Adult,Winter,16.200000762939453
+Suisun Marsh,Longfin Smelt,Juvenile,Winter,17.899999618530273
+Suisun Marsh,Longfin Smelt,Larvae,Winter,17.899999618530273
+Central,Green Sturgeon,Juvenile,Spring,22.77777777777778
+Central,White Sturgeon,Juvenile,Spring,23.333333333333332
+Central,White Sturgeon,Larvae,Spring,23.77777777777778
+Central,Sacramento Sucker,Adult,Spring,23.333333333333332
+Central,Sacramento Sucker,Juvenile,Spring,25.555557250976563
+Central,Prickly Sculpin,Adult,Spring,30
+Central,Prickly Sculpin,Juvenile-Larvae,Spring,30
+Central,Threespine Stickleback,Adult,Spring,22.944444444444443
+Central,Threespine Stickleback,Juvenile-Larvae,Spring,23.88888888888889
+Central,Wakasagi,Juvenile,Spring,25.555555555555557
+Central,Delta Smelt,Adult,Spring,24.444444444444443
+Central,Delta Smelt,Juvenile,Spring,27.77777777777778
+Central,Delta Smelt,Larvae,Spring,25.5
+Central,Tule Perch,Adult,Spring,22.200000762939453
+Central,Tule Perch,Juvenile-Larvae,Spring,25.100000381469727
+Central,Hitch,Adult,Spring,14.444444444444445
+Central,Hitch,Juvenile-Larvae,Spring,24.5
+Central,Mississippi Silverside,Adult,Spring,26.666666666666668
+Central,Mississippi Silverside,Juvenile,Spring,28.88888888888889
+Central,Largemouth Bass,Adult,Spring,28.333333333333332
+Central,Largemouth Bass,Juvenile,Spring,30
+Central,Largemouth Bass,Larvae,Spring,28.333333333333332
+Central,Striped Bass,Adult,Spring,26.11111111111111
+Central,Striped Bass,Juvenile,Spring,28.88888888888889
+Central,Striped Bass,Larvae,Spring,26.799999237060547
+Central,Steelhead/Rainbow Trout,Adult,Spring,23.88888888888889
+Central,Steelhead/Rainbow Trout,Juvenile,Spring,28.333333333333332
+Central,Chinook Salmon,Juvenile,Spring,28.333333333333332
+Central,Chinook Salmon,Larvae,Spring,21.666666666666668
+Central,Sacramento Blackfish,Adult,Spring,21.666666666666668
+Central,Sacramento Blackfish,Juvenile-Larvae,Spring,28.333333333333332
+Central,Sacramento Splittail,Adult,Spring,26.11111111111111
+Central,Sacramento Splittail,Juvenile,Spring,28.88888888888889
+Central,Sacramento Splittail,Larvae,Spring,24.444444444444443
+Central,Sacramento Pikeminnow,Adult,Spring,24.444444444444443
+Central,Sacramento Pikeminnow,Juvenile-Larvae,Spring,25.700000762939453
+Central,Longfin Smelt,Juvenile,Spring,25
+Central,Longfin Smelt,Larvae,Spring,24
+Confluence,Sacramento Sucker,Juvenile,Spring,25.200000762939453
+Confluence,Prickly Sculpin,Adult,Spring,25.5
+Confluence,Prickly Sculpin,Juvenile-Larvae,Spring,25.5
+Confluence,Threespine Stickleback,Adult,Spring,25.5
+Confluence,Threespine Stickleback,Juvenile-Larvae,Spring,25.000001907348633
+Confluence,Wakasagi,Juvenile,Spring,24.299999237060547
+Confluence,Delta Smelt,Adult,Spring,23.940000534057617
+Confluence,Delta Smelt,Juvenile,Spring,24.719999313354492
+Confluence,Delta Smelt,Larvae,Spring,23.940000534057617
+Confluence,Tule Perch,Adult,Spring,24.444446563720703
+Confluence,Tule Perch,Juvenile-Larvae,Spring,25.5
+Confluence,Hitch,Adult,Spring,21.200000762939453
+Confluence,Hitch,Juvenile-Larvae,Spring,23.100000381469727
+Confluence,Mississippi Silverside,Adult,Spring,25.200000762939453
+Confluence,Mississippi Silverside,Juvenile,Spring,26.399999618530273
+Confluence,Mississippi Silverside,Larvae,Spring,19.600000381469727
+Confluence,Largemouth Bass,Adult,Spring,24.200000762939453
+Confluence,Largemouth Bass,Juvenile,Spring,26.399999618530273
+Confluence,Largemouth Bass,Larvae,Spring,23.799999237060547
+Confluence,Striped Bass,Adult,Spring,20.399999618530273
+Confluence,Striped Bass,Juvenile,Spring,26.399999618530273
+Confluence,Striped Bass,Larvae,Spring,24.700000762939453
+Confluence,Steelhead/Rainbow Trout,Juvenile,Spring,18.055557250976563
+Confluence,Chinook Salmon,Juvenile,Spring,23.888891220092773
+Confluence,Chinook Salmon,Larvae,Spring,18.33333396911621
+Confluence,Sacramento Blackfish,Juvenile-Larvae,Spring,22.799999237060547
+Confluence,Sacramento Splittail,Adult,Spring,23.333335876464844
+Confluence,Sacramento Splittail,Juvenile,Spring,25.5
+Confluence,Sacramento Splittail,Larvae,Spring,22.77778053283691
+Confluence,Sacramento Pikeminnow,Adult,Spring,22.5
+Confluence,Sacramento Pikeminnow,Juvenile-Larvae,Spring,26.111112594604492
+Confluence,Longfin Smelt,Adult,Spring,20.549999237060547
+Confluence,Longfin Smelt,Juvenile,Spring,23.940000534057617
+Confluence,Longfin Smelt,Larvae,Spring,19.100000381469727
+Far North,White Sturgeon,Adult,Spring,20.55555534
+Far North,White Sturgeon,Juvenile,Spring,17.10000038
+Far North,White Sturgeon,Larvae,Spring,13.199999809265137
+Far North,Sacramento Sucker,Adult,Spring,26.39999962
+Far North,Sacramento Sucker,Juvenile,Spring,30
+Far North,Sacramento Sucker,Larvae,Spring,18.100000381469727
+Far North,Prickly Sculpin,Adult,Spring,27.10000038
+Far North,Prickly Sculpin,Juvenile-Larvae,Spring,26.5
+Far North,Threespine Stickleback,Juvenile-Larvae,Spring,17.399999618530273
+Far North,Wakasagi,Adult,Spring,26.200000762939453
+Far North,Wakasagi,Juvenile,Spring,27
+Far North,Wakasagi,Larvae,Spring,22.700000762939453
+Far North,Delta Smelt,Adult,Spring,23.888891220092773
+Far North,Delta Smelt,Juvenile,Spring,26
+Far North,Delta Smelt,Larvae,Spring,21.111112594604492
+Far North,Tule Perch,Adult,Spring,23.333335876464844
+Far North,Tule Perch,Juvenile-Larvae,Spring,26.111112594604492
+Far North,Hitch,Adult,Spring,29.60000038
+Far North,Hitch,Juvenile-Larvae,Spring,29.60000038
+Far North,Mississippi Silverside,Adult,Spring,30
+Far North,Mississippi Silverside,Juvenile,Spring,30
+Far North,Mississippi Silverside,Larvae,Spring,24
+Far North,Largemouth Bass,Adult,Spring,29.10000038
+Far North,Largemouth Bass,Juvenile,Spring,29.44444466
+Far North,Largemouth Bass,Larvae,Spring,28.88888931
+Far North,Striped Bass,Adult,Spring,28.10000038
+Far North,Striped Bass,Juvenile,Spring,28.10000038
+Far North,Striped Bass,Larvae,Spring,25.799999237060547
+Far North,Steelhead/Rainbow Trout,Adult,Spring,16.11111069
+Far North,Steelhead/Rainbow Trout,Juvenile,Spring,25.000001907348633
+Far North,Steelhead/Rainbow Trout,Larvae,Spring,15.000000953674316
+Far North,Chinook Salmon,Adult,Spring,25.89999962
+Far North,Chinook Salmon,Juvenile,Spring,28.5
+Far North,Chinook Salmon,Larvae,Spring,20.555557250976563
+Far North,Sacramento Blackfish,Adult,Spring,26.38888931
+Far North,Sacramento Blackfish,Juvenile-Larvae,Spring,30
+Far North,Sacramento Splittail,Adult,Spring,23.5
+Far North,Sacramento Splittail,Juvenile,Spring,30
+Far North,Sacramento Splittail,Larvae,Spring,26.111112594604492
+Far North,Sacramento Pikeminnow,Adult,Spring,26.111112594604492
+Far North,Sacramento Pikeminnow,Juvenile-Larvae,Spring,28.700000762939453
+Far North,Longfin Smelt,Juvenile,Spring,25.5
+Far North,Longfin Smelt,Larvae,Spring,21
+North Delta,Sacramento Sucker,Adult,Spring,24.5
+North Delta,Sacramento Sucker,Juvenile,Spring,26.111112594604492
+North Delta,Prickly Sculpin,Adult,Spring,26
+North Delta,Prickly Sculpin,Juvenile-Larvae,Spring,25.89999962
+North Delta,Threespine Stickleback,Adult,Spring,26.66666603
+North Delta,Threespine Stickleback,Juvenile-Larvae,Spring,30
+North Delta,Wakasagi,Adult,Spring,22
+North Delta,Wakasagi,Juvenile,Spring,25.39999962
+North Delta,Wakasagi,Larvae,Spring,22
+North Delta,Delta Smelt,Adult,Spring,22.77778053283691
+North Delta,Delta Smelt,Juvenile,Spring,26.66666603
+North Delta,Delta Smelt,Larvae,Spring,23.200000762939453
+North Delta,Tule Perch,Adult,Spring,24.89999962
+North Delta,Tule Perch,Juvenile-Larvae,Spring,27.222225189208984
+North Delta,Hitch,Adult,Spring,25.200000760000002
+North Delta,Hitch,Juvenile-Larvae,Spring,26.39999962
+North Delta,Mississippi Silverside,Adult,Spring,27.700000762939453
+North Delta,Mississippi Silverside,Juvenile,Spring,28.399999618530273
+North Delta,Mississippi Silverside,Larvae,Spring,24
+North Delta,Largemouth Bass,Adult,Spring,24.299999239999998
+North Delta,Largemouth Bass,Juvenile,Spring,31.11111069
+North Delta,Largemouth Bass,Larvae,Spring,25.5
+North Delta,Striped Bass,Adult,Spring,22.799999237060547
+North Delta,Striped Bass,Juvenile,Spring,30
+North Delta,Striped Bass,Larvae,Spring,24.72222137
+North Delta,Steelhead/Rainbow Trout,Adult,Spring,22.299999239999998
+North Delta,Steelhead/Rainbow Trout,Juvenile,Spring,25.39999962
+North Delta,Chinook Salmon,Juvenile,Spring,25.555557250976563
+North Delta,Chinook Salmon,Larvae,Spring,20.200000762939453
+North Delta,Sacramento Blackfish,Adult,Spring,23.33333397
+North Delta,Sacramento Blackfish,Juvenile-Larvae,Spring,31.11111069
+North Delta,Sacramento Splittail,Adult,Spring,19.5
+North Delta,Sacramento Splittail,Juvenile,Spring,31.11111069
+North Delta,Sacramento Splittail,Larvae,Spring,25.555557250976563
+North Delta,Sacramento Pikeminnow,Adult,Spring,24.200000760000002
+North Delta,Sacramento Pikeminnow,Juvenile-Larvae,Spring,31.11111069
+North Delta,Longfin Smelt,Adult,Spring,16.89999962
+North Delta,Longfin Smelt,Juvenile,Spring,24.60000038
+North Delta,Longfin Smelt,Larvae,Spring,19.5
+South,Green Sturgeon,Juvenile,Spring,22.77777777777778
+South,White Sturgeon,Juvenile,Spring,23.333333333333332
+South,White Sturgeon,Larvae,Spring,23.77777777777778
+South,Sacramento Sucker,Adult,Spring,25.5
+South,Sacramento Sucker,Juvenile,Spring,26.600000381469727
+South,Prickly Sculpin,Adult,Spring,27.22222222222222
+South,Prickly Sculpin,Juvenile-Larvae,Spring,28.333333333333332
+South,Threespine Stickleback,Adult,Spring,22.944444444444443
+South,Threespine Stickleback,Juvenile-Larvae,Spring,23.88888888888889
+South,Wakasagi,Juvenile,Spring,27
+South,Delta Smelt,Adult,Spring,24.444444444444443
+South,Delta Smelt,Juvenile,Spring,27.77777777777778
+South,Delta Smelt,Larvae,Spring,22.22222222222222
+South,Tule Perch,Adult,Spring,25.299999237060547
+South,Tule Perch,Juvenile-Larvae,Spring,24.5
+South,Hitch,Adult,Spring,21
+South,Hitch,Juvenile-Larvae,Spring,21.5
+South,Mississippi Silverside,Adult,Spring,28.200000762939453
+South,Mississippi Silverside,Juvenile,Spring,28.88888888888889
+South,Largemouth Bass,Adult,Spring,25
+South,Largemouth Bass,Juvenile,Spring,28.88888888888889
+South,Largemouth Bass,Larvae,Spring,28.333333333333332
+South,Striped Bass,Adult,Spring,26.11111111111111
+South,Striped Bass,Juvenile,Spring,28.88888888888889
+South,Striped Bass,Larvae,Spring,23.333333333333332
+South,Steelhead/Rainbow Trout,Adult,Spring,23.88888888888889
+South,Steelhead/Rainbow Trout,Juvenile,Spring,28.333333333333332
+South,Chinook Salmon,Adult,Spring,24.700000762939453
+South,Chinook Salmon,Juvenile,Spring,28.5
+South,Chinook Salmon,Larvae,Spring,21.666666666666668
+South,Sacramento Blackfish,Adult,Spring,27
+South,Sacramento Blackfish,Juvenile-Larvae,Spring,28.333333333333332
+South,Sacramento Splittail,Adult,Spring,26.11111111111111
+South,Sacramento Splittail,Juvenile,Spring,28.88888888888889
+South,Sacramento Splittail,Larvae,Spring,25.600000381469727
+South,Sacramento Pikeminnow,Adult,Spring,26.5
+South,Sacramento Pikeminnow,Juvenile-Larvae,Spring,26.600000381469727
+South,Longfin Smelt,Juvenile,Spring,25
+Suisun Bay,Green Sturgeon,Juvenile,Spring,21
+Suisun Bay,White Sturgeon,Adult,Spring,21.666667938232425
+Suisun Bay,White Sturgeon,Juvenile,Spring,22.22222328186035
+Suisun Bay,White Sturgeon,Larvae,Spring,18.33333396911621
+Suisun Bay,Sacramento Sucker,Adult,Spring,21.111112594604492
+Suisun Bay,Sacramento Sucker,Juvenile,Spring,21.111112594604492
+Suisun Bay,Prickly Sculpin,Adult,Spring,23.200000762939453
+Suisun Bay,Prickly Sculpin,Juvenile-Larvae,Spring,21.111112594604492
+Suisun Bay,Threespine Stickleback,Adult,Spring,23.888891220092773
+Suisun Bay,Threespine Stickleback,Juvenile-Larvae,Spring,22.399999618530273
+Suisun Bay,Wakasagi,Adult,Spring,20.899999618530273
+Suisun Bay,Wakasagi,Juvenile,Spring,19.200000762939453
+Suisun Bay,Delta Smelt,Adult,Spring,25.5
+Suisun Bay,Delta Smelt,Juvenile,Spring,25.5
+Suisun Bay,Delta Smelt,Larvae,Spring,22.444446563720703
+Suisun Bay,Tule Perch,Adult,Spring,23.299999237060547
+Suisun Bay,Tule Perch,Juvenile-Larvae,Spring,24
+Suisun Bay,Hitch,Adult,Spring,17.77777862548828
+Suisun Bay,Hitch,Juvenile-Larvae,Spring,18.33333396911621
+Suisun Bay,Mississippi Silverside,Adult,Spring,23.333335876464844
+Suisun Bay,Mississippi Silverside,Juvenile,Spring,22.799999237060547
+Suisun Bay,Largemouth Bass,Adult,Spring,18.299999237060547
+Suisun Bay,Largemouth Bass,Juvenile,Spring,21.666667938232425
+Suisun Bay,Largemouth Bass,Larvae,Spring,21.22222137451172
+Suisun Bay,Striped Bass,Adult,Spring,24.444446563720703
+Suisun Bay,Striped Bass,Juvenile,Spring,25.5
+Suisun Bay,Striped Bass,Larvae,Spring,24.799999237060547
+Suisun Bay,Steelhead/Rainbow Trout,Adult,Spring,18.888891220092773
+Suisun Bay,Steelhead/Rainbow Trout,Juvenile,Spring,23.333335876464844
+Suisun Bay,Chinook Salmon,Adult,Spring,21.700000762939453
+Suisun Bay,Chinook Salmon,Juvenile,Spring,25.5
+Suisun Bay,Chinook Salmon,Larvae,Spring,21.111112594604492
+Suisun Bay,Sacramento Blackfish,Adult,Spring,20.555557250976563
+Suisun Bay,Sacramento Blackfish,Juvenile-Larvae,Spring,21.111112594604492
+Suisun Bay,Sacramento Splittail,Adult,Spring,24.444446563720703
+Suisun Bay,Sacramento Splittail,Juvenile,Spring,25.5
+Suisun Bay,Sacramento Splittail,Larvae,Spring,18.33333396911621
+Suisun Bay,Sacramento Pikeminnow,Adult,Spring,20.000001907348633
+Suisun Bay,Sacramento Pikeminnow,Juvenile-Larvae,Spring,22
+Suisun Bay,Longfin Smelt,Adult,Spring,24.444446563720703
+Suisun Bay,Longfin Smelt,Juvenile,Spring,25.5
+Suisun Bay,Longfin Smelt,Larvae,Spring,20.88888931274414
+Suisun Marsh,White Sturgeon,Adult,Spring,23.600000381469727
+Suisun Marsh,White Sturgeon,Juvenile,Spring,25.899999618530273
+Suisun Marsh,White Sturgeon,Larvae,Spring,24.799999237060547
+Suisun Marsh,Sacramento Sucker,Adult,Spring,32.099998474121094
+Suisun Marsh,Sacramento Sucker,Juvenile,Spring,26
+Suisun Marsh,Prickly Sculpin,Adult,Spring,32.099998474121094
+Suisun Marsh,Prickly Sculpin,Juvenile-Larvae,Spring,32.099998474121094
+Suisun Marsh,Threespine Stickleback,Adult,Spring,26
+Suisun Marsh,Threespine Stickleback,Juvenile-Larvae,Spring,32.099998474121094
+Suisun Marsh,Wakasagi,Juvenile,Spring,21.399999618530273
+Suisun Marsh,Delta Smelt,Adult,Spring,23.799999237060547
+Suisun Marsh,Delta Smelt,Juvenile,Spring,25
+Suisun Marsh,Delta Smelt,Larvae,Spring,20.600000381469727
+Suisun Marsh,Tule Perch,Adult,Spring,32.099998474121094
+Suisun Marsh,Tule Perch,Juvenile-Larvae,Spring,32.099998474121094
+Suisun Marsh,Hitch,Juvenile-Larvae,Spring,24
+Suisun Marsh,Mississippi Silverside,Adult,Spring,24
+Suisun Marsh,Mississippi Silverside,Juvenile,Spring,23.200000762939453
+Suisun Marsh,Striped Bass,Adult,Spring,26.299999237060547
+Suisun Marsh,Striped Bass,Juvenile,Spring,32.099998474121094
+Suisun Marsh,Striped Bass,Larvae,Spring,32.099998474121094
+Suisun Marsh,Chinook Salmon,Juvenile,Spring,21.899999618530273
+Suisun Marsh,Sacramento Blackfish,Juvenile-Larvae,Spring,20.5
+Suisun Marsh,Sacramento Splittail,Adult,Spring,32.099998474121094
+Suisun Marsh,Sacramento Splittail,Juvenile,Spring,32.099998474121094
+Suisun Marsh,Sacramento Splittail,Larvae,Spring,24
+Suisun Marsh,Sacramento Pikeminnow,Adult,Spring,25
+Suisun Marsh,Sacramento Pikeminnow,Juvenile-Larvae,Spring,24.5
+Suisun Marsh,Longfin Smelt,Adult,Spring,21
+Suisun Marsh,Longfin Smelt,Juvenile,Spring,26
+Suisun Marsh,Longfin Smelt,Larvae,Spring,22.899999618530273
+Central,Green Sturgeon,Juvenile,Summer,28.5
+Central,White Sturgeon,Juvenile,Summer,26.666666666666668
+Central,Sacramento Sucker,Juvenile,Summer,28.055555555555557
+Central,Prickly Sculpin,Adult,Summer,29.700000762939453
+Central,Prickly Sculpin,Juvenile-Larvae,Summer,28.88888888888889
+Central,Wakasagi,Adult,Summer,26.899999618530273
+Central,Wakasagi,Juvenile,Summer,26.770000457763672
+Central,Delta Smelt,Adult,Summer,27.770000457763672
+Central,Delta Smelt,Juvenile,Summer,27.77777777777778
+Central,Delta Smelt,Larvae,Summer,25
+Central,Tule Perch,Adult,Summer,25.299999237060547
+Central,Tule Perch,Juvenile-Larvae,Summer,26.600000381469727
+Central,Hitch,Juvenile-Larvae,Summer,23.899999618530273
+Central,Mississippi Silverside,Adult,Summer,30.555555555555557
+Central,Mississippi Silverside,Juvenile,Summer,31.11111111111111
+Central,Largemouth Bass,Adult,Summer,28.333333333333332
+Central,Largemouth Bass,Juvenile,Summer,30
+Central,Largemouth Bass,Larvae,Summer,29.444444444444443
+Central,Striped Bass,Adult,Summer,28.333333333333332
+Central,Striped Bass,Juvenile,Summer,31.11111111111111
+Central,Striped Bass,Larvae,Summer,27.770000457763672
+Central,Steelhead/Rainbow Trout,Adult,Summer,25.555555555555557
+Central,Steelhead/Rainbow Trout,Juvenile,Summer,28.333333333333332
+Central,Chinook Salmon,Juvenile,Summer,28.333333333333332
+Central,Sacramento Blackfish,Adult,Summer,24.166666666666668
+Central,Sacramento Blackfish,Juvenile-Larvae,Summer,26.666666666666668
+Central,Sacramento Splittail,Adult,Summer,27.77777777777778
+Central,Sacramento Splittail,Juvenile,Summer,30.555555555555557
+Central,Sacramento Splittail,Larvae,Summer,22.88888888888889
+Central,Sacramento Pikeminnow,Adult,Summer,25.200000762939453
+Central,Sacramento Pikeminnow,Juvenile-Larvae,Summer,29
+Central,Longfin Smelt,Juvenile,Summer,28.270000457763672
+Confluence,White Sturgeon,Juvenile,Summer,23
+Confluence,White Sturgeon,Larvae,Summer,22.719999313354492
+Confluence,Sacramento Sucker,Adult,Summer,23.600000381469727
+Confluence,Sacramento Sucker,Juvenile,Summer,22.899999618530273
+Confluence,Prickly Sculpin,Adult,Summer,26.700000762939453
+Confluence,Prickly Sculpin,Juvenile-Larvae,Summer,25.100000381469727
+Confluence,Threespine Stickleback,Adult,Summer,24.440000534057617
+Confluence,Threespine Stickleback,Juvenile-Larvae,Summer,26
+Confluence,Wakasagi,Adult,Summer,23.200000762939453
+Confluence,Wakasagi,Juvenile,Summer,22.899999618530273
+Confluence,Delta Smelt,Adult,Summer,25.610000610351563
+Confluence,Delta Smelt,Juvenile,Summer,26
+Confluence,Delta Smelt,Larvae,Summer,23.5
+Confluence,Tule Perch,Adult,Summer,25.299999237060547
+Confluence,Tule Perch,Juvenile-Larvae,Summer,27.200000762939453
+Confluence,Hitch,Adult,Summer,23.899999618530273
+Confluence,Hitch,Juvenile-Larvae,Summer,28.100000381469727
+Confluence,Mississippi Silverside,Adult,Summer,29.600000381469727
+Confluence,Mississippi Silverside,Juvenile,Summer,29.600000381469727
+Confluence,Largemouth Bass,Adult,Summer,24.899999618530273
+Confluence,Largemouth Bass,Juvenile,Summer,29.100000381469727
+Confluence,Largemouth Bass,Larvae,Summer,24.200000762939453
+Confluence,Striped Bass,Adult,Summer,20.799999237060547
+Confluence,Striped Bass,Juvenile,Summer,28.100000381469727
+Confluence,Striped Bass,Larvae,Summer,28.700000762939453
+Confluence,Chinook Salmon,Juvenile,Summer,23.888891220092773
+Confluence,Sacramento Blackfish,Juvenile-Larvae,Summer,21.700000762939453
+Confluence,Sacramento Splittail,Adult,Summer,21.5
+Confluence,Sacramento Splittail,Juvenile,Summer,28.100000381469727
+Confluence,Sacramento Splittail,Larvae,Summer,23.049999237060547
+Confluence,Sacramento Pikeminnow,Adult,Summer,25.100000381469727
+Confluence,Sacramento Pikeminnow,Juvenile-Larvae,Summer,26.700000762939453
+Confluence,Longfin Smelt,Adult,Summer,23.940000534057617
+Confluence,Longfin Smelt,Juvenile,Summer,23.8799991607666
+Far North,Sacramento Sucker,Adult,Summer,28.700000762939453
+Far North,Sacramento Sucker,Juvenile,Summer,31.799999239999998
+Far North,Prickly Sculpin,Adult,Summer,29
+Far North,Prickly Sculpin,Juvenile-Larvae,Summer,29
+Far North,Threespine Stickleback,Adult,Summer,24.39999962
+Far North,Wakasagi,Adult,Summer,25.600000381469727
+Far North,Wakasagi,Juvenile,Summer,28.799999237060547
+Far North,Delta Smelt,Adult,Summer,24.700000762939453
+Far North,Delta Smelt,Juvenile,Summer,25.600000381469727
+Far North,Tule Perch,Adult,Summer,23.5
+Far North,Tule Perch,Juvenile-Larvae,Summer,27.200000760000002
+Far North,Hitch,Adult,Summer,24.600000381469727
+Far North,Hitch,Juvenile-Larvae,Summer,29.299999237060547
+Far North,Mississippi Silverside,Adult,Summer,31.799999239999998
+Far North,Mississippi Silverside,Juvenile,Summer,31.799999239999998
+Far North,Largemouth Bass,Adult,Summer,28.700000760000002
+Far North,Largemouth Bass,Juvenile,Summer,31.799999239999998
+Far North,Striped Bass,Adult,Summer,28.299999239999998
+Far North,Striped Bass,Juvenile,Summer,29.10000038
+Far North,Striped Bass,Larvae,Summer,26.600000381469727
+Far North,Steelhead/Rainbow Trout,Juvenile,Summer,23.888891220092773
+Far North,Chinook Salmon,Adult,Summer,22.5
+Far North,Chinook Salmon,Juvenile,Summer,24.444446563720703
+Far North,Sacramento Blackfish,Adult,Summer,24.44444466
+Far North,Sacramento Blackfish,Juvenile-Larvae,Summer,29.200000762939453
+Far North,Sacramento Splittail,Adult,Summer,18.600000381469727
+Far North,Sacramento Splittail,Juvenile,Summer,31.799999239999998
+Far North,Sacramento Splittail,Larvae,Summer,21.388891220092773
+Far North,Sacramento Pikeminnow,Adult,Summer,24.700000762939453
+Far North,Sacramento Pikeminnow,Juvenile-Larvae,Summer,31
+Far North,Longfin Smelt,Juvenile,Summer,25.555557250976563
+North Delta,White Sturgeon,Juvenile,Summer,20.799999237060547
+North Delta,Sacramento Sucker,Adult,Summer,23.200000762939453
+North Delta,Sacramento Sucker,Juvenile,Summer,25.200000762939453
+North Delta,Prickly Sculpin,Adult,Summer,25.200000762939453
+North Delta,Prickly Sculpin,Juvenile-Larvae,Summer,25.200000762939453
+North Delta,Threespine Stickleback,Adult,Summer,22.200000762939453
+North Delta,Threespine Stickleback,Juvenile-Larvae,Summer,26.799999239999998
+North Delta,Wakasagi,Adult,Summer,25.899999618530273
+North Delta,Wakasagi,Juvenile,Summer,25.899999618530273
+North Delta,Delta Smelt,Adult,Summer,24
+North Delta,Delta Smelt,Juvenile,Summer,25.899999618530273
+North Delta,Tule Perch,Adult,Summer,25.5
+North Delta,Tule Perch,Juvenile-Larvae,Summer,26.89999962
+North Delta,Hitch,Adult,Summer,23.5
+North Delta,Hitch,Juvenile-Larvae,Summer,23.888891220092773
+North Delta,Mississippi Silverside,Adult,Summer,27.200000762939453
+North Delta,Mississippi Silverside,Juvenile,Summer,29.799999237060547
+North Delta,Largemouth Bass,Adult,Summer,24.700000762939453
+North Delta,Largemouth Bass,Juvenile,Summer,26.799999239999998
+North Delta,Striped Bass,Adult,Summer,22.600000381469727
+North Delta,Striped Bass,Juvenile,Summer,29.799999237060547
+North Delta,Striped Bass,Larvae,Summer,26.11111069
+North Delta,Steelhead/Rainbow Trout,Juvenile,Summer,24.444446563720703
+North Delta,Chinook Salmon,Adult,Summer,21.799999237060547
+North Delta,Chinook Salmon,Juvenile,Summer,22.77778053283691
+North Delta,Sacramento Blackfish,Juvenile-Larvae,Summer,25.39999962
+North Delta,Sacramento Splittail,Juvenile,Summer,27.89999962
+North Delta,Sacramento Pikeminnow,Adult,Summer,24.600000381469727
+North Delta,Sacramento Pikeminnow,Juvenile-Larvae,Summer,29.799999237060547
+South,Green Sturgeon,Juvenile,Summer,28.5
+South,White Sturgeon,Juvenile,Summer,26.666666666666668
+South,Sacramento Sucker,Adult,Summer,24.5
+South,Sacramento Sucker,Juvenile,Summer,28.299999237060547
+South,Prickly Sculpin,Adult,Summer,28.88888888888889
+South,Prickly Sculpin,Juvenile-Larvae,Summer,28.88888888888889
+South,Wakasagi,Adult,Summer,27.600000381469727
+South,Wakasagi,Juvenile,Summer,26.299999237060547
+South,Delta Smelt,Adult,Summer,26.666666666666668
+South,Delta Smelt,Juvenile,Summer,27.77777777777778
+South,Tule Perch,Adult,Summer,28.700000762939453
+South,Tule Perch,Juvenile-Larvae,Summer,28.299999237060547
+South,Hitch,Juvenile-Larvae,Summer,24.200000762939453
+South,Mississippi Silverside,Adult,Summer,30.555555555555557
+South,Mississippi Silverside,Juvenile,Summer,31.11111111111111
+South,Largemouth Bass,Adult,Summer,27.22222222222222
+South,Largemouth Bass,Juvenile,Summer,30
+South,Largemouth Bass,Larvae,Summer,28.333333333333332
+South,Striped Bass,Adult,Summer,27.22222222222222
+South,Striped Bass,Juvenile,Summer,31.11111111111111
+South,Striped Bass,Larvae,Summer,23.88888888888889
+South,Steelhead/Rainbow Trout,Adult,Summer,25.555555555555557
+South,Steelhead/Rainbow Trout,Juvenile,Summer,28.333333333333332
+South,Chinook Salmon,Juvenile,Summer,28.333333333333332
+South,Sacramento Blackfish,Adult,Summer,27.100000381469727
+South,Sacramento Blackfish,Juvenile-Larvae,Summer,26.666666666666668
+South,Sacramento Splittail,Adult,Summer,27.77777777777778
+South,Sacramento Splittail,Juvenile,Summer,30.555555555555557
+South,Sacramento Splittail,Larvae,Summer,22.22222222222222
+South,Sacramento Pikeminnow,Adult,Summer,25.799999237060547
+South,Sacramento Pikeminnow,Juvenile-Larvae,Summer,28.200000762939453
+South,Longfin Smelt,Juvenile,Summer,27.77777777777778
+Suisun Bay,Green Sturgeon,Juvenile,Summer,25.5
+Suisun Bay,White Sturgeon,Adult,Summer,20.799999237060547
+Suisun Bay,White Sturgeon,Juvenile,Summer,23.8799991607666
+Suisun Bay,White Sturgeon,Larvae,Summer,21.65999984741211
+Suisun Bay,Sacramento Sucker,Adult,Summer,21.5
+Suisun Bay,Sacramento Sucker,Juvenile,Summer,24.799999237060547
+Suisun Bay,Prickly Sculpin,Adult,Summer,24
+Suisun Bay,Prickly Sculpin,Juvenile-Larvae,Summer,23
+Suisun Bay,Threespine Stickleback,Adult,Summer,22.100000381469727
+Suisun Bay,Threespine Stickleback,Juvenile-Larvae,Summer,24.5
+Suisun Bay,Wakasagi,Adult,Summer,22.61111068725586
+Suisun Bay,Wakasagi,Juvenile,Summer,23.5
+Suisun Bay,Delta Smelt,Adult,Summer,25.5
+Suisun Bay,Delta Smelt,Juvenile,Summer,25
+Suisun Bay,Delta Smelt,Larvae,Summer,21.940000534057617
+Suisun Bay,Tule Perch,Adult,Summer,24.799999237060547
+Suisun Bay,Tule Perch,Juvenile-Larvae,Summer,24.799999237060547
+Suisun Bay,Hitch,Adult,Summer,22.22222328186035
+Suisun Bay,Mississippi Silverside,Adult,Summer,23.5
+Suisun Bay,Mississippi Silverside,Juvenile,Summer,23.610000610351563
+Suisun Bay,Largemouth Bass,Juvenile,Summer,23.222225189208984
+Suisun Bay,Striped Bass,Adult,Summer,25.000001907348633
+Suisun Bay,Striped Bass,Juvenile,Summer,27
+Suisun Bay,Striped Bass,Larvae,Summer,24.799999237060547
+Suisun Bay,Steelhead/Rainbow Trout,Adult,Summer,22.799999237060547
+Suisun Bay,Steelhead/Rainbow Trout,Juvenile,Summer,23.5
+Suisun Bay,Chinook Salmon,Adult,Summer,22.444446563720703
+Suisun Bay,Chinook Salmon,Juvenile,Summer,25.5
+Suisun Bay,Sacramento Blackfish,Adult,Summer,21.666667938232425
+Suisun Bay,Sacramento Blackfish,Juvenile-Larvae,Summer,21.666667938232425
+Suisun Bay,Sacramento Splittail,Adult,Summer,25.5
+Suisun Bay,Sacramento Splittail,Juvenile,Summer,25.5
+Suisun Bay,Sacramento Pikeminnow,Adult,Summer,22.166669845581055
+Suisun Bay,Sacramento Pikeminnow,Juvenile-Larvae,Summer,21.700000762939453
+Suisun Bay,Longfin Smelt,Adult,Summer,25.600000381469727
+Suisun Bay,Longfin Smelt,Juvenile,Summer,25.600000381469727
+Suisun Bay,Longfin Smelt,Larvae,Summer,20.600000381469727
+Suisun Marsh,White Sturgeon,Juvenile,Summer,23.700000762939453
+Suisun Marsh,Sacramento Sucker,Adult,Summer,29.5
+Suisun Marsh,Sacramento Sucker,Juvenile,Summer,29.5
+Suisun Marsh,Prickly Sculpin,Adult,Summer,27
+Suisun Marsh,Prickly Sculpin,Juvenile-Larvae,Summer,27
+Suisun Marsh,Threespine Stickleback,Adult,Summer,25.200000762939453
+Suisun Marsh,Threespine Stickleback,Juvenile-Larvae,Summer,27
+Suisun Marsh,Wakasagi,Adult,Summer,24.299999237060547
+Suisun Marsh,Wakasagi,Juvenile,Summer,24.299999237060547
+Suisun Marsh,Delta Smelt,Adult,Summer,21.799999237060547
+Suisun Marsh,Delta Smelt,Juvenile,Summer,26
+Suisun Marsh,Delta Smelt,Larvae,Summer,21.719999313354492
+Suisun Marsh,Tule Perch,Adult,Summer,28
+Suisun Marsh,Tule Perch,Juvenile-Larvae,Summer,29.5
+Suisun Marsh,Hitch,Adult,Summer,25
+Suisun Marsh,Hitch,Juvenile-Larvae,Summer,25
+Suisun Marsh,Mississippi Silverside,Adult,Summer,25
+Suisun Marsh,Mississippi Silverside,Juvenile,Summer,28
+Suisun Marsh,Striped Bass,Adult,Summer,25.600000381469727
+Suisun Marsh,Striped Bass,Juvenile,Summer,29.5
+Suisun Marsh,Striped Bass,Larvae,Summer,26.799999237060547
+Suisun Marsh,Chinook Salmon,Juvenile,Summer,22.770000457763672
+Suisun Marsh,Sacramento Blackfish,Juvenile-Larvae,Summer,23.600000381469727
+Suisun Marsh,Sacramento Splittail,Adult,Summer,29.5
+Suisun Marsh,Sacramento Splittail,Juvenile,Summer,29.5
+Suisun Marsh,Sacramento Splittail,Larvae,Summer,26.700000762939453
+Suisun Marsh,Sacramento Pikeminnow,Adult,Summer,23
+Suisun Marsh,Sacramento Pikeminnow,Juvenile-Larvae,Summer,24
+Suisun Marsh,Longfin Smelt,Adult,Summer,24.700000762939453
+Suisun Marsh,Longfin Smelt,Juvenile,Summer,25
+Suisun Marsh,Longfin Smelt,Larvae,Summer,21
+Central,Green Sturgeon,Juvenile,Fall,18.72222222222222
+Central,White Sturgeon,Juvenile,Fall,20.833333333333332
+Central,Prickly Sculpin,Adult,Fall,22.444444444444446
+Central,Prickly Sculpin,Juvenile-Larvae,Fall,22.77777777777778
+Central,Threespine Stickleback,Adult,Fall,17.77777777777778
+Central,Threespine Stickleback,Juvenile-Larvae,Fall,19.055555555555557
+Central,Delta Smelt,Adult,Fall,14.699999809265137
+Central,Delta Smelt,Juvenile,Fall,15.555555555555555
+Central,Hitch,Juvenile-Larvae,Fall,18.200000762939453
+Central,Mississippi Silverside,Adult,Fall,23.888891220092773
+Central,Mississippi Silverside,Juvenile,Fall,23.888891220092773
+Central,Largemouth Bass,Adult,Fall,22.11111111111111
+Central,Largemouth Bass,Juvenile,Fall,23.888891220092773
+Central,Largemouth Bass,Larvae,Fall,20
+Central,Striped Bass,Adult,Fall,24.444444444444443
+Central,Striped Bass,Juvenile,Fall,25
+Central,Steelhead/Rainbow Trout,Adult,Fall,17.5
+Central,Steelhead/Rainbow Trout,Juvenile,Fall,17.77777777777778
+Central,Chinook Salmon,Juvenile,Fall,22.22222222222222
+Central,Sacramento Blackfish,Adult,Fall,16.11111111111111
+Central,Sacramento Blackfish,Juvenile-Larvae,Fall,21.11111111111111
+Central,Sacramento Splittail,Adult,Fall,22.22222222222222
+Central,Sacramento Splittail,Juvenile,Fall,21.666666666666668
+Central,Sacramento Pikeminnow,Adult,Fall,19.700000762939453
+Central,Sacramento Pikeminnow,Juvenile-Larvae,Fall,22.200000762939453
+Central,Longfin Smelt,Adult,Fall,14.199999809265137
+Central,Longfin Smelt,Juvenile,Fall,14.5
+Confluence,White Sturgeon,Juvenile,Fall,20.100000381469727
+Confluence,Sacramento Sucker,Adult,Fall,17.399999618530273
+Confluence,Sacramento Sucker,Juvenile,Fall,18.799999237060547
+Confluence,Prickly Sculpin,Adult,Fall,21.5
+Confluence,Threespine Stickleback,Adult,Fall,17.22222328186035
+Confluence,Threespine Stickleback,Juvenile-Larvae,Fall,19.200000762939453
+Confluence,Wakasagi,Adult,Fall,13.399999618530272
+Confluence,Delta Smelt,Adult,Fall,21.700000762939453
+Confluence,Delta Smelt,Juvenile,Fall,21.299999237060547
+Confluence,Tule Perch,Adult,Fall,20.600000381469727
+Confluence,Tule Perch,Juvenile-Larvae,Fall,20.600000381469727
+Confluence,Hitch,Adult,Fall,21.200000762939453
+Confluence,Hitch,Juvenile-Larvae,Fall,21.799999237060547
+Confluence,Mississippi Silverside,Adult,Fall,23.100000381469727
+Confluence,Mississippi Silverside,Juvenile,Fall,24
+Confluence,Largemouth Bass,Adult,Fall,22.200000762939453
+Confluence,Largemouth Bass,Juvenile,Fall,22.200000762939453
+Confluence,Striped Bass,Adult,Fall,20.600000381469727
+Confluence,Striped Bass,Juvenile,Fall,21.899999618530273
+Confluence,Steelhead/Rainbow Trout,Juvenile,Fall,14.800000190734863
+Confluence,Chinook Salmon,Adult,Fall,16.600000381469727
+Confluence,Chinook Salmon,Juvenile,Fall,21.200000762939453
+Confluence,Chinook Salmon,Larvae,Fall,12.222223281860352
+Confluence,Sacramento Splittail,Adult,Fall,18.899999618530273
+Confluence,Sacramento Splittail,Juvenile,Fall,21.100000381469727
+Confluence,Sacramento Pikeminnow,Adult,Fall,20.700000762939453
+Confluence,Sacramento Pikeminnow,Juvenile-Larvae,Fall,20.799999237060547
+Confluence,Longfin Smelt,Adult,Fall,19
+Confluence,Longfin Smelt,Juvenile,Fall,20.700000762939453
+Far North,Sacramento Sucker,Adult,Fall,20.89999962
+Far North,Sacramento Sucker,Juvenile,Fall,22.799999237060547
+Far North,Sacramento Sucker,Larvae,Fall,18.5
+Far North,Prickly Sculpin,Adult,Fall,19.60000038
+Far North,Threespine Stickleback,Juvenile-Larvae,Fall,18.399999618530273
+Far North,Wakasagi,Adult,Fall,22.200000762939453
+Far North,Wakasagi,Juvenile,Fall,20.5
+Far North,Delta Smelt,Adult,Fall,19.299999237060547
+Far North,Delta Smelt,Juvenile,Fall,20.100000381469727
+Far North,Tule Perch,Adult,Fall,20.799999237060547
+Far North,Tule Perch,Juvenile-Larvae,Fall,20.799999239999998
+Far North,Hitch,Adult,Fall,21.100000381469727
+Far North,Hitch,Juvenile-Larvae,Fall,19.72222328186035
+Far North,Mississippi Silverside,Adult,Fall,23.5
+Far North,Mississippi Silverside,Juvenile,Fall,25.55555534
+Far North,Largemouth Bass,Adult,Fall,25.55555534
+Far North,Largemouth Bass,Juvenile,Fall,25.55555534
+Far North,Striped Bass,Adult,Fall,26.11111069
+Far North,Striped Bass,Juvenile,Fall,21.39999962
+Far North,Steelhead/Rainbow Trout,Adult,Fall,15.100000380000001
+Far North,Steelhead/Rainbow Trout,Juvenile,Fall,14
+Far North,Chinook Salmon,Adult,Fall,22.39999962
+Far North,Chinook Salmon,Juvenile,Fall,21
+Far North,Chinook Salmon,Larvae,Fall,15.399999618530272
+Far North,Sacramento Blackfish,Adult,Fall,18.799999239999998
+Far North,Sacramento Blackfish,Juvenile-Larvae,Fall,20.5
+Far North,Sacramento Splittail,Adult,Fall,20.83333397
+Far North,Sacramento Splittail,Juvenile,Fall,20.555557250976563
+Far North,Sacramento Pikeminnow,Adult,Fall,21
+Far North,Sacramento Pikeminnow,Juvenile-Larvae,Fall,21.5
+Far North,Longfin Smelt,Adult,Fall,13.600000381469728
+Far North,Longfin Smelt,Juvenile,Fall,12.77777862548828
+North Delta,Sacramento Sucker,Adult,Fall,19.399999618530273
+North Delta,Sacramento Sucker,Juvenile,Fall,21.100000381469727
+North Delta,Prickly Sculpin,Adult,Fall,24
+North Delta,Prickly Sculpin,Juvenile-Larvae,Fall,17.200000762939453
+North Delta,Threespine Stickleback,Adult,Fall,20.000001907348633
+North Delta,Threespine Stickleback,Juvenile-Larvae,Fall,16.600000381469727
+North Delta,Wakasagi,Adult,Fall,21.799999237060547
+North Delta,Wakasagi,Juvenile,Fall,18.100000381469727
+North Delta,Delta Smelt,Adult,Fall,20.600000381469727
+North Delta,Delta Smelt,Juvenile,Fall,20.600000381469727
+North Delta,Tule Perch,Adult,Fall,18.700000762939453
+North Delta,Tule Perch,Juvenile-Larvae,Fall,24
+North Delta,Hitch,Adult,Fall,16.700000762939453
+North Delta,Hitch,Juvenile-Larvae,Fall,20.000001907348633
+North Delta,Mississippi Silverside,Adult,Fall,22.22222328186035
+North Delta,Mississippi Silverside,Juvenile,Fall,22.100000381469727
+North Delta,Largemouth Bass,Adult,Fall,19.399999618530273
+North Delta,Largemouth Bass,Juvenile,Fall,22
+North Delta,Striped Bass,Adult,Fall,19.100000381469727
+North Delta,Striped Bass,Juvenile,Fall,22.100000381469727
+North Delta,Steelhead/Rainbow Trout,Juvenile,Fall,15.000000953674316
+North Delta,Chinook Salmon,Adult,Fall,18.299999237060547
+North Delta,Chinook Salmon,Juvenile,Fall,22.22222328186035
+North Delta,Chinook Salmon,Larvae,Fall,14.399999618530272
+North Delta,Sacramento Blackfish,Juvenile-Larvae,Fall,17.5
+North Delta,Sacramento Splittail,Adult,Fall,19.299999237060547
+North Delta,Sacramento Splittail,Juvenile,Fall,20.600000381469727
+North Delta,Sacramento Pikeminnow,Adult,Fall,20
+North Delta,Sacramento Pikeminnow,Juvenile-Larvae,Fall,21.111112594604492
+North Delta,Longfin Smelt,Adult,Fall,16.399999618530273
+North Delta,Longfin Smelt,Juvenile,Fall,16.100000381469727
+South,Green Sturgeon,Juvenile,Fall,18.72222222222222
+South,White Sturgeon,Juvenile,Fall,20.833333333333332
+South,Sacramento Sucker,Adult,Fall,16
+South,Sacramento Sucker,Juvenile,Fall,16.799999237060547
+South,Prickly Sculpin,Adult,Fall,22.444444444444446
+South,Prickly Sculpin,Juvenile-Larvae,Fall,22.77777777777778
+South,Threespine Stickleback,Adult,Fall,17.77777777777778
+South,Threespine Stickleback,Juvenile-Larvae,Fall,16.166666666666668
+South,Wakasagi,Adult,Fall,14.399999618530272
+South,Delta Smelt,Adult,Fall,14.444444444444445
+South,Delta Smelt,Juvenile,Fall,15.555555555555555
+South,Tule Perch,Adult,Fall,17
+South,Hitch,Juvenile-Larvae,Fall,13.333333333333334
+South,Mississippi Silverside,Adult,Fall,23.88888888888889
+South,Mississippi Silverside,Juvenile,Fall,23.88888888888889
+South,Largemouth Bass,Adult,Fall,23.5
+South,Largemouth Bass,Juvenile,Fall,23.88888888888889
+South,Largemouth Bass,Larvae,Fall,20
+South,Striped Bass,Adult,Fall,21.666666666666668
+South,Striped Bass,Juvenile,Fall,25
+South,Steelhead/Rainbow Trout,Adult,Fall,16.11111111111111
+South,Steelhead/Rainbow Trout,Juvenile,Fall,22.100000381469727
+South,Chinook Salmon,Juvenile,Fall,22.22222222222222
+South,Sacramento Blackfish,Adult,Fall,16.11111111111111
+South,Sacramento Blackfish,Juvenile-Larvae,Fall,21.11111111111111
+South,Sacramento Splittail,Adult,Fall,22.22222222222222
+South,Sacramento Splittail,Juvenile,Fall,21.666666666666668
+South,Sacramento Pikeminnow,Juvenile-Larvae,Fall,18.833333333333336
+South,Longfin Smelt,Adult,Fall,10
+South,Longfin Smelt,Juvenile,Fall,13.88888888888889
+Suisun Bay,Green Sturgeon,Juvenile,Fall,20.600000381469727
+Suisun Bay,White Sturgeon,Adult,Fall,17.5
+Suisun Bay,White Sturgeon,Juvenile,Fall,20.600000381469727
+Suisun Bay,White Sturgeon,Larvae,Fall,16.700000762939453
+Suisun Bay,Sacramento Sucker,Adult,Fall,19.444446563720703
+Suisun Bay,Sacramento Sucker,Juvenile,Fall,20.299999237060547
+Suisun Bay,Prickly Sculpin,Adult,Fall,19.700000762939453
+Suisun Bay,Prickly Sculpin,Juvenile-Larvae,Fall,16.700000762939453
+Suisun Bay,Threespine Stickleback,Adult,Fall,19.27777671813965
+Suisun Bay,Threespine Stickleback,Juvenile-Larvae,Fall,19.399999618530273
+Suisun Bay,Wakasagi,Adult,Fall,18.799999237060547
+Suisun Bay,Wakasagi,Juvenile,Fall,16.5
+Suisun Bay,Delta Smelt,Adult,Fall,21.899999618530273
+Suisun Bay,Delta Smelt,Juvenile,Fall,21.100000381469727
+Suisun Bay,Tule Perch,Adult,Fall,21
+Suisun Bay,Tule Perch,Juvenile-Larvae,Fall,21
+Suisun Bay,Hitch,Adult,Fall,14.699999809265137
+Suisun Bay,Mississippi Silverside,Adult,Fall,20.299999237060547
+Suisun Bay,Mississippi Silverside,Juvenile,Fall,15
+Suisun Bay,Largemouth Bass,Juvenile,Fall,19.611114501953125
+Suisun Bay,Striped Bass,Adult,Fall,20.700000762939453
+Suisun Bay,Striped Bass,Juvenile,Fall,26.100000381469727
+Suisun Bay,Steelhead/Rainbow Trout,Adult,Fall,20.000001907348633
+Suisun Bay,Steelhead/Rainbow Trout,Juvenile,Fall,20
+Suisun Bay,Chinook Salmon,Adult,Fall,21.700000762939453
+Suisun Bay,Chinook Salmon,Juvenile,Fall,26.100000381469727
+Suisun Bay,Chinook Salmon,Larvae,Fall,11.100000381469728
+Suisun Bay,Sacramento Blackfish,Juvenile-Larvae,Fall,9.5
+Suisun Bay,Sacramento Splittail,Adult,Fall,20.799999237060547
+Suisun Bay,Sacramento Splittail,Juvenile,Fall,21.5
+Suisun Bay,Sacramento Pikeminnow,Adult,Fall,18.888891220092773
+Suisun Bay,Sacramento Pikeminnow,Juvenile-Larvae,Fall,18.888891220092773
+Suisun Bay,Longfin Smelt,Adult,Fall,21.5
+Suisun Bay,Longfin Smelt,Juvenile,Fall,23.5
+Suisun Marsh,White Sturgeon,Juvenile,Fall,20
+Suisun Marsh,Sacramento Sucker,Adult,Fall,21.200000762939453
+Suisun Marsh,Sacramento Sucker,Juvenile,Fall,19.399999618530273
+Suisun Marsh,Prickly Sculpin,Adult,Fall,20.799999237060547
+Suisun Marsh,Prickly Sculpin,Juvenile-Larvae,Fall,19.5
+Suisun Marsh,Threespine Stickleback,Adult,Fall,19
+Suisun Marsh,Threespine Stickleback,Juvenile-Larvae,Fall,20.600000381469727
+Suisun Marsh,Wakasagi,Adult,Fall,20.100000381469727
+Suisun Marsh,Delta Smelt,Adult,Fall,20.5
+Suisun Marsh,Delta Smelt,Juvenile,Fall,20.5
+Suisun Marsh,Tule Perch,Adult,Fall,21.100000381469727
+Suisun Marsh,Tule Perch,Juvenile-Larvae,Fall,22
+Suisun Marsh,Hitch,Adult,Fall,15.800000190734863
+Suisun Marsh,Hitch,Juvenile-Larvae,Fall,15.800000190734863
+Suisun Marsh,Mississippi Silverside,Adult,Fall,21.399999618530273
+Suisun Marsh,Mississippi Silverside,Juvenile,Fall,20
+Suisun Marsh,Striped Bass,Adult,Fall,20.600000381469727
+Suisun Marsh,Striped Bass,Juvenile,Fall,23
+Suisun Marsh,Steelhead/Rainbow Trout,Juvenile,Fall,13.899999618530272
+Suisun Marsh,Chinook Salmon,Adult,Fall,18.600000381469727
+Suisun Marsh,Chinook Salmon,Juvenile,Fall,18.600000381469727
+Suisun Marsh,Sacramento Blackfish,Juvenile-Larvae,Fall,16
+Suisun Marsh,Sacramento Splittail,Adult,Fall,21.100000381469727
+Suisun Marsh,Sacramento Splittail,Juvenile,Fall,22
+Suisun Marsh,Sacramento Pikeminnow,Adult,Fall,18.600000381469727
+Suisun Marsh,Sacramento Pikeminnow,Juvenile-Larvae,Fall,20.100000381469727
+Suisun Marsh,Longfin Smelt,Adult,Fall,19.799999237060547
+Suisun Marsh,Longfin Smelt,Juvenile,Fall,20.799999237060547

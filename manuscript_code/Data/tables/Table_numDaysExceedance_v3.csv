@@ -1,0 +1,42 @@
+Species,LifeStage,meanTolerance,minTolerance,maxTolerance,meanSuboptimum,minSuboptimum,maxSuboptimum,outputTolerance,outputSuboptimum,Taxon,Suboptimum_Upper,Tolerance_Upper
+Green Sturgeon,Juvenile,44,21,60,188,164,213,44 (21-60),188 (164-213),Acipenser medirostris,21,34
+White Sturgeon,Juvenile,46,21,61,141,122,170,46 (21-61),141 (122-170),Acipenser transmontanus,24,31
+White Sturgeon,Larvae,43,17,66,206,173,223,43 (17-66),206 (173-223),Acipenser transmontanus,20,32
+Delta Smelt,Adult,54,22,74,185,154,202,54 (22-74),185 (154-202),Hypomesus transpacificus,22,28.5
+Delta Smelt,Juvenile,52,22,74,180,147,201,52 (22-74),180 (147-201),Hypomesus transpacificus,22,29
+Delta Smelt,Larvae,34,9,59,146,109,160,34 (9-59),146 (109-160),Hypomesus transpacificus,23,29
+Longfin Smelt,Adult,55,22,82,309,284,335,55 (22-82),309 (284-335),Spirinchus thaleichthys,15,25.6
+Longfin Smelt,Juvenile,81,54,105,310,284,335,81 (54-105),310 (284-335),Spirinchus thaleichthys,15,26.4
+Longfin Smelt,Larvae,42,19,70,96,73,116,42 (19-70),96 (73-116),Spirinchus thaleichthys,20,24.8
+Wakasagi,Juvenile,48,16,74,NA,NA,NA,48 (16-74),NA,Hypomesus nipponensis,NA,29.1
+Chinook Salmon,Adult,44,21,64,166,125,200,44 (21-64),166 (125-200),Oncorhynchus tshawytscha,21,26
+Chinook Salmon,Juvenile,56,24,74,223,192,246,56 (24-74),223 (192-246),Oncorhynchus tshawytscha,20,28
+Chinook Salmon,Larvae,51,22,74,198,167,220,51 (22-74),198 (167-220),Oncorhynchus tshawytscha,16,29
+Steelhead/Rainbow Trout,Adult,107,76,133,218,188,242,107 (76-133),218 (188-242),Oncorhynchus mykiss,20,25.5
+Steelhead/Rainbow Trout,Juvenile,53,22,74,198,169,218,53 (22-74),198 (169-218),Oncorhynchus mykiss,21,29
+Steelhead/Rainbow Trout,Larvae,59,21,83,91,91,91,59 (21-83),91 (91-91),Oncorhynchus mykiss,12,19
+Sacramento Splittail,Adult,53,22,74,147,126,171,53 (22-74),147 (126-171),Pogonichthys macrolepidotus,24,29
+Sacramento Splittail,Juvenile,52,22,74,121,87,151,52 (22-74),121 (87-151),Pogonichthys macrolepidotus,25,33
+Sacramento Splittail,Larvae,33,9,59,50,34,69,33 (9-59),50 (34-69),Pogonichthys macrolepidotus,27,32
+Sacramento Pikeminnow,Adult,51,22,74,120,86,150,51 (22-74),120 (86-150),Ptychocheilus grandis,25,38
+Sacramento Sucker,Adult,52,22,74,221,191,244,52 (22-74),221 (191-244),Catostomus occidentalis,20,30
+Sacramento Blackfish,Adult,51,22,74,NA,NA,NA,51 (22-74),NA,Orthodon microlepidotus,NA,32
+Sacramento Blackfish,Juvenile-Larvae,52,22,74,147,126,171,52 (22-74),147 (126-171),Orthodon microlepidotus,24,32
+Hitch,Adult,51,22,74,51,22,74,51 (22-74),51 (22-74),Lavinia exilicauda,29,38
+Tule Perch,Adult,52,21,74,201,173,220,52 (21-74),201 (173-220),Hysterocarpus traskii,21,34
+Threespine Stickleback,Adult,52,22,74,NA,NA,NA,52 (22-74),NA,Gasterosteus aculeatus,NA,29
+Threespine Stickleback,Juvenile-Larvae,52,22,74,NA,NA,NA,52 (22-74),NA,Gasterosteus aculeatus,NA,29
+Prickly Sculpin,Adult,NA,NA,NA,147,126,171,NA,147 (126-171),Cottus asper,24,NA
+Mississippi Silverside,Adult,52,22,74,NA,NA,NA,52 (22-74),NA,Menidia audens,NA,31
+Mississippi Silverside,Juvenile,52,22,74,93,76,119,52 (22-74),93 (76-119),Menidia audens,26,35
+Striped Bass,Adult,56,24,74,147,126,171,56 (24-74),147 (126-171),Morone saxatilis,24,28
+Striped Bass,Juvenile,52,22,74,121,87,151,52 (22-74),121 (87-151),Morone saxatilis,25,32
+Striped Bass,Larvae,NA,NA,NA,36,14,52,NA,36 (14-52),Morone saxatilis,25,NA
+Largemouth Bass,Adult,52,22,74,NA,NA,NA,52 (22-74),NA,Micropterus salmoides,NA,35
+Largemouth Bass,Juvenile,52,22,74,53,22,74,52 (22-74),53 (22-74),Micropterus salmoides,29,40
+Giant Reed EAV,Undifferentiated,52,22,74,52,22,74,52 (22-74),52 (22-74),Arundo donax,30,32
+Brazilian Waterweed,Undifferentiated,52,22,74,52,22,74,52 (22-74),52 (22-74),Egeria densa,30,30
+Water Hyacinth FAV,Undifferentiated,52,22,74,52,22,74,52 (22-74),52 (22-74),Eichhornia crassipes,30,34
+Microcystis,Undifferentiated,19,3,31,76,24,107,19 (3-31),76 (24-107),Microcystis spp.,25,36
+Asian Clam,Undifferentiated,52,22,74,52,22,74,52 (22-74),52 (22-74),"Corbicula spp. (manilensis, fluminea)",30,37
+Overbite Clam,Undifferentiated,NA,NA,NA,44,19,61,NA,44 (19-61),Potamocorbula amurensis,28,NA

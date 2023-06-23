@@ -1,0 +1,147 @@
+﻿OrganismCode,Active,CommonName,Phylum,Class,Order,Family,Genus,Species,Comments,NormalizedCode
+1,TRUE,Chinook Salmon,Chordata,Osteichthyes,Salmoniformes,Salmonidae,Oncorhynchus,tshawytscha,,136
+2,TRUE,Rainbow / Steelhead Trout,Chordata,Osteichthyes,Salmoniformes,Salmonidae,Oncorhynchus,mykiss,,161
+3,TRUE,Striped Bass,Chordata,Osteichthyes,Perciformes,Percichthyidae,Morone,saxatilis,,172
+4,TRUE,White Catfish,Chordata,Osteichthyes,Siluriformes,Ictaluridae,Ameiurus,catus,,179
+5,TRUE,Brown Bullhead,Chordata,Osteichthyes,Siluriformes,Ictaluridae,Ameiurus,nebulosus,,132
+6,TRUE,Channel Catfish,Chordata,Osteichthyes,Siluriformes,Ictaluridae,Ictalurus,punctatus,,135
+7,TRUE,American Shad,Chordata,Osteichthyes,Clupeiformes,Clupeidae,Alosa,sapidissima,,126
+8,TRUE,Threadfin Shad,Chordata,Osteichthyes,Clupeiformes,Clupeidae,Dorosoma,petenense,,175
+9,TRUE,Splittail,Chordata,Osteichthyes,Cypriniformes,Cyprinidae,Pogonichthys,macrolepidotus,,169
+10,TRUE,Sacramento Pikeminnow,Chordata,Osteichthyes,Cypriniformes,Cyprinidae,Ptychocheilus,grandis,,164
+11,TRUE,Threespine Stickleback,Chordata,Osteichthyes,Gasterosteiformes,Gasterosteidae,Gasterosteus,aculeatus,,171
+12,TRUE,Hardhead,Chordata,Osteichthyes,Cypriniformes,Cyprinidae,Mylopharodon,conocephalus,,186
+13,TRUE,Golden Shiner,Chordata,Osteichthyes,Cypriniformes,Cyprinidae,Notemigonus,crysoleucas,,141
+14,TRUE,Common Carp,Chordata,Osteichthyes,Cypriniformes,Cyprinidae,Cyprinus,carpio,,134
+15,TRUE,Goldfish,Chordata,Osteichthyes,Cypriniformes,Cyprinidae,Carassius,auratus,,142
+16,TRUE,Hitch,Chordata,Osteichthyes,Cypriniformes,Cyprinidae,Lavinia,exilicauda,,145
+17,TRUE,Sacramento Blackfish,Chordata,Osteichthyes,Cypriniformes,Cyprinidae,Orthodon,microlepidotus,,163
+18,TRUE,Black Crappie,Chordata,Osteichthyes,Perciformes,Centrarchidae,Pomoxis,nigromaculatus,,130
+19,TRUE,Green Sunfish,Chordata,Osteichthyes,Perciformes,Centrarchidae,Lepomis,cyanellus,,143
+20,TRUE,Warmouth,Chordata,Osteichthyes,Perciformes,Centrarchidae,Lepomis,gulosus,,183
+21,TRUE,Bluegill,Chordata,Osteichthyes,Perciformes,Centrarchidae,Lepomis,macrochirus,,131
+22,TRUE,Largemouth Bass,Chordata,Osteichthyes,Perciformes,Centrarchidae,Micropterus,salmoides,,148
+23,TRUE,Bigscale Logperch,Chordata,Osteichthyes,Perciformes,Percidae,Percina,macrolepida,,128
+24,TRUE,Tule Perch,Chordata,Osteichthyes,Perciformes,Embiotocidae,Hysterocarpus,traski,,177
+25,TRUE,Longfin Smelt,Chordata,Osteichthyes,Salmoniformes,Osmeridae,Spirinchus,thaleichthys,,149
+26,TRUE,Delta Smelt,Chordata,Osteichthyes,Salmoniformes,Osmeridae,Hypomesus,transpacificus,,138
+27,TRUE,White Sturgeon,Chordata,Osteichthyes,Acipenseriformes,Acipenseridae,Acipenser,transmontanus,,182
+28,TRUE,Green Sturgeon,Chordata,Osteichthyes,Acipenseriformes,Acipenseridae,Acipenser,medirostris,,144
+29,TRUE,Prickly Sculpin,Chordata,Osteichthyes,Scorpaeniformes,Cottidae,Cottus,asper,,159
+30,TRUE,Yellowfin Goby,Chordata,Osteichthyes,Perciformes,Gobiidae,Acanthogobius,flavimanus,,184
+31,TRUE,Inland Silverside,Chordata,Osteichthyes,Atheriniformes,Atherinidae,Menidia,beryllina,,146
+32,TRUE,Starry Flounder,Chordata,Osteichthyes,Pleuronectiformes,Pleuronectidae,Platichthys,stellatus,,173
+33,TRUE,Lamprey Unknown,Chordata,Cephalaspidomorphi,Petromyzontiformes,Petromyzontidae,Lampetra,NA,,202
+34,TRUE,Western Mosquitofish,Chordata,Osteichthyes,Cyprinodontiformes,Poeciliidae,Gambusia,affinis,,153
+35,TRUE,Yellow Bullhead,Chordata,Osteichthyes,Siluriformes,Ictaluridae,Ictalurus,natalis,,191
+36,TRUE,Smallmouth Bass,Chordata,Osteichthyes,Perciformes,Centrarchidae,Micropterus,dolomieu,,188
+37,TRUE,Surf Smelt,Chordata,Osteichthyes,Salmoniformes,Osmeridae,Hypomesus,pretiosus,,174
+39,TRUE,Pacific Staghorn Sculpin,Chordata,Osteichthyes,Scorpaeniformes,Cottidae,Leptocottus,armatus,,170
+40,TRUE,Riffle Sculpin,Chordata,Osteichthyes,Scorpaeniformes,Cottidae,Cottus,gulosus,,222
+41,TRUE,White Crappie,Chordata,Osteichthyes,Perciformes,Centrarchidae,Pomoxis,annularis,,180
+42,TRUE,Pacific Herring,Chordata,Osteichthyes,Clupeiformes,Clupeidae,Clupea,pallasi,,157
+43,TRUE,Yellow Perch,Chordata,Osteichthyes,Perciformes,Percidae,Perca,flavescens,,
+44,TRUE,Black Bullhead,Chordata,Osteichthyes,Siluriformes,Ictaluridae,Ameiurus,melas,,129
+45,TRUE,Sacramento Perch,Chordata,Osteichthyes,Perciformes,Centrarchidae,Archoplites,interruptus,,214
+46,TRUE,Tui Chub,Chordata,Osteichthyes,Cypriniformes,Cyprinidae,Gila,bicolor,,219
+47,TRUE,Coho Salmon,Chordata,Osteichthyes,Salmoniformes,Salmonidae,Oncorhynchus,kisutch,,
+48,TRUE,Pacific Brook Lamprey,Chordata,Cephalaspidomorphi,Petromyzontiformes,Petromyzontidae,Lampetra,pacifica,,
+49,TRUE,Redear Sunfish,Chordata,Osteichthyes,Perciformes,Centrarchidae,Lepomis,microlophus,,162
+50,TRUE,Sacramento Sucker,Chordata,Osteichthyes,Cypriniformes,Catostomidae,Catostomus,occidentalis,,165
+51,TRUE,Fathead Minnow,Chordata,Osteichthyes,Cypriniformes,Cyprinidae,Pimephales,promelas,,140
+52,TRUE,California Roach,Chordata,Osteichthyes,Cypriniformes,Cyprinidae,Hesperoleucus,symmetricus,,185
+53,TRUE,Speckled Dace,Chordata,Osteichthyes,Cypriniformes,Cyprinidae,Rhinichthys,osculus,,221
+54,TRUE,Pumpkinseed,Chordata,Osteichthyes,Perciformes,Centrarchidae,Lepomis,gibbosus,,210
+55,TRUE,Blue Catfish,Chordata,Osteichthyes,Siluriformes,Ictaluridae,Ictalurus,furcatus,,
+60,TRUE,White Bass,Chordata,Osteichthyes,Perciformes,Percichthyidae,Morone,Chrysops,,
+61,TRUE,Chameleon Goby,Chordata,Osteichthyes,Perciformes,Gobiidae,Tridentiger,trigonocephalus,,197
+62,TRUE,Pink Salmon,Chordata,Osteichthyes,Salmoniformes,Salmonidae,Oncorhynchus,gorbuscha,,
+63,TRUE,Freshwater Eel,Chordata,Osteichthyes,Anguilliformes,Anguillidae,Anguilla,rostrata,,
+64,TRUE,Red Shiner,Chordata,Osteichthyes,Cypriniformes,Cyprinidae,Cyprinella,lutrensis,,187
+65,TRUE,Wakasagi,Chordata,Osteichthyes,Salmoniformes,Osmeridae,Hypomesus,nipponensis,,178
+66,TRUE,Shimofuri Goby,Chordata,Osteichthyes,Perciformes,Gobiidae,Tridentiger,bifasciatus,,167
+67,TRUE,Rainwater Killifish,Chordata,Osteichthyes,Cyprinodontiformes,Cyprinodontidae,Lucania,parva,,147
+68,TRUE,Northern Pike,Chordata,Osteichthyes,Esociformes,Esocidae,Esox,lucius,,
+69,TRUE,Shokihaze Goby,Chordata,Osteichthyes,Perciformes,Gobiidae,Tridentiger,barbatus,,
+70,TRUE,Spotted Bass,Chordata,Osteichthyes,Perciformes,Centrarchidae,Micropterus,punctulatus,,213
+71,TRUE,Large-Scale Loach,Chordata,Osteichthyes,dabryanus,cobitidae,Paramisgurnus,dabryanus,"Added on February 21, 2017",263
+80,TRUE,Chinese Mitten Crab,Arthropoda,Crustacea,Decapoda,Grapsidae,Eriocheir,sinensis,,139
+81,TRUE,Chinese Mitten Crab Temp.,NA,NA,NA,NA,NA,NA,,139
+90,TRUE,Unknown,NA,NA,NA,NA,NA,unknown,,190
+98,TRUE,Total Fish Count,NA,NA,NA,NA,NA,Total,,
+99,TRUE,Total Fish Estimate,NA,NA,NA,NA,NA,Estimate,,
+117,TRUE,Striped Mullet,Chordata,Osteichthyes,Perciformes,Mugilidae,Mugil,cephalus,,212
+127,FALSE,Bay Pipefish,Chordata,Osteichthyes,Gasterosteiformes,Syngnathidae,Syngnathus,leptorhynchus,,127
+133,FALSE,California Halibut,Chordata,Osteichthyes,Pleuronectiformes,Bothidae,Paralichthys,californicus,,133
+137,FALSE,California Bay Shrimp,Arthropoda,Crustacea,Decapoda,Crangonidae,Crangon,franciscorum,,137
+150,FALSE,Longjaw Mudsucker,Chordata,Osteichthyes,Percifomes,Gobiidae,Gillichthys,mirabilis,,150
+151,FALSE,Black Sea Jellyfish,Cnidaria,Hydrozoa,Limnomedusae,Olindiadidae,Maeotias,inexpectata,,151
+152,FALSE,Plainfin Midshipman,Chordata,Osteichthyes,Batrachoidiformes,Batrachoididae,Porichthys,notatus,,152
+154,FALSE,Opossum Shrimp,Arthropoda,Crustacea,Malacostraca,Mysidae,neomysis,NA,,154
+155,FALSE,Northern Anchovy,Chordata,Osteichthyes,Clupeiformes,Engraulidae,Engraulis,mordax,,155
+156,FALSE,Bay Shrimp,Arthropoda,Crustacea,Euphausiacea,Palaemonidae,Palaemon,macrodactylum,,156
+158,TRUE,Pacific Lamprey,Chordata,Cephalaspidomorphi,Petromyzontiformes,Petromyzontidae,Lampetra,tridentata,,158
+160,FALSE,Asian Clam,Mollusca,Bivalvia,Myodia,Sphaeriidae,Potamocorbula,amurenis,,160
+166,FALSE,Speckled Sanddab,Chordata,Osteichthyes,Pleuronectiformes,Bothidae,Citharichthys,stigmaeus,,166
+168,FALSE,Shiner perch,Chordata,Osteichthyes,Perciformes,Embiotocidae,Cymatogaster,aggregata,,168
+176,FALSE,Topsmelt,Chordata,Osteichthyes,Atheriniformes,Atherinidae,Atherinops,affinis,,176
+181,FALSE,White Croaker,Chordata,Osteichthyes,Perciformes,Sciaenidae,Genyonemus,lineatus,,181
+192,FALSE,Bass Unknown,Chordata,Osteichthyes,Perciformes,Centrarchidae,Micropterus,NA,,192
+193,FALSE,Sculpin Unknown,Chordata,Osteichthyes,Scorpaeniformes,Cottidae,NA,NA,,193
+194,FALSE,Bay Goby,Chordata,Osteichthyes,Perciformes,Gobiidae,Lepidogobius,lepidus,,194
+195,FALSE,Barred Surfperch,Chordata,Osteichthyes,Perciformes,Embiotocidae,Amphistichus,argenteus,,195
+196,FALSE,Brown Trout,Chordata,Osteichthyes,Salmoniformes,Salmonidae,Salmo,trutta,,196
+198,FALSE,Diamond Turbot,Chordata,Osteichthyes,Pleuronectiformes,Pleuronectidae,Hypsopsetta,guttulata,,198
+199,FALSE,English Sole,Chordata,Osteichthyes,Pleuronectiformes,Pleuronectidae,Pleuronectes,vetulus,,199
+200,FALSE,Goby Unknown,Chordata,Osteichthyes,Perciformes,Gobiidae,NA,NA,,200
+201,FALSE,Jacksmelt,Chordata,Osteichthyes,Atheriniformes,Atherinidae,Atherinopsis,californiensis,,201
+202,FALSE,Kern Brook Lamprey,Chordata,Cephalaspidomorphi,Petromyzontiformes,Petromyzontidae,Lampetra,hubbsi,,
+203,FALSE,Minnow Unknown,Chordata,Osteichthyes,Cypriniformes,Cyprinidae,NA,NA,,203
+204,FALSE,Perch Unknown,Chordata,Osteichthyes,Perciformes,Percidae,NA,NA,,204
+205,FALSE,Righteye Flounder Unknown,Chordata,Osteichthyes,Pleuronectiformes,Pleuronectidae,NA,NA,,205
+206,FALSE,Rosyface Shinner,Chordata,Osteichthyes,Cypriniformes,Cyprinidae,Notropis,rubellus,,206
+207,FALSE,Rockfish Unknown,Chordata,Osteichthyes,Scorpaeniformes,Scorpaenidae,NA,NA,,207
+208,FALSE,River Lamprey,Chordata,Cephalaspidomorphi,Petromyzontiformes,Petromyzontidae,Lampetra,ayresi,,208
+211,FALSE,Smelt Unknown,Chordata,Osteichthyes,Salmoniformes,Osmeridae,NA,NA,,211
+215,FALSE,Sturgeon Unknown,Chordata,Osteichthyes,Acipenseriformes,Acipenseridae,Acipenser,NA,,215
+216,FALSE,Sunfish Unknown,Chordata,Osteichthyes,Perciformes,Centrarchidae,NA,NA,,216
+217,FALSE,Sucker Unknown,Chordata,Osteichthyes,Cypriniformes,Catostomidae,NA,NA,,217
+218,FALSE,Silver Perch,Chordata,Osteichthyes,Perciformes,Embiotocidae,Hyperprosopon,ellipticum,,218
+220,FALSE,NoCatch,NA,NA,NA,NA,NA,nocatch,,220
+223,FALSE,Walleye Surfperch,Chordata,Osteichthyes,Perciformes,Embiotocidae,Hyperprosopon,Argenteum,,223
+224,FALSE,Callico Serf Perch,Chordata,Osteichthyes,Percifomes,Embiotocidae,Amphistichus,koelzi,,224
+225,FALSE,Brown Smoothhound,Chordata,Elasmobranchiomorphi,Lamniformes,Carcharhinidae,Mustelus,henlei,,225
+226,FALSE,Leopard Shark,Chordata,Elasmobranchiomorphi,Lamniformes,Carcharhinidae,Triakis,semifasciata,,226
+227,FALSE,Arrow Goby,Chordata,Osteichthyes,Perciformes,Gobiidae,Clevelandia,ios,,227
+228,FALSE,Pacific Sanddab,Chordata,Osteichthyes,Pleuronectiformes,Bothidae,Citharichthys,sordidus,,228
+230,FALSE,Bat Ray,Chordata,Elasmobranchiomorphi,Rajiformes,Mobulidae,Myliobatis,californica,,230
+231,FALSE,Big Skate,Chordata,Elasmobranchiomorphi,Rajiformes,Rajidae,Raja,binoculata,,231
+232,FALSE,Pacific Butterfish,Chordata,Osteichthyes,Perciformes,Stromateidae,Peprilus,simillimus,,232
+233,FALSE,Pacific Tomcod,Chordata,Osteichthyes,Gadiformes,Gadidae,Microgadus,proximus,,233
+235,FALSE,Night Smelt,Chordata,Osteichthyes,Salmoniformes,Osmeridae,Spirinchus,starski,,235
+236,FALSE,Whitebait Smelt,Chordata,Osteichthyes,Salmoniformes,Osmeridae,Allosmerus,elongatus,,236
+237,FALSE,Pile Perch,Chordata,Osteichthyes,Percifomes,Embiotocidae,Rhacochilus,vacca,,237
+238,FALSE,Black Perch,Chordata,Osteichthyes,Percifomes,Embiotocidae,Embiotoca,jacksoni,,238
+240,FALSE,Sevengill Shark,Chordata,Elasmobranchiomorphi,Hexanchiformes,Hexanchidae,Notorynchus,maculatus,,240
+241,FALSE,Spiny Dogfish,Chordata,Elasmobranchiomorphi,Squaliformes,Squalidae,Squalus,acanthias,,241
+242,FALSE,Grey Smoothhound,Chordata,Elasmobranchiomorphi,Lamniformes,Carcharhinidae,Mustelus,californica,,242
+243,FALSE,Rubberlip Surfperch,Chordata,Osteichthyes,Percifomes,Embiotocidae,Rhacochilus,toxotes,,243
+244,FALSE,Pacific Halibut,Chordata,Osteichthyes,Pleuronectiformes,Pleuronectidae,Hippoglossus,stenolepis,,244
+245,FALSE,Sand Sole,Chordata,Osteichthyes,Pleuronectiformes,Pleuronectidae,Psettichthys,melanostictus,,245
+246,FALSE,Flatfish,Chordata,Osteichthyes,Pleuronectiformes,NA,NA,NA,,246
+247,FALSE,Rock Sole,Chordata,Osteichthyes,Pleuronectiformes,Pleuronectidae,Lepidopsetta,bilineatta,,247
+248,FALSE,Lingcod,Chordata,Osteichthyes,Scorpaeniformes,Hexagrammidae,Ophiodon,elongatus,,248
+249,FALSE,Wolf-eel,Chordata,Osteichthyes,Percifomes,Anarhichadidae,Anarrhichthys,ocellantus,,249
+250,FALSE,Spotfin Surfperch,Chordata,Osteichthyes,Percifomes,Embiotocidae,Hyperprosopon,anale,,250
+251,FALSE,White Perch,Chordata,Osteichthyes,Percifomes,Embiotocidae,Phanerodon,furactus,,251
+252,FALSE,Pacific Electric Ray,Chordata,Elasmobranchiomorphi,Rajiformes,Torpedinidae,Torpedo,californica,,252
+253,FALSE,Pacific sardine,Chordata,Osteichthyes,Clupeiformes,Clupeidae,Sardinops,sagax,,253
+254,FALSE,Dwarf Surfperch,Chordata,Osteichthyes,Perciformes,Embiotocidae,Micrometrus,minimus,,254
+255,FALSE,Butter Sole,Chordata,Osteichthyes,Pleuronectiformes,Pleuronectidae,Isopsetta,NA,,255
+256,FALSE,Redeye Bass,Chordata,Osteichthyes,Perciformes,Centrarchidae,Micropterus,coosae,,256
+257,FALSE,Cheekspot Goby,Chordata,Osteichthyes,Perciformes,Gobiidae,Llypnus,gilberti,,257
+258,FALSE,Kokanee Salmon,Chordata,Osteichthyes,Salmoniformes,Salmonidae,Oncorhynchus,nerka,,258
+259,FALSE,Herring Unknown,Chordata,Osteichthyes,Clupeiformes,Clupeidae,NA,NA,,259
+260,FALSE,Catfish Unknown,Chordata,Osteichthyes,Siluriformes,Ictaluridae,NA,NA,,260
+261,FALSE,Tidewater Goby,Chordata,Osteichthyes,Perciformes,Gobiidae,Eucyclogobius,newberryi,,261
+262,FALSE,Silversides Unknown,Chordata,Osteichthyes,Atheriniformes,Atherinidae,NA,NA,,262
