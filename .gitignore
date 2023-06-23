@@ -1,19 +1,20 @@
 .Rproj.user
-.Rhistory
-.RData
 .Ruserdata
 
-Data/
-*.csv
-*.rds
 *.html
 *.tiff
-*.RData
-RasteredPreds*
 Figures/Archive/
-Figures/
 TimeSeriesCat.Rmd
 SpeciesTables/Salvage_data_FTP*
 SpeciesTables/ReadSalvageData*
 SpeciesTables/data_raw
 
+Data/Archive*
+Temp_filtered.rds
+Temp_flagged.rds
+temp10years*
+temp12years*
+tempToUse*
+newdataPreds*
+DailyAnalysisFiltered.csv
+HourlyAnalysisFiltered*
