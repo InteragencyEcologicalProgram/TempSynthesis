@@ -909,7 +909,7 @@ save(plot21_anom, plot21_avg, plot25_anom, plot25_avg, plot21NR_anom, plot21NR_a
 ```
 
 ```{r}
-load("manuscript_code/Data/gam/finalplots_20230503.RData")
+load("manuscript_code/Data/gam/finalplots_20230613.RData")
 ```
 
 #### Combined Plots Stress
@@ -944,6 +944,7 @@ get_legend<-function(myggplot){
 # Stress plots
 (plot21_avg <- plot21_avg  + 
     scale_fill_viridis_c(option = "viridis", breaks = seq(from = 0, to = 120, by = 20), na.value="white", limits = c(0,110)) + 
+    annotate(geom = "text", x = 580000, y = 4.255e+06, label = "A", size = 6) + 
     guides(fill=guide_colorbar(title="Number Stressful Days", barwidth = 9)) +
     theme_fig) 
 
@@ -958,6 +959,7 @@ plot(legend1)
 
 
 (plot21_anom2 <- plot21_anom + 
+       annotate(geom = "text", x = 580000, y = 4.255e+06, label = "B", size = 6) + 
     theme_fig +
     theme(legend.position = "none") +
     scale_fill_viridis_c(option = "viridis", breaks = seq(from = 0, to = 120, by = 20), na.value="white", limits = c(0,110)) +
@@ -967,12 +969,14 @@ plot(legend1)
 
 (plot25_avg2 <- plot25_avg + 
     scale_fill_viridis_c(option = "viridis", breaks = seq(from = 0, to = 120, by = 20), na.value="white", limits = c(0,110)) +
+       annotate(geom = "text", x = 580000, y = 4.255e+06, label = "D", size = 6) + 
     theme_fig + 
     theme(legend.position = "none"))
 
 
 (plot25_anom2 <- plot25_anom + 
     scale_fill_viridis_c(option = "viridis", breaks = seq(from = 0, to = 120, by = 20), na.value="white", limits = c(0,110)) + 
+       annotate(geom = "text", x = 580000, y = 4.255e+06, label = "E", size = 6) + 
     theme_fig +
     theme(legend.position = "none"))
 
@@ -984,13 +988,15 @@ legend2
 (raster21DiffPlot2 <- raster21DiffPlot + 
     scale_x_continuous(expand = c(0,0)) + 
     scale_y_continuous(expand = c(0,0)) +
+       annotate(geom = "text", x = 580000, y = 4.255e+06, label = "C", size = 6) + 
     theme_fig +
     theme(legend.position = "none") +
-    labs(title = "Difference"))
+    labs(title = " Difference"))
 
 (raster25DiffPlot2 <- raster25DiffPlot + 
     scale_x_continuous(expand = c(0,0)) + 
     scale_y_continuous(expand = c(0,0)) +
+       annotate(geom = "text", x = 580000, y = 4.255e+06, label = "F", size = 6) + 
     theme_fig +
     theme(legend.position = "none"))
 
@@ -1012,8 +1018,8 @@ plot25_avg3 <- annotate_figure(plot25_avg2,
 
 ##### Final Stress plot
 ```{r}
-png(filename=file.path("manuscript_code/Figures/StressPlot.png"), units="in",type="cairo", bg="white", height=6.5, 
-     width=8, res=300, pointsize=10)
+tiff(filename=file.path("manuscript_code/Figures/StressPlot.tiff"), units="in",type="cairo", bg="white", height=6.5, 
+     width=8, res=300, pointsize=10, compress = "lzw")
 (stressPlotC <- grid.arrange(legend1, legend2, plot21_avg3, plot21_anom2, raster21DiffPlot2, plot25_avg3, plot25_anom2, raster25DiffPlot2,
                             nrow = 3,
             layout_matrix = rbind(c(1,1,2), c(3,4,5), c(6,7,8)),
@@ -1051,13 +1057,13 @@ legend3
     scale_fill_viridis_c(option = "viridis", breaks = seq(from = 0, to = 120, by = 20), na.value="white", limits = c(0,110)) + 
     theme_fig +
     theme(legend.position = "none") + 
-    labs(title = "Average Year"))
+    labs(title = "A) Average Year"))
 
 (plot21NR_anom2 <- plot21NR_anom + 
     theme_fig +
     theme(legend.position = "none") +
     scale_fill_viridis_c(option = "viridis", breaks = seq(from = 0, to = 120, by = 20), na.value="white", limits = c(0,110)) +
-    labs(title = "Warm Year (+1°C)"))
+    labs(title = "B) Warm Year (+1°C)"))
 
 (plot25NR_avg2 <- plot25NR_avg + 
     scale_fill_viridis_c(option = "viridis", breaks = seq(from = 0, to = 120, by = 20), na.value="white", limits = c(0,110)) + 
@@ -1087,7 +1093,7 @@ legend4
     scale_x_continuous(expand = c(0,0)) + 
     scale_y_continuous(expand = c(0,0)) +
     theme_fig + theme(legend.position = "none") +
-    labs(title = "Difference"))
+    labs(title = "C) Difference"))
 
 (raster25NRDiffPlot2 <- raster25NRDiffPlot + 
     scale_x_continuous(expand = c(0,0)) + 
@@ -1098,8 +1104,8 @@ legend4
 
 ##### Final No Recovery Plot
 ```{r}
-png(filename=file.path("manuscript_code/Figures/StressNRPlot_updated.png"), units="in",type="cairo", bg="white", height=3.5, 
-     width=8, res=300, pointsize=10)
+tiff(filename=file.path("manuscript_code/Figures/StressNRPlot_updated.tiff"), units="in",type="cairo", bg="white", height=3.5, 
+     width=8, res=300, pointsize=10, compress = "lzw")
 # stressPlotD <- grid.arrange(legend3, legend4, plot21NR_avg3, plot21NR_anom2, raster21NRDiffPlot2, plot25NR_avg3, plot25NR_anom2, raster25NRDiffPlot2,
 #                             nrow = 3,
 #             layout_matrix = rbind(c(1,1,2), c(3,4,5), c(6,7,8)),
