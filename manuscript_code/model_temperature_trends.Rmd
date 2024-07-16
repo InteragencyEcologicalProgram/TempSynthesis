@@ -29,7 +29,12 @@ library(multcomp)
 
 ## Read in data
 ```{r}
-tempMonthly <- readRDS(here::here("manuscript_code","Data", "tempMonthly.rds"))
+tempMonthly <- readRDS(here::here("manuscript_code","Data", "tempMonthly.rds")) %>%
+  filter(!(Year == 2012 & Station == "BLP" & Month == 12)) 
+
+# Removed one month of BLP because there were only 4 values in the month that had high maximum temperatures, causing one big outlier.
+
+
 tempDaily <- readRDS(here::here("manuscript_code", "Data", "tempDaily.rds"))
 # temp20 <- readRDS(here("Data", "temp20years_20220125.rds"))
 ```
@@ -80,6 +85,7 @@ staOfInterest <- temp_qr %>%
   filter(!(year(Date) ==2012 & Station == "VER" & Month == 11 & rangeTemp > 3)) %>%
   filter(!(year(Date) ==2018 & Station %in% c("VER", "SJR") & Month == 7 & rangeTemp <2)) %>%
   filter(Station != "VER") %>%
+
   mutate(StationName = case_when(Station == "BLL" ~ "Blacklock (Suisun Marsh)",
                                  Station == "TEA" ~ "Frank Horan Slough (Suisun Marsh)",
                                  Station == "SJR" ~ "San Joaquin River near Vernalis (South)")) %>% 
@@ -158,148 +164,32 @@ temp <- tempMonthly  %>%
                             TRUE~ Region)) %>%
   mutate(Region2 = factor(Region2),
          Station = factor(Station)) %>%
-  filter(WY > 2009)
+  filter(WY > 2009) %>%
+  filter(maxAvTemp > 7) # removed two outliers
 ```
 
 # 10-year dataset
 ## Run models
 ```{r}
 summary(m.maxs9 <- lmer(maxAvTemp ~ fWY + Season * Region2 + (1|Station) +(1|fMonth), data = temp))
+anova(m.maxs9, type = 2)
+write.csv(summary(m.maxs9)$coefficients, here("manuscript_code/Data/lmer_results/maxs9_coef.csv"))
+summary <- summary(m.maxs9)
 
 summary(m.mins9 <- lmer(minAvTemp ~ fWY + Season * Region2 + (1|Station) +(1|fMonth), data = temp))
+write.csv(summary(m.mins9)$coefficients, here("manuscript_code/Data/lmer_results/mins9_coef.csv"))
 
 summary(m.means9 <- lmer(meanTemp ~ fWY + Season * Region2 + (1|Station) +(1|fMonth), data = temp))
 ```
 
-### model validation
-```{r}
-png(filename = "manuscript_code/Figures/plots_residuals_maxmodel.png", width = 9, height = 7, units = "in", res = 300)
-par(mfrow = c(2,4))
-resid.maxs9 = resid(m.maxs9, type = "pearson")
-lev2a = hatvalues(m.maxs9)
-plot(m.maxs9)
-qqnorm(resid(m.maxs9))
-qqline(resid(m.maxs9))
-hist(resid.maxs9)
-plot(resid.maxs9)
-plot(temp$Region2, resid.maxs9)
-plot(temp$fWY, resid.maxs9)
-plot(temp$Season, resid.maxs9)
-acf(resid.maxs9)
-dev.off()
-
-resid_df <- data.frame(resid.maxs9)
-res_max <- cbind(temp, resid_df)
-dat <- ggeffects::ggpredict(m.maxs9)
-fitted(m.maxs9, level = 0:1)
-
-theme_vis <- theme_bw() +
-  theme(strip.background = element_rect(color = "black", fill = "white"),
-        axis.text = element_text(size = 10),
-        axis.title = element_text(size = 10),
-        strip.text = element_text(size = 11),
-        legend.text = element_text(size = 10),
-        legend.title = element_text(size = 10),
-        legend.position = "top",
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank())
-### ACF Plots
-conf.level <- 0.95
-ciline <- qnorm((1 - conf.level)/2)/sqrt(length(resid.maxs9))
-bacf <- acf(resid.maxs9, plot = FALSE)
-bpacf <- pacf(resid.maxs9, plot = FALSE)
-bacfdf <- with(bacf, data.frame(lag, acf))
-bpacfdf <- with(bpacf, data.frame(lag, acf))
-(acf <- ggplot(data = bacfdf, mapping = aes(x = lag, y = acf)) +
-    geom_hline(aes(yintercept = 0)) +
-    geom_hline(aes(yintercept = ciline), color = "blue", linetype = "dashed") +
-    geom_hline(aes(yintercept = ciline*-1), color = "blue", linetype = "dashed") +
-    geom_segment(mapping = aes(xend = lag, yend = 0)) +
-    labs(y = "ACF", x = "Lag") +
-    theme_vis)
-(pacf <- ggplot(data = bpacfdf, mapping = aes(x = lag, y = acf)) +
-    geom_hline(aes(yintercept = 0)) +
-    geom_hline(aes(yintercept = ciline), color = "blue", linetype = "dashed") +
-    geom_hline(aes(yintercept = ciline*-1), color = "blue", linetype = "dashed") +
-    geom_segment(mapping = aes(xend = lag, yend = 0)) +
-    labs(y = "pACF", x = "Lag") +
-    theme_vis)
-
-
-(d_p1 <- ggplot(res_max) + geom_point(aes(fitted, resid.maxs9)) +
-    labs(x = "Fitted", y = "Residuals") +
-    theme_vis)
-(d_p2 <- ggplot(res_max) +
-    geom_histogram(aes(resid.maxs9), binwidth = 0.3, color = "black", fill = "gray80") +
-    labs(x = "Residuals") +
-    theme_vis +
-    theme(axis.title.y = element_blank()))
-#(d_p3 <- acf(resid))
-(d_p3 <- acf_d)
-(d_p4 <- ggplot(res_max) +  geom_point(aes(flow, resid.maxs9)) +
-    labs(x = "Log Flow (cfs)", y = "Residuals")+
-    theme_vis)
-(d_p5 <- ggplot(res_max) +  geom_point(aes(WTmwk, resid.maxs9)) +
-    labs(x = "Mean Weekly Water Temperature (°C)", y = "Residuals")+
-    theme_vis)
-(d_p6 <- ggplot(res_max) +  geom_boxplot(aes(inund_fac, resid.maxs9)) +
-    labs(x = "Inundation Factor", y = "Residuals")+
-    theme_vis)
-(d_p7 <- downstream_re <- sm %>%
-  filter (smooth == "s(station)") %>%
-  ggplot()+
-  geom_point(aes(x = station, y = est), size = 3) +
-  geom_errorbar(aes(x = station, ymin = est-se, ymax = est+se))+
-    labs(x = "Station", y = "Estimate") +
-  theme_vis +
-    theme(axis.text.x = element_text(size = 7, angle = 14, hjust = 0.5, vjust = 0.5)))
-(d_p8 <- pacf_d)
 
 
 
-
-
-
-
-
-
-
-
-par(mfrow = c(2,4))
-resid.means9 = resid(m.means9, type = "pearson")
-lev2a = hatvalues(m.means9)
-plot(m.means9)
-qqnorm(resid(m.means9))
-qqline(resid(m.means9))
-plot(lev2a, y = resid.means9)
-hist(resid.means9)
-plot(resid.means9)
-plot(temp$Region2, resid.means9)
-plot(temp$fWY, resid.means9)
-plot(temp$Season, resid.means9)
-acf(resid.means9)
-
-
-par(mfrow = c(2,4))
-resid.mins9 = resid(m.mins9, type = "pearson")
-lev2a = hatvalues(m.mins9)
-plot(m.mins9)
-qqnorm(resid(m.mins9))
-qqline(resid(m.mins9))
-plot(lev2a, y = resid.mins9)
-hist(resid.mins9)
-plot(resid.mins9)
-plot(temp$Region2, resid.mins9)
-plot(temp$fWY, resid.mins9)
-plot(temp$Season, resid.mins9)
-acf(resid.mins9)
-```
 
 ### random effects
 #### max
 ```{r}
 re_m.maxs9 <- as.data.frame(ranef(m.maxs9)) 
-
 
 re_sta_max <- re_m.maxs9 %>% filter(grpvar == "Station")%>%
   left_join(temp %>% dplyr::select(Region2, grp=Station)) %>%
@@ -335,7 +225,18 @@ sjPlot::plot_model(m.maxs9)
 
 #### min
 ```{r}
-re_m.mins <- as.data.frame(ranef(m.mins))
+re_m.mins9 <- as.data.frame(ranef(m.mins9))
+
+re_sta_min <- re_m.mins9 %>% filter(grpvar == "Station")%>%
+  left_join(temp %>% dplyr::select(Region2, grp=Station)) %>%
+  mutate(grp = factor(grp),
+         grp = fct_reorder(grp, condval))
+
+re_sta_min1 <- re_m.mins9 %>% 
+  filter(grpvar == "fMonth")%>%
+  left_join(temp %>% dplyr::select(Season, grp=fMonth)) %>%
+  mutate(grp = factor(grp),
+         grp = fct_reorder(grp, condval))
 
 ggplot(re_m.mins) + 
   geom_point(aes(grp, condval)) +
@@ -358,20 +259,263 @@ ggplot(re_m.means) +
 ```
 
 
+### model validation
+#### max
+```{r}
 
+png(filename = "manuscript_code/Figures/plots_residuals_maxmodel.png", width = 9, height = 7, units = "in", res = 300)
+par(mfrow = c(2,4))
+resid.maxs9 = resid(m.maxs9, type = "pearson")
+lev2a = hatvalues(m.maxs9)
+plot(m.maxs9)
+qqnorm(resid(m.maxs9))
+qqline(resid(m.maxs9))
+hist(resid.maxs9)
+plot(resid.maxs9)
+plot(temp$Region2, resid.maxs9)
+plot(temp$fWY, resid.maxs9)
+plot(temp$Season, resid.maxs9)
+acf(resid.maxs9)
+dev.off()
+
+#### GGPLOT VERSION
+resid <- data.frame(resid.maxs9)
+res_max <- cbind(temp, resid)
+dat <- ggeffects::ggpredict(m.maxs9)
+fitted <- fitted(m.maxs9, level = 0:1)
+
+theme_vis <- theme_bw() +
+  theme(strip.background = element_rect(color = "black", fill = "white"),
+        axis.text = element_text(size = 10),
+        axis.title = element_text(size = 10),
+        strip.text = element_text(size = 11),
+        legend.text = element_text(size = 10),
+        legend.title = element_text(size = 10),
+        legend.position = "top",
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank())
+
+### ACF Plots
+conf.level <- 0.95
+ciline <- qnorm((1 - conf.level)/2)/sqrt(length(resid.maxs9))
+bacf <- acf(resid.maxs9, plot = FALSE)
+bpacf <- pacf(resid.maxs9, plot = FALSE)
+bacfdf <- with(bacf, data.frame(lag, acf))
+bpacfdf <- with(bpacf, data.frame(lag, acf))
+(acf <- ggplot(data = bacfdf, mapping = aes(x = lag, y = acf)) +
+    geom_hline(aes(yintercept = 0)) +
+    geom_hline(aes(yintercept = ciline), color = "blue", linetype = "dashed") +
+    geom_hline(aes(yintercept = ciline*-1), color = "blue", linetype = "dashed") +
+    geom_segment(mapping = aes(xend = lag, yend = 0)) +
+    labs(y = "ACF", x = "Lag") +
+    theme_vis)
+(pacf <- ggplot(data = bpacfdf, mapping = aes(x = lag, y = acf)) +
+    geom_hline(aes(yintercept = 0)) +
+    geom_hline(aes(yintercept = ciline), color = "blue", linetype = "dashed") +
+    geom_hline(aes(yintercept = ciline*-1), color = "blue", linetype = "dashed") +
+    geom_segment(mapping = aes(xend = lag, yend = 0)) +
+    labs(y = "pACF", x = "Lag") +
+    theme_vis)
+
+
+(p1 <- ggplot(res_max) + geom_point(aes(fitted, resid.maxs9)) +
+    labs(x = "Fitted", y = "Residuals") +
+    theme_vis)
+(pq <- ggplot(res_max, aes(sample = resid.maxs9)) +
+  geom_qq() +
+  geom_qq_line() +
+    labs(x = "Theoretical Quantiles", y = "Sample Quantiles") + 
+    theme_bw())
+(p2 <- ggplot(res_max) +
+    geom_histogram(aes(resid.maxs9), binwidth = 0.3, color = "black", fill = "gray80") +
+    labs(x = "Residuals") +
+    theme_vis +
+    theme(axis.title.y = element_blank()))
+#(d_p3 <- acf(resid))
+(p3 <- acf)
+(p4 <- ggplot(res_max) +  geom_boxplot(aes(fWY, resid.maxs9)) +
+    labs(x = "WY", y = "Residuals")+
+      theme_vis+
+   theme(axis.text.x = element_text(angle = 90, hjust = 0.95)))
+(p5 <- ggplot(res_max) +  geom_boxplot(aes(Season, resid.maxs9)) +
+    labs(x = "Season", y = "Residuals")+
+    theme_vis+
+   theme(axis.text.x = element_text(angle = 90, hjust = 0.95)))
+(p6 <- ggplot(res_max) +  geom_boxplot(aes(Region2, resid.maxs9)) +
+    labs(x = "Region", y = "Residuals")+
+      theme_vis+
+   theme(axis.text.x = element_text(angle = 90, hjust = 0.95)))
+(p7 <- ggplot(re_sta_max) + 
+  geom_point(aes(grp, condval, color = Region2)) +
+  geom_errorbar(aes(x = grp, ymin = condval-condsd, ymax = condval+condsd), width = 0.3) +
+  viridis::scale_color_viridis(option = "turbo", discrete = "TRUE")+
+    labs(title = "Random Effect of Station",
+         color = "Region") + 
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 0.95),
+        legend.position = "bottom",
+        axis.title = element_blank()))
+(p8 <- ggplot(re_sta_max1) + 
+  geom_point(aes(grp, condval)) +
+  geom_errorbar(aes(x = grp, ymin = condval-condsd, ymax = condval+condsd), width = 0.3) +
+  labs(title = "Random Effect of Month") + 
+    theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 0.95),
+        axis.title = element_blank()))
+(p9 <- pacf)
+
+library(patchwork)
+(max_val_plots <- p1 +  pq+p2 + p3 + p4 + p5 + p6 +  p9 + plot_layout(nrow = 2))
+ggsave("manuscript_code/Figures/model_validation_max_model.png", width = 8.5, height = 5.5, units = "in")
+
+(re_plots <- p8 / p7)
+ggsave("manuscript_code/Figures/model_validation_max_model_re.png", width = 7, height = 6, units = "in")
+
+
+```
+
+
+#### min
+```{r}
+#### GGPLOT VERSION
+resid.mins9 = resid(m.mins9, type = "pearson")
+residmin <- data.frame(resid.mins9)
+res_min <- cbind(temp, residmin)
+dat <- ggeffects::ggpredict(m.mins9)
+fitted_min <- fitted(m.mins9, level = 0:1)
+
+theme_vis <- theme_bw() +
+  theme(strip.background = element_rect(color = "black", fill = "white"),
+        axis.text = element_text(size = 10),
+        axis.title = element_text(size = 10),
+        strip.text = element_text(size = 11),
+        legend.text = element_text(size = 10),
+        legend.title = element_text(size = 10),
+        legend.position = "top",
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank())
+
+### ACF Plots
+conf.level <- 0.95
+ciline <- qnorm((1 - conf.level)/2)/sqrt(length(resid.mins9))
+bacf <- acf(resid.mins9, plot = FALSE)
+bpacf <- pacf(resid.mins9, plot = FALSE)
+bacfdf <- with(bacf, data.frame(lag, acf))
+bpacfdf <- with(bpacf, data.frame(lag, acf))
+(acf_min <- ggplot(data = bacfdf, mapping = aes(x = lag, y = acf)) +
+    geom_hline(aes(yintercept = 0)) +
+    geom_hline(aes(yintercept = ciline), color = "blue", linetype = "dashed") +
+    geom_hline(aes(yintercept = ciline*-1), color = "blue", linetype = "dashed") +
+    geom_segment(mapping = aes(xend = lag, yend = 0)) +
+    labs(y = "ACF", x = "Lag") +
+    theme_vis)
+(pacf_min <- ggplot(data = bpacfdf, mapping = aes(x = lag, y = acf)) +
+    geom_hline(aes(yintercept = 0)) +
+    geom_hline(aes(yintercept = ciline), color = "blue", linetype = "dashed") +
+    geom_hline(aes(yintercept = ciline*-1), color = "blue", linetype = "dashed") +
+    geom_segment(mapping = aes(xend = lag, yend = 0)) +
+    labs(y = "pACF", x = "Lag") +
+    theme_vis)
+
+
+(p1_min <- ggplot(res_min) + geom_point(aes(fitted_min, resid.mins9)) +
+    labs(x = "Fitted", y = "Residuals") +
+    theme_vis)
+(pq_min <- ggplot(res_min, aes(sample = resid.mins9)) +
+  geom_qq() +
+  geom_qq_line() +
+    labs(x = "Theoretical Quantiles", y = "Sample Quantiles") + 
+    theme_bw())
+(p2_min <- ggplot(res_min) +
+    geom_histogram(aes(resid.mins9), binwidth = 0.3, color = "black", fill = "gray80") +
+    labs(x = "Residuals") +
+    theme_vis +
+    theme(axis.title.y = element_blank()))
+#(d_p3 <- acf(resid))
+(p3_min <- acf_min)
+(p4_min <- ggplot(res_min) +  geom_boxplot(aes(fWY, resid.mins9)) +
+    labs(x = "WY", y = "Residuals")+
+      theme_vis+
+   theme(axis.text.x = element_text(angle = 90, hjust = 0.95)))
+(p5_min <- ggplot(res_min) +  geom_boxplot(aes(Season, resid.mins9)) +
+    labs(x = "Season", y = "Residuals")+
+    theme_vis+
+   theme(axis.text.x = element_text(angle = 90, hjust = 0.95)))
+(p6_min <- ggplot(res_min) +  geom_boxplot(aes(Region2, resid.mins9)) +
+    labs(x = "Region", y = "Residuals")+
+      theme_vis+
+   theme(axis.text.x = element_text(angle = 90, hjust = 0.95)))
+(p7_min <- ggplot(re_sta_min) + 
+  geom_point(aes(grp, condval, color = Region2)) +
+  geom_errorbar(aes(x = grp, ymin = condval-condsd, ymax = condval+condsd), width = 0.3) +
+  viridis::scale_color_viridis(option = "turbo", discrete = "TRUE")+
+    labs(title = "Random Effect of Station",
+         color = "Region") + 
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 0.95),
+        legend.position = "bottom",
+        axis.title = element_blank()))
+(p8_min <- ggplot(re_sta_min1) + 
+  geom_point(aes(grp, condval)) +
+  geom_errorbar(aes(x = grp, ymin = condval-condsd, ymax = condval+condsd), width = 0.3) +
+  labs(title = "Random Effect of Month") + 
+    theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 0.95),
+        axis.title = element_blank()))
+(p9_min <- pacf_min)
+
+library(patchwork)
+(min_val_plots <- p1_min +  pq_min+p2_min + p3_min + p4_min + p5_min + p6_min +  p9_min + plot_layout(nrow = 2))
+ggsave("manuscript_code/Figures/model_validation_min_model.png", width = 8.5, height = 5.5, units = "in")
+
+(re_plots_min <- p8_min / p7_min)
+ggsave("manuscript_code/Figures/model_validation_min_model_re.png", width = 7, height = 6, units = "in")
+
+```
+
+```{r}
+par(mfrow = c(2,4))
+resid.means9 = resid(m.means9, type = "pearson")
+lev2a = hatvalues(m.means9)
+plot(m.means9)
+qqnorm(resid(m.means9))
+qqline(resid(m.means9))
+plot(lev2a, y = resid.means9)
+hist(resid.means9)
+plot(resid.means9)
+plot(temp$Region2, resid.means9)
+plot(temp$fWY, resid.means9)
+plot(temp$Season, resid.means9)
+acf(resid.means9)
+
+
+par(mfrow = c(2,4))
+resid.mins9 = resid(m.mins9, type = "pearson")
+lev2a = hatvalues(m.mins9)
+plot(m.mins9)
+qqnorm(resid(m.mins9))
+qqline(resid(m.mins9))
+plot(lev2a, y = resid.mins9)
+hist(resid.mins9)
+plot(resid.mins9)
+plot(temp$Region2, resid.mins9)
+plot(temp$fWY, resid.mins9)
+plot(temp$Season, resid.mins9)
+acf(resid.mins9)
+```
 
 ## Max temps
 
 
 ### emmeans
 ```{r}
-
+emm_options(pbkrtest.limit = 8608)
 # WY-------------------------------------
 max9.emm <- emmeans(m.maxs9, "fWY")
 plot(max9.emm, comparisons = TRUE) + theme_bw()
 #save a dataframe of all the things the plotting function uses so we can plot with ggplot later
-plotmax9 = plot(max9.emm, comparisons = TRUE, plotit = F, adjust = "bonferroni", alpha = 0.01)
-results_max92 = cld(max9.emm, Letters = LETTERS, alpha = 0.01, p.adj.methods = "bonferroni") %>%
+plotmax9 = plot(max9.emm, comparisons = TRUE, plotit = T, adjust = "bonferroni", alpha = 0.01)
+ci_max9_wy = cld(max9.emm, Letters = LETTERS, alpha = 0.01, p.adj.methods = "bonferroni") %>%
   left_join(plotmax9) %>%
   mutate(.group = gsub(" ", "", .group))
 
@@ -380,17 +524,22 @@ results_max9.emm = as.data.frame(pairs(max9.emm, adjust = "bonferroni", alpha = 
   arrange(p.value)
 
 # Region/Season ------------------------------
-max9.emm2 <- emmeans(m.maxs9, specs = pairwise ~ Region2:Season)
-# max9.emm2 <- emmeans(m.maxs9, Region2:Season)
-# plotmax9.rs = plot(max9.emm2, comparisons = TRUE, plotit = F, adjust = "bonferroni", alpha = 0.001)
-
+max9.emm2 <- emmeans(m.maxs9, ~Region2:Season)
+(plotmax9.rs = plot(max9.emm2, comparisons = TRUE, plotit = T, adjust = "bonferroni", alpha = 0.001))
 # add letters
 letters.rs <- cld(max9.emm2, Letters = LETTERS, alpha = 0.01, p.adj.methods = "bonferroni")%>%
   mutate(.group = gsub(" ", "", .group))
-ci_max9_rs <- as.data.frame(max9.emm2$emmeans) %>%
+
+ci_max9_rs <- as.data.frame(max9.emm2) %>%
   left_join(letters.rs) %>%
   mutate(Season = ifelse(Season == "Wet", "Wet Season", ifelse(Season == "Dry", "Dry Season", NA))) %>%
   mutate(Season = factor(Season, levels = c("Wet Season", "Dry Season")))
+
+results_max9.emm2 = as.data.frame(pairs(max9.emm2, adjust = "bonferroni", alpha = 0.01)) %>%
+  mutate(sig = ifelse(p.value<0.01, "yes", "no")) %>%
+  arrange(p.value)
+
+
   
 # other suggested plots but a bit too crazy
 emmip(m.maxs9, Region2~Season, CI = TRUE, plotit = FALSE)
@@ -442,9 +591,7 @@ pwpp(plotmax9.rs, type = "response", adjust = "bonferroni", by = "Season")
      annotate(geom = "text", label = "C", x =0.53, y = 26, size = 5) + 
   viridis::scale_color_viridis(discrete = TRUE, option = "turbo") + 
   scale_y_continuous(breaks = seq(10, 30, by = 2))+
-  
   labs(y = "Water Temperature (°C) with 95% Confidence Intervals", color = "Region") +
-
    theme_classic() +
   theme(axis.text.x = element_text(size = 11),
         legend.position = c(0.78, 0.25),
@@ -507,7 +654,7 @@ theme_fig = theme_bw() +
     annotate(geom = "text", label = "A", x = 1, y = 1.5, size = 5) + 
   # scale_x_continuous(breaks = seq(from = 1999, to = 2019, by = 1)) +
    scale_y_continuous(breaks = seq(-1, 2, 0.5))+
-  scale_fill_viridis(discrete = TRUE) +
+  viridis::scale_fill_viridis(discrete = TRUE) +
   labs(x = "Water Year", y = "Mean Maximum Daily Temperature (°C)", fill = "Water Year Type")+
   theme_classic() +
   theme(axis.text.x = element_text(size = 11),
@@ -594,24 +741,46 @@ plotmin9 = plot(min9.emm, comparisons = TRUE, plotit = F, adjust = "bonferroni",
 results_min92 = cld(min9.emm, Letters = LETTERS, alpha = 0.01, p.adj.methods = "bonferroni") %>%
   left_join(plotmin9) %>%
   mutate(.group = gsub(" ", "", .group))%>%
+   mutate(across(emmean:upper.CL,~round(.x, 3))) 
+
+results_min92 = cld(min9.emm, Letters = LETTERS, alpha = 0.01, p.adj.methods = "bonferroni") %>%
+  left_join(plotmin9) %>%
+  mutate(.group = gsub(" ", "", .group))%>%
    mutate(across(emmean:asymp.UCL,~round(.x, 3))) 
 
 results_min9.emm = as.data.frame(pairs(min9.emm, adjust = "bonferroni", alpha = 0.01)) %>%
   mutate(sig = ifelse(p.value<0.01, "yes",  "no")) %>%
   arrange(p.value)
 
-# Region/Season ------------------------------
-min9.emm2 <- emmeans(m.mins9, specs = pairwise ~ Region2:Season)
-# min9.emm2 <- emmeans(m.mins9, Region2:Season)
-# plotmin9.rs = plot(min9.emm2, comparisons = TRUE, plotit = F, adjust = "bonferroni", alpha = 0.001)
 
+
+# Region/Season ------------------------------
+min9.emm2 <- emmeans(m.mins9, ~ Region2:Season)
+# min9.emm2 <- emmeans(m.mins9, Region2:Season)
+plotmin9.rs = plot(min9.emm2, comparisons = TRUE, plotit = T, adjust = "bonferroni", alpha = 0.001)
+
+# add letters
 letters.rs.min <- cld(min9.emm2, Letters = LETTERS, alpha = 0.01, p.adj.methods = "bonferroni")%>%
   mutate(.group = gsub(" ", "", .group))
-ci_min9_rs <- as.data.frame(min9.emm2$emmeans) %>%
+
+ci_min9_rs <- as.data.frame(min9.emm2) %>%
+  left_join(letters.rs.min) %>%
+   mutate(across(c(emmean, SE, upper.CL, lower.CL),~round(.x, 3))) %>%
+  mutate(Season = ifelse(Season == "Wet", "Wet Season", ifelse(Season == "Dry", "Dry Season", NA))) %>%
+  mutate(Season = factor(Season, levels = c("Wet Season", "Dry Season")))
+
+ci_min9_rs <- as.data.frame(min9.emm2) %>%
   left_join(letters.rs.min) %>%
    mutate(across(c(emmean, SE, asymp.UCL, asymp.LCL),~round(.x, 3))) %>%
   mutate(Season = ifelse(Season == "Wet", "Wet Season", ifelse(Season == "Dry", "Dry Season", NA))) %>%
   mutate(Season = factor(Season, levels = c("Wet Season", "Dry Season")))
+
+results_min9.emm2 = as.data.frame(pairs(min9.emm2, adjust = "bonferroni", alpha = 0.01)) %>%
+  mutate(sig = ifelse(p.value<0.01, "yes", "no")) %>%
+  arrange(p.value)
+
+write_csv(results_min92, "manuscript_code/Data/emmeans_results/emmeans_min_wy.csv")
+write_csv(ci_min9_rs, "manuscript_code/Data/emmeans_results/ci_rs_min.csv")
 ```
 
 
@@ -629,6 +798,7 @@ ci_min9_rs <- as.data.frame(min9.emm2$emmeans) %>%
     geom_segment(aes(x = fWY, y = emmean, xend = fWY, yend = lcmpl, color = .group), size = 6, color = "cadetblue3", lineend = "butt") +
   geom_point(aes(x=fWY, y=emmean), size = 3, shape = 18) + 
   viridis::scale_color_viridis(discrete = TRUE, option = "turbo") + 
+    annotate(geom = "text", label = "A", x = 1, y = 21, size = 5) + 
   scale_y_continuous(breaks = seq(14, 28, by = 1))+
   labs(y = "Water Temperature (°C) with 95% Confidence Intervals") +
   theme_classic() +
@@ -646,25 +816,22 @@ ci_min9_rs <- as.data.frame(min9.emm2$emmeans) %>%
 (plot_ci_min9 <- ggplot() + 
   geom_errorbar(data = ci_min9_rs, aes(x = Season, ymin = asymp.LCL, ymax = asymp.UCL, color = Region2), size = 0.5,  width = 0.75, position = position_dodge2()) +
   # geom_errorbar(data = ci_min9_rs, aes(x = Season, ymin = emmean-SE, ymin = emmean+SE ), color = "black", size = 0.2,  width = 0.75, position = position_dodge2())+
-  
   geom_text(data = ci_min9_rs, aes(label = .group, x = Season, y = asymp.UCL + 0.5), position = position_dodge2(width = 0.75)) + 
-  
   geom_point(data = ci_min9_rs, aes(x=Season, y=emmean, color = Region2), size = 2.5, shape = 5, position = position_dodge2(width = 0.75)) + 
-  
+        annotate(geom = "text", label = "B", x =0.53, y = 26, size = 5) + 
   viridis::scale_color_viridis(discrete = TRUE, option = "turbo") + 
   scale_y_continuous(breaks = seq(10, 30, by = 2))+
-  
   labs(y = "Water Temperature (°C) with 95% Confidence Intervals", color = "Region") +
-
    theme_classic() +
   theme(axis.text.x = element_text(size = 11),
-        legend.position = c(0.15, 0.7),
+        legend.position = c(0.78, 0.25),
         legend.background = element_blank(),
         legend.box.background = element_rect(colour = "black"),
         legend.spacing.y = unit(0, "mm"), 
         legend.title = element_blank(),
         axis.title.x = element_blank(),
-        panel.grid.major.y = element_line(size = .1, color = "gray85")))
+        panel.grid.major.y = element_line(size = .1, color = "gray85")) +
+   guides(color=guide_legend(ncol=2))) 
 ```
 
 ### Combined Plot

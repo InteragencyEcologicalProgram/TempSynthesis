@@ -1,13 +1,13 @@
 Region2,Season,emmean,SE,df,asymp.LCL,asymp.UCL,.group
-Central,Wet Season,13.466,1.038,Inf,11.431,15.501,C
-Confluence,Wet Season,12.987,1.038,Inf,10.952,15.022,AB
-NorthDelta,Wet Season,12.716,1.041,Inf,10.675,14.757,A
-South,Wet Season,13.214,1.039,Inf,11.177,15.251,BC
-SuisunBay,Wet Season,13.095,1.042,Inf,11.053,15.137,ABC
-SuisunMarsh,Wet Season,12.896,1.04,Inf,10.857,14.935,AB
-Central,Dry Season,22.05,1.228,Inf,19.643,24.457,G
-Confluence,Dry Season,20.738,1.228,Inf,18.331,23.145,E
-NorthDelta,Dry Season,20.655,1.231,Inf,18.243,23.067,E
-South,Dry Season,21.332,1.229,Inf,18.923,23.741,F
-SuisunBay,Dry Season,19.7,1.231,Inf,17.287,22.113,D
-SuisunMarsh,Dry Season,19.993,1.23,Inf,17.583,22.403,D
+Central,Wet Season,13.466,1.038,Inf,11.431,15.5,C
+Confluence,Wet Season,12.987,1.038,Inf,10.953,15.022,AB
+NorthDelta,Wet Season,12.716,1.041,Inf,10.676,14.756,A
+South,Wet Season,13.219,1.039,Inf,11.182,15.256,BC
+SuisunBay,Wet Season,13.095,1.041,Inf,11.054,15.136,ABC
+SuisunMarsh,Wet Season,12.9,1.04,Inf,10.862,14.938,AB
+Central,Dry Season,22.05,1.228,Inf,19.644,24.456,G
+Confluence,Dry Season,20.738,1.228,Inf,18.332,23.144,E
+NorthDelta,Dry Season,20.655,1.23,Inf,18.244,23.067,E
+South,Dry Season,21.332,1.229,Inf,18.924,23.74,F
+SuisunBay,Dry Season,19.7,1.231,Inf,17.288,22.112,D
+SuisunMarsh,Dry Season,19.993,1.229,Inf,17.584,22.402,D

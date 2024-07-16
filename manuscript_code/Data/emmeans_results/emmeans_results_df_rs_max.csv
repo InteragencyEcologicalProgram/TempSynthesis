@@ -1,0 +1,13 @@
+Region2,Season,emmean,SE,df,lower.CL,upper.CL,.group
+Central,Wet Season,14.16,1.08,10.10,11.75,16.57,CDE
+Confluence,Wet Season,13.64,1.08,10.10,11.23,16.05,AB
+NorthDelta,Wet Season,13.39,1.09,10.25,10.98,15.80,AB
+South,Wet Season,14.17,1.08,10.16,11.76,16.58,CDE
+SuisunBay,Wet Season,13.86,1.09,10.28,11.45,16.28,ABCD
+SuisunMarsh,Wet Season,14.29,1.09,10.19,11.87,16.70,CDE
+Central,Dry Season,23.25,1.28,10.07,20.40,26.10,F
+Confluence,Dry Season,21.76,1.28,10.07,18.91,24.61,BD
+NorthDelta,Dry Season,21.78,1.28,10.19,18.93,24.63,BD
+South,Dry Season,22.98,1.28,10.12,20.13,25.84,EF
+SuisunBay,Dry Season,20.91,1.28,10.21,18.05,23.76,AC
+SuisunMarsh,Dry Season,22.05,1.28,10.15,19.19,24.90,BD
