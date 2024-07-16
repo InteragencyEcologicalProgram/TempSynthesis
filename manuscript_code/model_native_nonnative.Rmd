@@ -179,33 +179,125 @@ ggplot(re_m_tolb) +
 
 ### by listed status
 
+```{r}
+mAdultLista <- lmer(log_daysTol ~ Lstatus + (1|Species), data = data_adult_tol)
+summary(mAdultLista)
+
+par(mfrow = c(2,3))
+resid.tola = resid(mAdultLista, type = "pearson")
+lev2a = hatvalues(mAdultListb)
+plot(mAdultListb)
+qqnorm(resid(mAdultLista))
+qqline(resid(mAdultLista))
+plot(lev2a, y = resid.tola)
+hist(resid.tola)
+plot(resid.tola)
+plot(data_adult_tol$Lstatus, resid.tola)
+par(mfrow = c(1,1))
+
+```
+
 binomial
 ```{r}
 mAdultListb <- glmer(cbind(daysExceedanceTol,daysTotal) ~ Lstatus + (1|Species), data = data_adult_tol, family = "binomial")
 summary(mAdultListb)
 
-par(mfrow = c(2,3))
-resid.tolb = resid(mAdultListb, type = "pearson")
-lev2a = hatvalues(mAdultListb)
-plot(mAdultListb)
-qqnorm(resid(mAdultListb))
-qqline(resid(mAdultListb))
-plot(lev2a, y = resid.tolb)
-hist(resid.tolb)
-plot(resid.tolb)
-plot(data_adult_tol$Lstatus, resid.tolb)
-acf(resid.tolb)
+# par(mfrow = c(2,3))
+# resid.tolb = resid(mAdultListb, type = "pearson")
+# lev2a = hatvalues(mAdultListb)
+# plot(mAdultListb)
+# qqnorm(resid(mAdultListb))
+# qqline(resid(mAdultListb))
+# plot(lev2a, y = resid.tolb)
+# hist(resid.tolb)
+# plot(resid.tolb)
+# plot(data_adult_tol$Lstatus, resid.tolb)
+# acf(resid.tolb)
+# par(mfrow = c(1,1))
 
+
+```
+
+#### Model validation
+```{r}
+library(gratia)
+resid = residuals(mAdultListb)
+res <- data.frame(fitted = fitted(mAdultListb), resid = resid, status = data_adult_tol$Lstatus, Species = data_adult_tol$Species) 
+
+### RE
 re_m_tolb <- as.data.frame(ranef(mAdultListb))
 
-ggplot(re_m_tolb) + 
+### ACF Plots
+conf.level <- 0.95
+ciline <- qnorm((1 - conf.level)/2)/sqrt(length(resid))
+bacf <- acf(resid, plot = FALSE)
+bpacf <- pacf(resid, plot = FALSE)
+bacfdf <- with(bacf, data.frame(lag, acf))
+bpacfdf <- with(bpacf, data.frame(lag, acf))
+(acf <- ggplot(data = bacfdf, mapping = aes(x = lag, y = acf)) +
+    geom_hline(aes(yintercept = 0)) +
+    geom_hline(aes(yintercept = ciline), color = "blue", linetype = "dashed") +
+    geom_hline(aes(yintercept = ciline*-1), color = "blue", linetype = "dashed") +
+    geom_segment(mapping = aes(xend = lag, yend = 0)) +
+    labs(y = "ACF", x = "Lag") +
+    theme_bw())
+(pacf <- ggplot(data = bpacfdf, mapping = aes(x = lag, y = acf)) +
+    geom_hline(aes(yintercept = 0)) +
+    geom_hline(aes(yintercept = ciline), color = "blue", linetype = "dashed") +
+    geom_hline(aes(yintercept = ciline*-1), color = "blue", linetype = "dashed") +
+    geom_segment(mapping = aes(xend = lag, yend = 0)) +
+    labs(y = "pACF", x = "Lag") +
+    theme_bw())
+
+### Rest of plots
+(p1 <- ggplot(res) + geom_point(aes(fitted, resid)) +
+    labs(x = "Fitted", y = "Residuals") +
+    theme_bw())
+(p2 <- ggplot(res) +
+    geom_histogram(aes(resid), binwidth = 0.3, color = "black", fill = "gray80") +
+    labs(x = "Residuals") +
+    theme_bw() + 
+    theme(axis.title.y = element_blank()))
+#(d_p3 <- acf(resid))
+(p3 <- acf)
+(p4 <- ggplot(res) +  geom_boxplot(aes(status, resid)) +
+    labs(x = "Lstatus", y = "Residuals")+
+    theme_bw())
+(p6 <- ggplot(re_m_tolb) + 
   geom_point(aes(grp, condval)) +
   geom_errorbar(aes(x = grp, ymin = condval-condsd, ymax = condval+condsd), width = 0.3) +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 90, hjust = 0.95),
-      axis.title = element_blank())
+      axis.title = element_blank()))
+(p5 <- pacf)
+(pq <- ggplot(res, aes(sample = resid)) +
+  geom_qq() +
+  geom_qq_line() +
+    labs(x = "Theoretical Quantiles", y = "Sample Quantiles")+
+    theme_bw())
+
+
+library(patchwork)
+(patched <- p1 + pq +  p2 + p4 + plot_layout(ncol = 2))
+
+ggsave("manuscript_code/Figures/model_validation_listed_status.png", width = 5, height = 5, units = "in")
+
+p6
+ggsave("manuscript_code/Figures/model_validation_listed_status_re.png", width = 7, height = 4, units = "in")
 
 ```
+
+```{r}
+#Kruskal Wallis
+
+kruskal.test(daysExceedanceTol~Lstatus, data = data_exceedance)
+
+wilcox.test(daysExceedanceTol~Lstatus, data = data_exceedance)
+
+ggplot()
+```
+
+
 
 ```{r}
 library(effects)
