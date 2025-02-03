@@ -170,7 +170,59 @@ temp <- tempMonthly  %>%
 
 # 10-year dataset
 
+## Correlation max and min
+```{r}
+lm_maxmin <- lm(temp$maxAvTemp ~ temp$minAvTemp)
+summary(lm_maxmin)
+```
+
 ## Run models
+
+# AR Models
+```{r}
+library(glmmTMB)
+library(itsadug)
+
+#need a new time variable that is year + month as a factor
+temp2 = mutate(temp, 
+              WM = case_when(Month %in% c(10, 11, 12) ~ Month-9,
+                             TRUE ~ Month +3),
+              fMonthYear = as.factor(paste(fWY, WM)),
+              fMY2 = as.numeric(fMonthYear),
+              MonthYear = WY+(WM-12)/12,
+              fYM = factor(MonthYear))
+
+m.maxsAR1 =  glmmTMB(maxAvTemp ~ fWY + Season * Region2 + (1|Station)+ ar1(fYM + 0|Station), data = temp2)
+summary(m.maxsAR1)
+emmeans(m.maxsAR1, pairwise ~ fWY)
+
+#some of the tutorials have you do it like this instaed, seems to be pretty much the same results
+m.maxsAR1b =  glmmTMB(maxAvTemp ~ fWY + Season * Region2 + (1|Station)+ ar1(fYM - 1|Station), data = temp2)
+summary(m.maxsAR1b)
+
+
+
+# Test 
+library(ggplot2)
+library(glmmTMB)
+
+# Extract residuals
+resid_ar1 <- resid(m.maxsAR1b, type = "pearson")
+
+# Plot ACF and PACF
+acf(resid_ar1, main = "Autocorrelation of Residuals")
+pacf(resid_ar1, main = "Partial Autocorrelation of Residuals")
+
+
+
+
+summary(m.maxs9 <- lmer(maxAvTemp ~ fWY + Season * Region2 + (1|Station) +(1|fMonth), data = temp))
+anova(m.maxs9, type = 2)
+write.csv(summary(m.maxs9)$coefficients, here("manuscript_code/Data/lmer_results/maxs9_coef.csv"))
+summary <- summary(m.maxs9)
+```
+
+
 ```{r}
 summary(m.maxs9 <- lmer(maxAvTemp ~ fWY + Season * Region2 + (1|Station) +(1|fMonth), data = temp))
 anova(m.maxs9, type = 2)
@@ -523,11 +575,10 @@ ci_max9_wy = cld(max9.emm, Letters = LETTERS, alpha = 0.01, p.adj.methods = "bon
 results_max9.emm = as.data.frame(pairs(max9.emm, adjust = "bonferroni", alpha = 0.01)) %>%
   mutate(sig = ifelse(p.value<0.01, "yes",  "no")) %>%
   arrange(p.value)
-pwpm(max9.emm2)
 
 # Region/Season ------------------------------
 max9.emm2 <- emmeans(m.maxs9, ~Region2:Season)
-(plotmax9.rs = plot(max9.emm2, comparisons = TRUE, plotit = T, adjust = "bonferroni", alpha = 0.001))
+(plotmax9.rs = plot(max9.emm2, comparisons = TRUE, plotit = T, adjust = "bonferroni", alpha = 0.01))
 # add letters
 letters.rs <- cld(max9.emm2, Letters = LETTERS, alpha = 0.01, p.adj.methods = "bonferroni")%>%
   mutate(.group = gsub(" ", "", .group))
@@ -559,7 +610,7 @@ pwpp(plotmax9.rs, type = "response", adjust = "bonferroni", by = "Season")
 
 ### Year plot
 ```{r}
-(plot_ci_max9_wy <- ggplot(data = results_max92,) + 
+(plot_ci_max9_wy <- ggplot(data = results_max92) + 
    geom_errorbar(aes(x = fWY, ymin = asymp.LCL, ymax = asymp.UCL), size = 0.5,  width = 0.3) +
    geom_text( aes(label = .group, x = fWY, y = asymp.UCL + 0.3), position = position_dodge2(width = 0.75)) + 
   # geom_segment(aes(x=fWY, y=emmean, xend =fWY, yend = rcmpl), color = "orange",
