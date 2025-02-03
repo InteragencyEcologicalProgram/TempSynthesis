@@ -26,8 +26,8 @@ library(sjPlot)
 
 # Read data
 ```{r}
-# data_exceedance0 <- read_csv("manuscript_code/Data/daysExceedanceUpperDataForPlotting.csv") %>%
-#   filter(!Species %in% c("Giant Reed EAV", "Brazilian Waterweed", "Water Hyacinth FAV", "Microcystis", "Asian Clam", "Overbite Clam"))
+data_exceedance0upper <- read_csv("manuscript_code/Data/daysExceedanceUpperDataForPlotting.csv") %>%
+  filter(!Species %in% c("Giant Reed EAV", "Brazilian Waterweed", "Water Hyacinth FAV", "Microcystis", "Asian Clam", "Overbite Clam"))
 
 # Now using days exceedance for lower tolerance
 data_exceedance0 <- read_csv("manuscript_code/Data/daysExceedanceDataForPlotting.csv") %>%
@@ -56,6 +56,16 @@ data_exceedance <- data_exceedance0 %>%
          Lstatus = as.factor(Lstatus),
          Lstatus2 = ifelse(Lstatus == "Unlisted", 0, 1),
          daysTotal = ifelse(WY%%4 ==0, 366, 365))
+
+data_exceedance_upper <- data_exceedance0upper %>%
+  mutate(fWY = factor(WY),
+         Status = ifelse(Species %in% native, "Native", "NonNative"),
+         Status = as.factor(Status),
+         Status2 = ifelse(Status == "Native", 0, 1),
+         Lstatus = ifelse(Species %in% listed, "Listed", "Unlisted"),
+         Lstatus = as.factor(Lstatus),
+         Lstatus2 = ifelse(Lstatus == "Unlisted", 0, 1),
+         daysTotal = ifelse(WY%%4 ==0, 366, 365))
 ```
 
 # Adult days tolerance
@@ -70,6 +80,14 @@ data_adult_tol <- data_exceedance%>%
   unique()
 
 str(data_adult_tol)
+
+data_adult_tol_upper <- data_exceedance_upper%>%
+  mutate(log_daysTol = log(daysExceedanceTol + 1),
+         sqrt_daysTol = sqrt(daysExceedanceTol)) %>%
+  filter(LifeStage == "Adult" | LifeStage == "Undifferentiated", 
+         !is.na(daysExceedanceTol)) %>%
+  dplyr::select(Status, Lstatus, fWY, Species, daysExceedanceTol, log_daysTol, sqrt_daysTol, daysTotal, Status2, Lstatus2) %>%
+  unique()
 ```
 
 Write table of species included in model
@@ -202,6 +220,8 @@ binomial
 mAdultListb <- glmer(cbind(daysExceedanceTol,daysTotal) ~ Lstatus + (1|Species), data = data_adult_tol, family = "binomial")
 summary(mAdultListb)
 
+mAdultListbupper <- glmer(cbind(daysExceedanceTol,daysTotal) ~ Lstatus + (1|Species), data = data_adult_tol_upper, family = "binomial")
+summary(mAdultListbupper)
 # par(mfrow = c(2,3))
 # resid.tolb = resid(mAdultListb, type = "pearson")
 # lev2a = hatvalues(mAdultListb)
