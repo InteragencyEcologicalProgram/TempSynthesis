@@ -170,7 +170,7 @@ theme_plots <-
 
 ### Plot function
 ```{r}
-f_threshold_plot <- function(df, var) {
+f_threshold_plot <- function(df, var, max_y) {
   ggplot(df) + 
     geom_rect(xmin = 0, xmax = 1.5, ymin = -Inf, ymax = Inf, fill = "gray85") +
     geom_rect(xmin = 2.5, xmax = 3.5, ymin = -Inf, ymax = Inf, fill = "gray85") +
@@ -186,19 +186,24 @@ f_threshold_plot <- function(df, var) {
       geom_rect(xmin = 22.5, xmax = 23.5, ymin = -Inf, ymax = Inf, fill = "gray85") +
    geom_vline(aes(xintercept = stage(Species, after_scale = 18.5)), linetype = "dashed", linewidth = 0.5, color = "orangered2") +
     geom_boxplot(aes_string(x = "Species",  y = var, fill = "LifeStage"), position = position_dodge(preserve = "single"), color = "gray50", size = 0.3) +
-   annotate(geom = "text", x = 10, y = 300, label = "Fish", vjust = 1, hjust = 0.5, size = 4) +
-   annotate(geom = "text", x = 21.5, y = 300, label = "Vegetation & Clams", vjust = 1, size = 4) +
+   annotate(geom = "text", x = 10, y = max_y, label = "Fish", vjust = 1, hjust = 0.5, size = 4) +
+   annotate(geom = "text", x = 21.5, y = max_y, label = "Vegetation & Clams", vjust = 1, size = 4) +
     viridis::scale_fill_viridis(discrete = TRUE, option = "plasma") + 
-   scale_y_continuous(limits = c(0,300), breaks = seq(from = 0, to = 300, by = 25)) +
+   scale_y_continuous(limits = c(0,max_y), breaks = seq(from = 0, to = max_y, by = 25)) +
    theme_plots
 }
 ```
 
-### Make plots
+### Make plots for Lower Thresholds (this is what is used in the manuscript)
 ```{r}
-(FishTol1 <- f_threshold_plot(DaysExceedanceData, var = "daysExceedanceTol") +
+DaysExceedanceData <- read_csv("manuscript_code/Data/daysExceedanceDataForPlotting.csv") %>%
+  dplyr::mutate(Species = factor(Species, levels = level_order))
+
+maxTol = max(DaysExceedanceData$daysExceedanceTol, na.rm = TRUE) +10
+maxOpt = max(DaysExceedanceData$daysExceedanceOpt, na.rm = TRUE) +10
+(FishTol1 <- f_threshold_plot(DaysExceedanceData, var = "daysExceedanceTol", max_y = maxTol) +
     labs( y = "Annual Days \nExceeding Tolerance") )
-(FishOpt1 <- f_threshold_plot(DaysExceedanceData, var = "daysExceedanceOpt") +
+(FishOpt1 <- f_threshold_plot(DaysExceedanceData, var = "daysExceedanceOpt", max_y = maxOpt) +
     labs( y = "Annual Days \nExceeding Optimum") )
     
 ```
@@ -237,7 +242,7 @@ ggarrange(legend, FishOpt2_noleg, FishTol1b_noleg, ncol=1, nrow=3,
 dev.off()
 ```
 
-## Upper values
+## Upper values (this is what is in the supplemental)
 ```{r}
 funDaysExceedBoxUpper <- function(specieslsinput) {
 filternewdf <- speciesComp %>%
@@ -284,7 +289,7 @@ DaysExceedanceDataUpper <- DaysExceedanceDataUpper0 %>%
 
 ### Start from here if just editing plot
 ```{r}
-write_csv(DaysExceedanceDataUpper, "manuscript_code/Data/daysExceedanceUpperDataForPlotting.csv")
+# write_csv(DaysExceedanceDataUpper, "manuscript_code/Data/daysExceedanceUpperDataForPlotting.csv")
 DaysExceedanceDataUpper <- read_csv("manuscript_code/Data/daysExceedanceUpperDataForPlotting.csv")
 fieldtemps <- read_csv("manuscript_code/Data/fish/surveymaxtemps.csv") %>%
   dplyr::select(Taxon = Taxa,
@@ -368,9 +373,11 @@ daysExceedanceSummary %>%
 
 ### Make plot
 ```{r}
-(FishTolU <- f_threshold_plot(DaysExceedanceDataUpper, var = "daysExceedanceTol") +
-    labs( y = "Annual Days \nExceeding Tolerance") )
-(FishOptU <- f_threshold_plot(DaysExceedanceDataUpper, var = "daysExceedanceOpt") +
+maxTol = max(DaysExceedanceDataUpper$daysExceedanceTol, na.rm = TRUE) +10
+maxOpt = max(DaysExceedanceDataUpper$daysExceedanceOpt, na.rm = TRUE) +10
+(FishTolU <- f_threshold_plot(DaysExceedanceDataUpper, var = "daysExceedanceTol", max_y = maxTol) +
+    labs( y = "Annual Days \nExceeding Tolerance") ) 
+(FishOptU <- f_threshold_plot(DaysExceedanceDataUpper, var = "daysExceedanceOpt", max_y = maxOpt) +
     labs( y = "Annual Days \nExceeding Optimum") )
 ```
 ### Combined
