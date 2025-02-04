@@ -1,0 +1,66 @@
+Common_name,Taxon,Assigned_life_stage,Status,Field_detection_temp_mean,Field_detection_temp_75Q,Field_detection_temp_max,n,Threshold_suboptimum,Threshold_tolerance,Spawning_growth_temp_range,Metric_suboptimum,Metric_tolerance,Reference_suboptimum,Reference_tolerance,Reference_spawning
+Chinook Salmon,Oncorhynchus tshawytscha,Adult,Native,17.4,20.6,25.9,332,21,23-26, 6-14,field mortality; migration behavior,field mortality; halted migration,Williams et al. 2006; Martin et al. 2017; Strange et al. 2012,Williams et al. 2006; Martin et al. 2017;  Strange 2012;  Zillig et al. 2021 (review); Richter & Kolmes 2005,Myrick & Cech 2004 (egg & larvae survival 6-16C SRand 5.6-14C WR); Zillig et al. 2021 (lit synthesis 12-14C); Martin et al. 2017 (Winter Run egg survivaland aerial redd survey 10-12C)
+Chinook Salmon,Oncorhynchus tshawytscha,Juvenile,Native,15.8,18.3,28.5,639019,16-20,24-28,NA,aerobic scope; growth,critical therma maxima; upper lethal limit,Rich 1987; Polleto et al. 2017; Zillig et al. 2020,Zillig et al. 2020; Brett 1952; Rich 1987; Cech & Myrick 1999; Myrick & Cech 1998 (review),NA
+Chinook Salmon,Oncorhynchus tshawytscha,Larvae,Native,10.7,11.7,21.7,13901,13-16,16.7-29,NA,egg & alevin survival,"egg survival (16.7C);
+critical thermal maxima (alevin and fry; 29C)",Myrick & Cech 1998; Del Rio et al. 2019; Myrick & Cech 2004; Williams 2006,Del Rio et al. 2019,NA
+Steelhead/Rainbow Trout,Oncorhynchus mykiss,Adult,Native,14.7,16.7,25.6,386,20,25.5, 7-13,aerobic scope,aerobic scope survival; field catch,Verhille et al. 2016,"Verhille et al. 2016; Bashevkin et al. 2022 + CDFW Salvage + IEP, Pien & Kwan 2022","Rombough 1988;
+Myrick & Cech 2004 (egg survival 7-10C); USFWS 1999"
+Steelhead/Rainbow Trout,Oncorhynchus mykiss,Juvenile,Native,12.3,14.4,28.3,24279,17-21,24-29,NA,growth; aerobic scope,upper lethal limit; critical thermal maxima,Myrick & Cech 2000; Verhille et al. 2016,Threader & Houston 1983; Cech & Myrick 1999; Myrick & Cech 2000; Myrick & Cech 2004; Myrick & Cech 1998 (review); Beitinger et al. 2000 (review); Sloat & Osterback 2013,NA
+Steelhead/Rainbow Trout,Oncorhynchus mykiss,Larvae,Native,12.9,13.3,21.7,8, 10-12,15-19,NA,egg survival & hatching success ,egg hatching success,Myrick & Cech 1998; USFWS 1999; Myrick & Cech 2004,Myrick & Cech 1998,NA
+Delta Smelt,Hypomesus transpacificus,Adult,Native,14,17.8,27.8,37076,19-22,26.5-28.5, 9-18,"transcriptional responses, gene expression; growth",critical thermal maxima,Komoroske et al. 2015; Lewis et al. 2021,Swanson et al. 2000; Komoroske et al. 2014,Damon et al. 2016
+Delta Smelt,Hypomesus transpacificus,Juvenile,Native,18.4,21.2,27.8,59587,20-22,27-29,NA,transcriptional responses; hematocrit,critical thermal maxima,Komoroske et al. 2021; Davis et al. 2019,Swanson et al. 2000; Komoroske et al. 2015; Davis et al. 2019,NA
+Delta Smelt,Hypomesus transpacificus,Larvae,Native,16.3,19.9,25.5,6148,20-23,27.6-29,NA,metabolic rates; transcriptional responses,critical thermal maxima,Komoroske et al. 2015; Jeffries et al. 2016,Komoroske et al. 2014; Jeffries et al. 2016,NA
+Longfin Smelt,Spirinchus thaleichthys,Adult,Native,11.3,12,25.6,37076,15,25.6, 8-16,catch,catch,Lewis et al. 2019; Wang 2007,"Bashevkin et al. 2022 + CDFW Salvage + IEP, Pien & Kwan 2022",Wang 2007; Grimaldo et al. 2017
+Longfin Smelt,Spirinchus thaleichthys,Juvenile,Native,15.7,19.3,28.3,59587,15,26.4,NA,catch,critical thermal maxima,Lewis et al. 2019,Pasparakis et al. (unpub data),NA
+Longfin Smelt,Spirinchus thaleichthys,Larvae,Native,11.9,13.5,24,6148,15-20,24.8,NA,hatching success and growth; metabolic rates and transcriptional responses; catch,critical thermal maxima,Yanagitsuru et al. 2021; Jeffries et al. 2016; Lewis et al. 2019,"
+Jeffries et al. 2016",NA
+Sacramento Splittail,Pogonichthys macrolepidotus,Adult,Native,15.1,19,32.1,30214,24,29,<20,growth; upper limit of safe temperature,critical thermal maxima,Young & Cech 1996,Young & Cech 1996,Moyle et al. 2004
+Sacramento Splittail,Pogonichthys macrolepidotus,Juvenile,Native,19.1,21.5,32.1,153509,21-25,28-33,NA,growth; upper limit of safe temperature,Critical thermal maxima,Young & Cech 1996,Young & Cech 1996,NA
+Sacramento Splittail,Pogonichthys macrolepidotus,Larvae,Native,18.1,20,26.7,1192,22-27,32,NA,growth; upper limit of safe temperature; percent mortality,critical thermal maxima; maximum field detection,Young & Cech 1996; Deng et al. 2012,"Young & Cech 1996; Bashevkin et al. 2022 + CDFW Salvage + IEP, Pien & Kwan 2022",NA
+Green Sturgeon,Acipenser medirostris,Adult,Native,NA,NA,NA,NA,19,NA, 10-17,growth,NA,"Borin et al. 2017
+",NA,Seesholtz et al. 2015; Poytress et al. 2015; Van Eenennaam et al. 2005
+Green Sturgeon,Acipenser medirostris,Juvenile,Native,17.1,20.6,28.5,89,20-21,30-34,NA,growth,critical thermal maxima,Mayfield & Cech 2004; Allen et al. 2006; Hamda et al. 2019; Thomas et al. 2022,Lee et al. 2016; Sardella et al. 2008; Rodgers et al. 2018; Verhille et al. 2016,NA
+Green Sturgeon,Acipenser medirostris,Larvae,Native,NA,NA,NA,NA,20-24,26-28,NA,"growth; deformities;
+cellular heat shock response",critical thermal maxima; lethal rearing temperature (mortality),"Allen et al. 2006; Linares?Casenave et al. 2013; Polleto et al. 2018
+",Linares-Casenave et al. 2013,NA
+White Sturgeon,Acipenser transmontanus,Adult,Native,14.7,15.8,23.6,792,NA,NA, 10-18,NA,NA,NA,NA,"Wang et al. 1985 (egg development & survival); Hildebrand et al. 2016 (review)
+"
+White Sturgeon,Acipenser transmontanus,Juvenile,Native,16.5,19.4,26.7,1286,21-24,31,NA,growth,critical thermal maxima,Hung et al. 1993; Hildebrand et al. 2016 (review),Lee et al. 2016,NA
+White Sturgeon,Acipenser transmontanus,Larvae,Native,16.5,20,24.8,37,20,27-32,NA,growth,critical thermal maxima,Cech et al. 1984,Rodgers et al. 2019,NA
+Striped Bass,Morone saxatilis,Adult,Non-native,16.3,20,28.3,37076,24,28,NA,growth; detection frequency,detection frequency; aerobic scope,Coutant 1985,Coutant 1985; Lapointe 2014,NA
+Striped Bass,Morone saxatilis,Juvenile,Non-native,18.1,22.2,32.1,59587,25,32,NA,growth,survival; upper tolerance,Coutant 1985; Cox & Coutant 1981,Coutant 1985,NA
+Striped Bass,Morone saxatilis,Larvae,Non-native,21.4,22.3,32.1,6148,25,NA,NA,growth,NA,Cech et al. 1984,NA,NA
+Largemouth Bass,Micropterus salmoides,Adult,Non-native,16.2,20.6,29.1,1429,NA,33-35,NA,NA,critical thermal maxima,NA,Davis et al. 2019,NA
+Largemouth Bass,Micropterus salmoides,Juvenile,Non-native,20.9,24,31.8,49212,27-29,33-40,NA,growth,critical thermal maxima; lethal limit,Jobling et al. 1981 (review),Recsetar et al. 2012; Beitinger et al. 2000 (review),NA
+Largemouth Bass,Micropterus salmoides,Larvae,Non-native,21.8,23.6,29.4,4048,NA,NA,NA,NA,NA,NA,NA,NA
+Mississippi Silverside,Menidia spp. (audens/beryllina),Adult,Non-native,14.3,17.8,31.8,262814,NA,31,13-30,NA,critical thermal maxima; opercular spasms,NA,Swanson & Cech (unpub in Swanson et al. 2000); Lutterschmidt & Hutchinson 1997,Hubbs et al. 1971
+Mississippi Silverside,Menidia spp. (audens/beryllina),Juvenile,Non-native,18.8,23.3,31.8,164371,26,35,NA,transcriptional responses,critical thermal maxima,Komoroske et al. 2021,Davis et al. 2019; Komoroske et al. 2021,NA
+Mississippi Silverside,Menidia spp. (audens/beryllina),Larvae,Non-native,19.6,22.5,24,20,25,34,NA,optimal growth (egg),hatching survival,Weinstein 1986; Hubbs et al. 1971,Weinstein 1986,NA
+Wakasagi,Hypomesus nipponensis,Adult,Non-native,15.4,20.9,27.6,2215,NA,NA, 9-18,NA,NA,NA,NA,Davis et al. 2022 (similar spawning to Delta Smelt); Damon et al. 2016
+Wakasagi,Hypomesus nipponensis,Juvenile,Non-native,17.4,21.1,28.8,2750,NA,29.1,NA,NA,critical thermal maxima,NA,Swanson et al. 2000,NA
+Wakasagi,Hypomesus nipponensis,Larvae,Non-native,15.3,16.1,23.3,180,NA,NA,NA,NA,NA,NA,NA,NA
+Sacramento Blackfish  ,Orthodon microlepidotus ,Adult,Native,16.6,20,27.7,464,NA,32,NA,NA,critical thermal maxima,NA,Moyle & Knight 1984,NA
+Sacramento Blackfish  ,Orthodon microlepidotus ,Juvenile/Larvae,Native,19.6,22.8,31.1,2300,24,32,NA,behavioral; placement in tank,critical thermal maxima,Moyle & Knight 1984,Moyle & Knight 1984,NA
+Hitch             ,Lavinia exilicauda,Adult,Native,16.5,21.1,29.6,233,29,38,NA,behavioral; placement in tank,critical thermal maxima,Moyle & Knight 1984,Moyle & Knight 1984,NA
+Hitch             ,Lavinia exilicauda,Juvenile/Larvae,Native,18,21.8,29.6,2839,NA,NA,NA,NA,NA,NA,NA,NA
+Tule Perch  ,Hysterocarpus traskii,Adult,Native,16.7,20.8,32.1,8475,21,34,NA,behavioral; placement in tank,critical thermal maxima,Moyle & Knight 1984,Moyle & Knight 1984,NA
+Tule Perch  ,Hysterocarpus traskii,Juvenile/Larvae,Native,18,21.8,32.1,14766,NA,NA,NA,NA,NA,NA,NA,NA
+Sacramento Pikeminnow,Ptychocheilus grandis,Adult,Native,16.4,20,26.5,462,22-25,35-38,NA,behavioral; placement in tank; metabolic rate,"survival; metabolic rate; 
+critical thermal maxima",Moyle & Knight 1984; Baltz et al. 1987;  Smith 1977; Cech et al. 1990,Moyle & Knight 1984; Cech et al. 1990,NA
+Sacramento Pikeminnow,Ptychocheilus grandis,Juvenile/Larvae,Native,16.4,20,31.1,47379,NA,NA,NA,NA,NA,Cech et al. 1990;  Baltz et al. 1987,NA,NA
+Sacramento Sucker,Catostomus occidentalis,Adult,Native,16.6,20.6,32.1,2395,20,30,NA,metabolic rate,critical thermal maxima (death),Cech et al. 1990; Smith 1977,Cech et al. 1990,NA
+Sacramento Sucker,Catostomus occidentalis,Juvenile,Native,16.8,20.3,31.8,58473,NA,NA,NA,NA,NA,Baltz et al. 1987,NA,NA
+Sacramento Sucker,Catostomus occidentalis,Larvae,Native,15.6,17.4,19,15,NA,NA,NA,NA,NA,NA,NA,NA
+Threespine Stickleback,Gasterosteus aculeatus,Adult,Native,15.4,18.6,26.7,2094,NA,26-29,NA,NA,percent mortality,NA,Blahm & Snyder 1975; Jordan & Garside 1972,NA
+Threespine Stickleback,Gasterosteus aculeatus,Juvenile/Larvae,Native,16.5,19.5,32.1,12021,NA,25-29,NA,NA,signs of stress and reduced feeding,NA,Hovel et al. 2015; Jordan & Garside 1972,NA
+Prickly Sculpin,Cottus asper,Adult,Native,17.9,21.7,32.1,12672,22-24,32, 8-13,presence; percent mortality,field observation,Black 1952,"Bashevkin et al. 2022 + CDFW Salvage + IEP, Pien & Kwan 2022
+",Krejsa 1967
+Prickly Sculpin,Cottus asper,Juvenile/Larvae,Native,18.5,20.3,32.1,32174,NA,NA,NA,NA,NA,NA,NA,NA
+Brazilian waterweed,Egeria densa,Undifferentiated,Non-native,NA,NA,NA,NA, 3-16 & 26-30,30,NA,biomass,biomass,Borgnis and Boyer 2016,Higher end of suboptimum,NA
+Microcystis,Microcystis spp.,Undifferentiated,Non-native,NA,NA,NA,NA,< 19 & >25,36,NA,abundance,growth rate,Lehman et al. 2013; Lehman et al. 2022,Mowe et al. 2015,NA
+Asian Clam,Corbicula spp. (manilensis; fluminea),Undifferentiated,Non-native,NA,NA,NA,NA,< 22 & > 30,37,NA,abundance; ctenidial mucocyte growth,abundance; ctenidial mucocyte growth,Rosa et al. 2012; Karatayev et al. 2006,"Rosa et al. 2012; 
+Karatayev et al. 2006",NA
+Overbite Clam,Potamocorbula amurensis,Undifferentiated,Non-native,NA,NA,NA,NA,<12 & > 28,NA,16-20,growth,presence,Carlton et al. 1990 based on Potamocorbula laevis,Carlton et al. 1990 based on presence in Asia,Carlton et al. 1990 based on Potamocorbula laevis
+Giant Reed EAV,Arundo donax,Undifferentiated,Non-native,NA,NA,NA,NA,<24 & > 30,32,NA,growth rate,growth rate,Rossa et al. 1998,Rossa et al. 1998,NA
+Water Hyacinth FAV,Eichhornia crassipes,Undifferentiated,Non-native,NA,NA,NA,NA,<10 & >30,34,NA,sprouting,biomass,Kriticos & Brunel 2016,Kriticos & Brunel 2016,NA
+Curlyleaf Pondweed,Potamogeton crispus,Undifferentiated,Non-native,NA,NA,NA,NA,<5 & > 25,25,24,biomass,biomass,Madsen et al. 2021,Madsen et al. 2021,NA

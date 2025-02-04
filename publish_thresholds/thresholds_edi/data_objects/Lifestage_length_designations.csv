@@ -1,0 +1,49 @@
+Common_name,Taxon,Assigned_life_stage,Length_mm,Length_type,Notes_life_stage_designation,Reference
+Chinook Salmon,Oncorhynchus tshawytscha,Larvae,<35,FL,Fry size (probably Fork Length),Quinn 2005 as cited by DRERIP Salmon & Steelhead CM 2010
+Chinook Salmon,Oncorhynchus tshawytscha,Juvenile,>=35 & <=750,SL/FL,Process of elimination,NA
+Chinook Salmon,Oncorhynchus tshawytscha,Adult,>750,SL,Spawning adults… typically 75-80 cm SL,Moyle 2002 pg. 252
+Delta Smelt,Hypomesus transpacificus,Larvae,<25,FL,Includes range designated up to post-larvae,Bennett 2005
+Delta Smelt,Hypomesus transpacificus,Juvenile,>=25 & <=50,FL,Range of 25-50 mm (probably FL) designated as Juvenile stage,Bennett 2005
+Delta Smelt,Hypomesus transpacificus,Adult,>50,FL,Range of 50-80 mm FL designated as adult length,Bennett 2005
+Green Sturgeon,Acipenser medirostris,Larvae,<=19,TL,Stated range,Moyle 2002 pg. 111
+Green Sturgeon,Acipenser medirostris,Juvenile,>19 & <=1500,TL,Stated range,Moyle 2002 pg. 111
+Green Sturgeon,Acipenser medirostris,Adult,>1500,TL,Greater than juvenile range,Moyle 2002 pg. 111
+Hitch             ,Lavinia exilicauda,Juvenile/Larvae,<150,FL,Less than length at maturity,NA
+Hitch             ,Lavinia exilicauda,Adult,>=150,FL,Females usually mature in their 2nd or 3rd year; males in 1st 2nd or 3rd year. Measure 150-300mm FL by end of second year.,Moyle 2002 pg 138
+Largemouth Bass,Micropterus salmoides,Larvae,<8.5,TL,Size at completion of yolk-sac completion stage (6.5-8.5mm TL); this may be slightly smaller than full larval stage,Wang 1986
+Largemouth Bass,Micropterus salmoides,Juvenile,>=8.5 & <=190,TL,Less than spawning length,NA
+Largemouth Bass,Micropterus salmoides,Adult,>190,TL,Males spawn 18-21 cm TL; females 20-25 cm TL,Moyle 2002 pg 400
+Longfin Smelt,Spirinchus thaleichthys,Larvae,<=16,SL,Larval size = 5-16 mm SL,Merz et al. 2013 as adapted from Rosenfield 2010
+Longfin Smelt,Spirinchus thaleichthys,Juvenile,>16 & <=80,SL,Juvenile size = 16-84 mm SL; picked less than adult length,Merz et al. 2013 as adapted from Rosenfield 2010
+Longfin Smelt,Spirinchus thaleichthys,Adult,>80,SL,Adult size = >80mm SL,Merz et al. 2013 as adapted from Rosenfield 2010
+Mississippi Silverside,Menidia spp. (audens/beryllina),Larvae,<4.5,TL,Size at completion of yolk-sac stage for Menidia beryllina (4-4.5 mm TL); this may be slightly smaller than full larval stage,Wang 1986
+Mississippi Silverside,Menidia spp. (audens/beryllina),Juvenile,>=4.5 & <=80,TL,Less than spawning length,NA
+Mississippi Silverside,Menidia spp. (audens/beryllina),Adult,>=80,TL,In their first year...they reach 8-10 cm TL (which is when they usually spawn),Moyle 2002 pg. 309 
+Prickly Sculpin,Cottus asper,Juvenile/Larvae,<40,SL/TL,Less than length of maturity,NA
+Prickly Sculpin,Cottus asper,Adult,>=40,SL,Mature at 40-70 mm SL during their second third or fourth year.,Moyle 2002 pg 348
+Sacramento Blackfish  ,Orthodon microlepidotus ,Juvenile/Larvae,<250,FL,Less than length at maturity,NA
+Sacramento Blackfish  ,Orthodon microlepidotus ,Adult,>=250,FL,Most mature in their second or third year. Length at second year in Clear Lake (similar in San Luis Reservoir and Stone Lake) = 25-26 cm FL,Moyle 2002 pg 145
+Sacramento Pikeminnow,Ptychocheilus grandis,Juvenile/Larvae,<220,SL/FL,Less than length of maturity,NA
+Sacramento Pikeminnow,Ptychocheilus grandis,Adult,>=220,SL,Matures at 22-25 cm SL,Moyle 2002 pg 157
+Sacramento Splittail,Pogonichthys macrolepidotus,Larvae,<=20,TL,Postflexion larva (resorption of preanal finfold at 20.2mm TL),Deng at al. 2012
+Sacramento Splittail,Pogonichthys macrolepidotus,Juvenile,>20 & <170,SL,Process of elimination,NA
+Sacramento Splittail,Pogonichthys macrolepidotus,Adult,>170,SL/TL,Approximate size is 170 mm SL at end of second year when sexual maturity usually happens,Moyle 2002 pg 148
+Sacramento Sucker,Catostomus occidentalis,Larvae,<14,SL,Larval suckers (<14 mm SL),Moyle 2002 pg 186
+Sacramento Sucker,Catostomus occidentalis,Juvenile,>=14 & <200,SL,Moyle 2002 indicates <50mm SL is juvenile but I will go off less than maturity (below).,NA
+Sacramento Sucker,Catostomus occidentalis,Adult,>=200,SL,Matures at 200-320 mm SL though (p 187),Moyle 2002 pg 186
+Steelhead/Rainbow Trout,Oncorhynchus mykiss,Larvae,<28,FL,Fry size (probably Fork Length),Quinn 2005 as cited by DRERIP Salmon & Steelhead CM 2010
+Steelhead/Rainbow Trout,Oncorhynchus mykiss,Juvenile,>=28 & <350,FL,Steelhead smolts migrate out to sea at 1-3 years of age at 1-25 cm FL.,Moyle 2002  pg 278
+Steelhead/Rainbow Trout,Oncorhynchus mykiss,Adult,>=350,FL,After 1-2 years at sea they return at 35-65 cm FL.,Moyle 2002  pg 278
+Striped Bass,Morone saxatilis,Larvae,<7,TL,Size at completion of yolk-sac completion stage (6-7mm TL),Wang 1986
+Striped Bass,Morone saxatilis,Juvenile,>=7 & <350,FL/TL,Process of elimination; also upper limit of larger juveniles range,Moyle 2002 pg 366
+Striped Bass,Morone saxatilis,Adult,>350,FL,Average of male/female spawning size (lower range): males spawn 25 cm FL; females spawn 45 cm FL,Moyle 2002 pg 366
+Threespine Stickleback,Gasterosteus aculeatus,Juvenile/Larvae,<41,SL,Less than length at maturity,NA
+Threespine Stickleback,Gasterosteus aculeatus,Adult,>=41,SL,Mean size at first reproduction for freshwater resident fish (from plot); 42.5 mm SL for estuary; Navarro River by Mendocino,Snyder & Dingle 1990
+Tule Perch  ,Hysterocarpus traskii,Juvenile/Larvae,<100,SL,Less than length at maturity,NA
+Tule Perch  ,Hysterocarpus traskii,Adult,>=100,SL,San Francisco Estuary reach maturity at age 2; approx 8-10 cm SL by 18 months. Also cited 100 mm SL for producing fish.,Moyle 2002 pg 427
+Wakasagi,Hypomesus nipponensis,Larvae,<25,FL,Due to lack of literature used Delta Smelt value from Bennett 2005,NA
+Wakasagi,Hypomesus nipponensis,Juvenile,>=25 & <=73,FL,Process of elimination,NA
+Wakasagi,Hypomesus nipponensis,Adult,>73,FL,Mean first spawning at Shastina Reservoirmean size of wakasagi in Shastina Resrevoir was 73 mm FL at first spawning,Moyle 2002 pg 234
+White Sturgeon,Acipenser transmontanus,Larvae,<100,TL,From Figure 1a - 65 days post hatch (60-100mm TL),Zarri et al. 2019
+White Sturgeon,Acipenser transmontanus,Juvenile,>=100 & <=1450,TL/FL,Process of elimination,NA
+White Sturgeon,Acipenser transmontanus,Adult,>1450,FL,"In Klamath River, maturity at 139-199 cm FL for males; 151-223 cm for females; took the average; Moyle also notes maturity at 13-150 c, T:",Van Eenennaam et al. 2006

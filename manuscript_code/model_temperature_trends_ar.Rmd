@@ -170,7 +170,59 @@ temp <- tempMonthly  %>%
 
 # 10-year dataset
 
+## Correlation max and min
+```{r}
+lm_maxmin <- lm(temp$maxAvTemp ~ temp$minAvTemp)
+summary(lm_maxmin)
+```
+
 ## Run models
+
+# AR Models
+```{r}
+library(glmmTMB)
+library(itsadug)
+
+#need a new time variable that is year + month as a factor
+temp2 = mutate(temp, 
+              WM = case_when(Month %in% c(10, 11, 12) ~ Month-9,
+                             TRUE ~ Month +3),
+              fMonthYear = as.factor(paste(fWY, WM)),
+              fMY2 = as.numeric(fMonthYear),
+              MonthYear = WY+(WM-12)/12,
+              fYM = factor(MonthYear))
+
+m.maxsAR1 =  glmmTMB(maxAvTemp ~ fWY + Season * Region2 + (1|Station)+ ar1(fYM + 0|Station), data = temp2)
+summary(m.maxsAR1)
+emmeans(m.maxsAR1, pairwise ~ fWY)
+
+#some of the tutorials have you do it like this instaed, seems to be pretty much the same results
+m.maxsAR1b =  glmmTMB(maxAvTemp ~ fWY + Season * Region2 + (1|Station)+ ar1(fYM - 1|Station), data = temp2)
+summary(m.maxsAR1b)
+
+
+
+# Test 
+library(ggplot2)
+library(glmmTMB)
+
+# Extract residuals
+resid_ar1 <- resid(m.maxsAR1b, type = "pearson")
+
+# Plot ACF and PACF
+acf(resid_ar1, main = "Autocorrelation of Residuals")
+pacf(resid_ar1, main = "Partial Autocorrelation of Residuals")
+
+
+
+
+summary(m.maxs9 <- lmer(maxAvTemp ~ fWY + Season * Region2 + (1|Station) +(1|fMonth), data = temp))
+anova(m.maxs9, type = 2)
+write.csv(summary(m.maxs9)$coefficients, here("manuscript_code/Data/lmer_results/maxs9_coef.csv"))
+summary <- summary(m.maxs9)
+```
+
+
 ```{r}
 summary(m.maxs9 <- lmer(maxAvTemp ~ fWY + Season * Region2 + (1|Station) +(1|fMonth), data = temp))
 anova(m.maxs9, type = 2)
@@ -183,43 +235,7 @@ write.csv(summary(m.mins9)$coefficients, here("manuscript_code/Data/lmer_results
 summary(m.means9 <- lmer(meanTemp ~ fWY + Season * Region2 + (1|Station) +(1|fMonth), data = temp))
 ```
 
-### try AR1 term
 
-In order to fit the model with glmmTMB we must first specify a time variable as a factor. The factor levels correspond to unit spaced time points. It is a common mistake to forget some factor levels due to missing data or to order the levels incorrectly. We therefore recommend to construct factors with explicit levels, using the levels argument to the factor function:
-
-```{r}
-library(glmmTMB)
-
-#need a new time variable that is year + month as a factor
-temp = mutate(temp, 
-              WM = case_when(Month %in% c(10, 11, 12) ~ Month-9,
-                             TRUE ~ Month +3),
-              fMonthYear = as.factor(paste(WY, WM)),
-              fMY2 = as.numeric(fMonthYear),
-              MonthYear = WY+(WM-12)/12)
-
-m.maxsAR1 =  glmmTMB(maxAvTemp ~ fWY + Season * Region2 + (1|Station)+ ar1(fMonthYear + 0|Station), data = temp)
-summary(m.maxsAR1)
-emmeans(m.maxsAR1, pairwise ~ fWY)
-
-#some of the tutorials have you do it like this instaed, seems to be pretty much the same results
-m.maxsAR1b =  glmmTMB(maxAvTemp ~ fWY + Season * Region2 + (1|Station)+ ar1(fMonthYear - 1|Station), data = temp)
-summary(m.maxsAR1b)
-
-library(nlme)
-
-#do it with a different package
-m.maxsAR2 = lme(maxAvTemp~fWY + Season * Region2, random=~1|Station, data=temp, correlation=corAR1(.5, ~fMY2|Station))
-summary(m.maxsAR2)
-
-#did we fix it?
-acf(residuals(m.maxs9))
-acf(residuals(m.maxsAR1))
-acf(residuals(m.maxsAR1b))
-acf(residuals(m.maxsAR2))
-#that one isn't much better. Not sure why.
-
-```
 
 
 
@@ -548,7 +564,7 @@ acf(resid.mins9)
 ```{r}
 emm_options(pbkrtest.limit = 8608)
 # WY-------------------------------------
-max9.emm <- emmeans(m.maxs9, "fWY")
+max9.emm <- emmeans(m.maxsAR1, "fWY") # Change model name depending on AR or not
 plot(max9.emm, comparisons = TRUE) + theme_bw()
 #save a dataframe of all the things the plotting function uses so we can plot with ggplot later
 plotmax9 = plot(max9.emm, comparisons = TRUE, plotit = T, adjust = "bonferroni", alpha = 0.01)
@@ -559,11 +575,10 @@ ci_max9_wy = cld(max9.emm, Letters = LETTERS, alpha = 0.01, p.adj.methods = "bon
 results_max9.emm = as.data.frame(pairs(max9.emm, adjust = "bonferroni", alpha = 0.01)) %>%
   mutate(sig = ifelse(p.value<0.01, "yes",  "no")) %>%
   arrange(p.value)
-pwpm(max9.emm2)
 
 # Region/Season ------------------------------
-max9.emm2 <- emmeans(m.maxs9, ~Region2:Season)
-(plotmax9.rs = plot(max9.emm2, comparisons = TRUE, plotit = T, adjust = "bonferroni", alpha = 0.001))
+max9.emm2 <- emmeans(m.maxsAR1, ~Region2:Season) # Change model name here if desired
+(plotmax9.rs = plot(max9.emm2, comparisons = TRUE, plotit = T, adjust = "bonferroni", alpha = 0.01))
 # add letters
 letters.rs <- cld(max9.emm2, Letters = LETTERS, alpha = 0.01, p.adj.methods = "bonferroni")%>%
   mutate(.group = gsub(" ", "", .group))
@@ -595,9 +610,9 @@ pwpp(plotmax9.rs, type = "response", adjust = "bonferroni", by = "Season")
 
 ### Year plot
 ```{r}
-(plot_ci_max9_wy <- ggplot(data = results_max92,) + 
-   geom_errorbar(aes(x = fWY, ymin = asymp.LCL, ymax = asymp.UCL), size = 0.5,  width = 0.3) +
-   geom_text( aes(label = .group, x = fWY, y = asymp.UCL + 0.3), position = position_dodge2(width = 0.75)) + 
+(plot_ci_max9_wy <- ggplot(data = ci_max9_wy) + 
+   geom_errorbar(aes(x = fWY, ymin = upper.CL, ymax = lower.CL), size = 0.5,  width = 0.3) +
+   geom_text( aes(label = .group, x = fWY, y = upper.CL + 0.3), position = position_dodge2(width = 0.75)) + 
   # geom_segment(aes(x=fWY, y=emmean, xend =fWY, yend = rcmpl), color = "orange",
   #              linewidth = 3, arrow = arrow(length = unit(.1,"inches"),
   #                                           ends = "last"))+
@@ -623,8 +638,8 @@ pwpp(plotmax9.rs, type = "response", adjust = "bonferroni", by = "Season")
 # ggplot(newdata) + geom_boxplot(aes(x = fWY, y = Predicted_maxtemp))
 
 (plot_ci_max9 <- ggplot() + 
-   geom_errorbar(data = ci_max9_rs, aes(x = Season, ymin = asymp.LCL, ymax = asymp.UCL, color = Region2), size = 0.5,  width = 0.75, position = position_dodge2()) +
-  geom_text(data = ci_max9_rs, aes(label = .group, x = Season, y = asymp.UCL + 0.5), position = position_dodge2(width = 0.75)) + 
+   geom_errorbar(data = ci_max9_rs, aes(x = Season, ymin = lower.CL, ymax = upper.CL, color = Region2), size = 0.5,  width = 0.75, position = position_dodge2()) +
+  geom_text(data = ci_max9_rs, aes(label = .group, x = Season, y = upper.CL + 0.5), position = position_dodge2(width = 0.75)) + 
   geom_point(data = ci_max9_rs, aes(x=Season, y=emmean), color = "black", size = 3, shape = 5, position = position_dodge2(width = 0.75)) + 
      annotate(geom = "text", label = "C", x =0.53, y = 26, size = 5) + 
   viridis::scale_color_viridis(discrete = TRUE, option = "turbo") + 
