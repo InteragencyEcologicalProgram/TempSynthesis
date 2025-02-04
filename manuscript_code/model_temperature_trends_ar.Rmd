@@ -564,7 +564,7 @@ acf(resid.mins9)
 ```{r}
 emm_options(pbkrtest.limit = 8608)
 # WY-------------------------------------
-max9.emm <- emmeans(m.maxs9, "fWY")
+max9.emm <- emmeans(m.maxsAR1, "fWY") # Change model name depending on AR or not
 plot(max9.emm, comparisons = TRUE) + theme_bw()
 #save a dataframe of all the things the plotting function uses so we can plot with ggplot later
 plotmax9 = plot(max9.emm, comparisons = TRUE, plotit = T, adjust = "bonferroni", alpha = 0.01)
@@ -577,7 +577,7 @@ results_max9.emm = as.data.frame(pairs(max9.emm, adjust = "bonferroni", alpha = 
   arrange(p.value)
 
 # Region/Season ------------------------------
-max9.emm2 <- emmeans(m.maxs9, ~Region2:Season)
+max9.emm2 <- emmeans(m.maxsAR1, ~Region2:Season) # Change model name here if desired
 (plotmax9.rs = plot(max9.emm2, comparisons = TRUE, plotit = T, adjust = "bonferroni", alpha = 0.01))
 # add letters
 letters.rs <- cld(max9.emm2, Letters = LETTERS, alpha = 0.01, p.adj.methods = "bonferroni")%>%
@@ -610,9 +610,9 @@ pwpp(plotmax9.rs, type = "response", adjust = "bonferroni", by = "Season")
 
 ### Year plot
 ```{r}
-(plot_ci_max9_wy <- ggplot(data = results_max92) + 
-   geom_errorbar(aes(x = fWY, ymin = asymp.LCL, ymax = asymp.UCL), size = 0.5,  width = 0.3) +
-   geom_text( aes(label = .group, x = fWY, y = asymp.UCL + 0.3), position = position_dodge2(width = 0.75)) + 
+(plot_ci_max9_wy <- ggplot(data = ci_max9_wy) + 
+   geom_errorbar(aes(x = fWY, ymin = upper.CL, ymax = lower.CL), size = 0.5,  width = 0.3) +
+   geom_text( aes(label = .group, x = fWY, y = upper.CL + 0.3), position = position_dodge2(width = 0.75)) + 
   # geom_segment(aes(x=fWY, y=emmean, xend =fWY, yend = rcmpl), color = "orange",
   #              linewidth = 3, arrow = arrow(length = unit(.1,"inches"),
   #                                           ends = "last"))+
@@ -638,8 +638,8 @@ pwpp(plotmax9.rs, type = "response", adjust = "bonferroni", by = "Season")
 # ggplot(newdata) + geom_boxplot(aes(x = fWY, y = Predicted_maxtemp))
 
 (plot_ci_max9 <- ggplot() + 
-   geom_errorbar(data = ci_max9_rs, aes(x = Season, ymin = asymp.LCL, ymax = asymp.UCL, color = Region2), size = 0.5,  width = 0.75, position = position_dodge2()) +
-  geom_text(data = ci_max9_rs, aes(label = .group, x = Season, y = asymp.UCL + 0.5), position = position_dodge2(width = 0.75)) + 
+   geom_errorbar(data = ci_max9_rs, aes(x = Season, ymin = lower.CL, ymax = upper.CL, color = Region2), size = 0.5,  width = 0.75, position = position_dodge2()) +
+  geom_text(data = ci_max9_rs, aes(label = .group, x = Season, y = upper.CL + 0.5), position = position_dodge2(width = 0.75)) + 
   geom_point(data = ci_max9_rs, aes(x=Season, y=emmean), color = "black", size = 3, shape = 5, position = position_dodge2(width = 0.75)) + 
      annotate(geom = "text", label = "C", x =0.53, y = 26, size = 5) + 
   viridis::scale_color_viridis(discrete = TRUE, option = "turbo") + 
