@@ -182,7 +182,43 @@ write.csv(summary(m.mins9)$coefficients, here("manuscript_code/Data/lmer_results
 summary(m.means9 <- lmer(meanTemp ~ fWY + Season * Region2 + (1|Station) +(1|fMonth), data = temp))
 ```
 
+### try AR1 term
 
+In order to fit the model with glmmTMB we must first specify a time variable as a factor. The factor levels correspond to unit spaced time points. It is a common mistake to forget some factor levels due to missing data or to order the levels incorrectly. We therefore recommend to construct factors with explicit levels, using the levels argument to the factor function:
+
+```{r}
+library(glmmTMB)
+
+#need a new time variable that is year + month as a factor
+temp = mutate(temp, 
+              WM = case_when(Month %in% c(10, 11, 12) ~ Month-9,
+                             TRUE ~ Month +3),
+              fMonthYear = as.factor(paste(WY, WM)),
+              fMY2 = as.numeric(fMonthYear),
+              MonthYear = WY+(WM-12)/12)
+
+m.maxsAR1 =  glmmTMB(maxAvTemp ~ fWY + Season * Region2 + (1|Station)+ ar1(fMonthYear + 0|Station), data = temp)
+summary(m.maxsAR1)
+emmeans(m.maxsAR1, pairwise ~ fWY)
+
+#some of the tutorials have you do it like this instaed, seems to be pretty much the same results
+m.maxsAR1b =  glmmTMB(maxAvTemp ~ fWY + Season * Region2 + (1|Station)+ ar1(fMonthYear - 1|Station), data = temp)
+summary(m.maxsAR1b)
+
+library(nlme)
+
+#do it with a different package
+m.maxsAR2 = lme(maxAvTemp~fWY + Season * Region2, random=~1|Station, data=temp, correlation=corAR1(.5, ~fMY2|Station))
+summary(m.maxsAR2)
+
+#did we fix it?
+acf(residuals(m.maxs9))
+acf(residuals(m.maxsAR1))
+acf(residuals(m.maxsAR1b))
+acf(residuals(m.maxsAR2))
+#that one isn't much better. Not sure why.
+
+```
 
 
 
