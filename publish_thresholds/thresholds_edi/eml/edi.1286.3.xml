@@ -1,0 +1,2498 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<eml:eml xmlns:eml="https://eml.ecoinformatics.org/eml-2.2.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:stmml="http://www.xml-cml.org/schema/stmml-1.2" packageId="edi.1286.3" xsi:schemaLocation="https://eml.ecoinformatics.org/eml-2.2.0/eml.xsd https://eml.ecoinformatics.org/eml-2.2.0/eml.xsd" system="edi">
+  <access authSystem="https://pasta.edirepository.org/authentication" order="allowFirst" scope="document">
+    <allow>
+      <principal>uid=aquaticecology,o=EDI,dc=edirepository,dc=org</principal>
+      <permission>all</permission>
+    </allow>
+    <allow>
+      <principal>public</principal>
+      <permission>read</permission>
+    </allow>
+  </access>
+  <dataset>
+    <title>Temperature Thresholds for Aquatic Species in the Sacramento San-Joaquin Delta</title>
+    <creator>
+      <individualName>
+        <givenName>Brittany</givenName>
+        <surName>Davis</surName>
+      </individualName>
+      <organizationName>California Department of Water Resources</organizationName>
+      <electronicMailAddress>Brittany.E.Davis@water.ca.gov</electronicMailAddress>
+      <userId directory="https://orcid.org">https://orcid.org/0000-0003-3752-1830</userId>
+    </creator>
+    <creator>
+      <individualName>
+        <givenName>Eva</givenName>
+        <surName>Bush</surName>
+      </individualName>
+      <organizationName>Delta Stewardship Council</organizationName>
+      <electronicMailAddress>Eva.Bush@deltacouncil.ca.gov</electronicMailAddress>
+      <userId directory="https://orcid.org">https://orcid.org/0000-0003-2376-4735</userId>
+    </creator>
+    <creator>
+      <individualName>
+        <givenName>Peggy</givenName>
+        <surName>Lehman</surName>
+      </individualName>
+    </creator>
+    <creator>
+      <individualName>
+        <givenName>Catarina</givenName>
+        <surName>Pien</surName>
+      </individualName>
+      <organizationName>Bureau of Reclamation and California Department of Water Resources</organizationName>
+      <electronicMailAddress>cpien@usbr.gov</electronicMailAddress>
+      <userId directory="https://orcid.org">https://orcid.org/0000-0003-4427-6300</userId>
+    </creator>
+    <associatedParty>
+      <individualName>
+        <givenName>Rosemary</givenName>
+        <surName>Hartman</surName>
+      </individualName>
+      <organizationName>California Department of Water Resources</organizationName>
+      <electronicMailAddress>Rosemary.Hartman@water.ca.gov</electronicMailAddress>
+      <userId directory="https://orcid.org">https://orcid.org/0000-0002-0642-183X</userId>
+      <role>Associate</role>
+    </associatedParty>
+    <pubDate>2025-02-05</pubDate>
+    <abstract>
+      <para>The effects of increasing water temperature on species in the Sacramento San-Joaquin Delta is of growing importance for conservation and resource management; however, species metrics of temperature sensitivity vary across agency groups and can result in varied understanding and predictions of species vulnerability and modeling. Here, we provide a catalogue of key temperature metrics for several species in the Sacramento San Joaquin Delta that may be used as a standard for scientists studying temperature effects and resource management of native and non-native species. The dataset includes both documented physiological thresholds for suboptimal and upper temperature tolerances from metrics such as growth or critical and lethal limits, as well as calculated minimum, maximum and mean temperature values of species catch in the Delta from long-term monitoring surveys from 1954-2022. Species include critical estuarine fishes such as Delta Smelt, Longfin Smelt, Chinook Salmon, and sturgeon, as well as the species they interact with such as invasive fishes and invertebrates, cyanobacteria, and aquatic vegetation. The dataset includes values for different life-stages where possible and references for information. This information can help guide conservation measures and species management needed to lessen the impact stressful temperature conditions.</para>
+    </abstract>
+    <keywordSet>
+      <keyword>estuaries</keyword>
+      <keyword>rivers</keyword>
+      <keyword>fishes</keyword>
+      <keyword>endangered species</keyword>
+      <keyword>invasive species</keyword>
+      <keyword>temperature</keyword>
+      <keywordThesaurus>LTER Controlled Vocabulary</keywordThesaurus>
+    </keywordSet>
+    <keywordSet>
+      <keyword>tolerance</keyword>
+      <keyword>Sacramento-San Joaquin Delta</keyword>
+      <keyword>San Francisco Estuary</keyword>
+      <keyword>Interagency Ecological Program</keyword>
+      <keyword>IEP</keyword>
+    </keywordSet>
+    <intellectualRights>
+      <para>This information is released under the Creative Commons license - Attribution - CC BY (https://creativecommons.org/licenses/by/4.0/). The consumer of these data ("Data User" herein) is required to cite it appropriately in any publication that results from its use. The Data User should realize that these data may be actively used by others for ongoing research and that coordination may be necessary to prevent duplicate publication. The Data User is urged to contact the authors of these data if any questions about methodology or results occur. Where appropriate, the Data User is encouraged to consider collaboration or co-authorship with the authors. The Data User should realize that misinterpretation of data may occur if used out of context of the original study. While substantial efforts are made to ensure the accuracy of data and associated documentation, complete accuracy of data sets cannot be guaranteed. All data are made available "as is." The Data User should be aware, however, that data are updated periodically and it is the responsibility of the Data User to check for new versions of the data. The data authors and the repository where these data were obtained shall not be liable for damages resulting from any use or misinterpretation of the data. Thank you.
+</para>
+    </intellectualRights>
+    <coverage>
+      <taxonomicCoverage>
+        <taxonomicClassification>
+          <taxonRankName>kingdom</taxonRankName>
+          <taxonRankValue>Animalia</taxonRankValue>
+          <commonName>animals</commonName>
+          <taxonId provider="https://itis.gov">202423</taxonId>
+          <taxonomicClassification>
+            <taxonRankName>subkingdom</taxonRankName>
+            <taxonRankValue>Bilateria</taxonRankValue>
+            <commonName>triploblasts</commonName>
+            <taxonId provider="https://itis.gov">914154</taxonId>
+            <taxonomicClassification>
+              <taxonRankName>infrakingdom</taxonRankName>
+              <taxonRankValue>Deuterostomia</taxonRankValue>
+              <taxonId provider="https://itis.gov">914156</taxonId>
+              <taxonomicClassification>
+                <taxonRankName>phylum</taxonRankName>
+                <taxonRankValue>Chordata</taxonRankValue>
+                <commonName>chordates</commonName>
+                <taxonId provider="https://itis.gov">158852</taxonId>
+                <taxonomicClassification>
+                  <taxonRankName>subphylum</taxonRankName>
+                  <taxonRankValue>Vertebrata</taxonRankValue>
+                  <commonName>vertebrates</commonName>
+                  <taxonId provider="https://itis.gov">331030</taxonId>
+                  <taxonomicClassification>
+                    <taxonRankName>infraphylum</taxonRankName>
+                    <taxonRankValue>Gnathostomata</taxonRankValue>
+                    <taxonId provider="https://itis.gov">914179</taxonId>
+                    <taxonomicClassification>
+                      <taxonRankName>superclass</taxonRankName>
+                      <taxonRankValue>Actinopterygii</taxonRankValue>
+                      <commonName>ray-finned fishes</commonName>
+                      <commonName>spiny rayed fishes</commonName>
+                      <taxonId provider="https://itis.gov">161061</taxonId>
+                      <taxonomicClassification>
+                        <taxonRankName>class</taxonRankName>
+                        <taxonRankValue>Teleostei</taxonRankValue>
+                        <taxonId provider="https://itis.gov">161105</taxonId>
+                        <taxonomicClassification>
+                          <taxonRankName>superorder</taxonRankName>
+                          <taxonRankValue>Protacanthopterygii</taxonRankValue>
+                          <taxonId provider="https://itis.gov">161928</taxonId>
+                          <taxonomicClassification>
+                            <taxonRankName>order</taxonRankName>
+                            <taxonRankValue>Salmoniformes</taxonRankValue>
+                            <commonName>salmons</commonName>
+                            <taxonId provider="https://itis.gov">161929</taxonId>
+                            <taxonomicClassification>
+                              <taxonRankName>family</taxonRankName>
+                              <taxonRankValue>Salmonidae</taxonRankValue>
+                              <commonName>salmonids</commonName>
+                              <commonName>trouts and salmons</commonName>
+                              <commonName>salmons</commonName>
+                              <commonName>trouts</commonName>
+                              <taxonId provider="https://itis.gov">161931</taxonId>
+                              <taxonomicClassification>
+                                <taxonRankName>subfamily</taxonRankName>
+                                <taxonRankValue>Salmoninae</taxonRankValue>
+                                <taxonId provider="https://itis.gov">623286</taxonId>
+                                <taxonomicClassification>
+                                  <taxonRankName>genus</taxonRankName>
+                                  <taxonRankValue>Oncorhynchus</taxonRankValue>
+                                  <commonName>Pacific salmon</commonName>
+                                  <taxonId provider="https://itis.gov">161974</taxonId>
+                                  <taxonomicClassification>
+                                    <taxonRankName>species</taxonRankName>
+                                    <taxonRankValue>Oncorhynchus tshawytscha</taxonRankValue>
+                                    <commonName>Chinook salmon</commonName>
+                                    <commonName>king salmon</commonName>
+                                    <taxonId provider="https://itis.gov">161980</taxonId>
+                                  </taxonomicClassification>
+                                </taxonomicClassification>
+                              </taxonomicClassification>
+                            </taxonomicClassification>
+                          </taxonomicClassification>
+                        </taxonomicClassification>
+                      </taxonomicClassification>
+                    </taxonomicClassification>
+                  </taxonomicClassification>
+                </taxonomicClassification>
+              </taxonomicClassification>
+            </taxonomicClassification>
+          </taxonomicClassification>
+        </taxonomicClassification>
+        <taxonomicClassification>
+          <taxonRankName>kingdom</taxonRankName>
+          <taxonRankValue>Animalia</taxonRankValue>
+          <commonName>animals</commonName>
+          <taxonId provider="https://itis.gov">202423</taxonId>
+          <taxonomicClassification>
+            <taxonRankName>subkingdom</taxonRankName>
+            <taxonRankValue>Bilateria</taxonRankValue>
+            <commonName>triploblasts</commonName>
+            <taxonId provider="https://itis.gov">914154</taxonId>
+            <taxonomicClassification>
+              <taxonRankName>infrakingdom</taxonRankName>
+              <taxonRankValue>Deuterostomia</taxonRankValue>
+              <taxonId provider="https://itis.gov">914156</taxonId>
+              <taxonomicClassification>
+                <taxonRankName>phylum</taxonRankName>
+                <taxonRankValue>Chordata</taxonRankValue>
+                <commonName>chordates</commonName>
+                <taxonId provider="https://itis.gov">158852</taxonId>
+                <taxonomicClassification>
+                  <taxonRankName>subphylum</taxonRankName>
+                  <taxonRankValue>Vertebrata</taxonRankValue>
+                  <commonName>vertebrates</commonName>
+                  <taxonId provider="https://itis.gov">331030</taxonId>
+                  <taxonomicClassification>
+                    <taxonRankName>infraphylum</taxonRankName>
+                    <taxonRankValue>Gnathostomata</taxonRankValue>
+                    <taxonId provider="https://itis.gov">914179</taxonId>
+                    <taxonomicClassification>
+                      <taxonRankName>superclass</taxonRankName>
+                      <taxonRankValue>Actinopterygii</taxonRankValue>
+                      <commonName>ray-finned fishes</commonName>
+                      <commonName>spiny rayed fishes</commonName>
+                      <taxonId provider="https://itis.gov">161061</taxonId>
+                      <taxonomicClassification>
+                        <taxonRankName>class</taxonRankName>
+                        <taxonRankValue>Teleostei</taxonRankValue>
+                        <taxonId provider="https://itis.gov">161105</taxonId>
+                        <taxonomicClassification>
+                          <taxonRankName>superorder</taxonRankName>
+                          <taxonRankValue>Protacanthopterygii</taxonRankValue>
+                          <taxonId provider="https://itis.gov">161928</taxonId>
+                          <taxonomicClassification>
+                            <taxonRankName>order</taxonRankName>
+                            <taxonRankValue>Salmoniformes</taxonRankValue>
+                            <commonName>salmons</commonName>
+                            <taxonId provider="https://itis.gov">161929</taxonId>
+                            <taxonomicClassification>
+                              <taxonRankName>family</taxonRankName>
+                              <taxonRankValue>Salmonidae</taxonRankValue>
+                              <commonName>salmonids</commonName>
+                              <commonName>trouts and salmons</commonName>
+                              <commonName>salmons</commonName>
+                              <commonName>trouts</commonName>
+                              <taxonId provider="https://itis.gov">161931</taxonId>
+                              <taxonomicClassification>
+                                <taxonRankName>subfamily</taxonRankName>
+                                <taxonRankValue>Salmoninae</taxonRankValue>
+                                <taxonId provider="https://itis.gov">623286</taxonId>
+                                <taxonomicClassification>
+                                  <taxonRankName>genus</taxonRankName>
+                                  <taxonRankValue>Oncorhynchus</taxonRankValue>
+                                  <commonName>Pacific salmon</commonName>
+                                  <taxonId provider="https://itis.gov">161974</taxonId>
+                                  <taxonomicClassification>
+                                    <taxonRankName>species</taxonRankName>
+                                    <taxonRankValue>Oncorhynchus mykiss</taxonRankValue>
+                                    <commonName>rainbow trout</commonName>
+                                    <commonName>steelhead</commonName>
+                                    <commonName>redband trout</commonName>
+                                    <taxonId provider="https://itis.gov">161989</taxonId>
+                                  </taxonomicClassification>
+                                </taxonomicClassification>
+                              </taxonomicClassification>
+                            </taxonomicClassification>
+                          </taxonomicClassification>
+                        </taxonomicClassification>
+                      </taxonomicClassification>
+                    </taxonomicClassification>
+                  </taxonomicClassification>
+                </taxonomicClassification>
+              </taxonomicClassification>
+            </taxonomicClassification>
+          </taxonomicClassification>
+        </taxonomicClassification>
+        <taxonomicClassification>
+          <taxonRankName>kingdom</taxonRankName>
+          <taxonRankValue>Animalia</taxonRankValue>
+          <commonName>animals</commonName>
+          <taxonId provider="https://itis.gov">202423</taxonId>
+          <taxonomicClassification>
+            <taxonRankName>subkingdom</taxonRankName>
+            <taxonRankValue>Bilateria</taxonRankValue>
+            <commonName>triploblasts</commonName>
+            <taxonId provider="https://itis.gov">914154</taxonId>
+            <taxonomicClassification>
+              <taxonRankName>infrakingdom</taxonRankName>
+              <taxonRankValue>Deuterostomia</taxonRankValue>
+              <taxonId provider="https://itis.gov">914156</taxonId>
+              <taxonomicClassification>
+                <taxonRankName>phylum</taxonRankName>
+                <taxonRankValue>Chordata</taxonRankValue>
+                <commonName>chordates</commonName>
+                <taxonId provider="https://itis.gov">158852</taxonId>
+                <taxonomicClassification>
+                  <taxonRankName>subphylum</taxonRankName>
+                  <taxonRankValue>Vertebrata</taxonRankValue>
+                  <commonName>vertebrates</commonName>
+                  <taxonId provider="https://itis.gov">331030</taxonId>
+                  <taxonomicClassification>
+                    <taxonRankName>infraphylum</taxonRankName>
+                    <taxonRankValue>Gnathostomata</taxonRankValue>
+                    <taxonId provider="https://itis.gov">914179</taxonId>
+                    <taxonomicClassification>
+                      <taxonRankName>superclass</taxonRankName>
+                      <taxonRankValue>Actinopterygii</taxonRankValue>
+                      <commonName>ray-finned fishes</commonName>
+                      <commonName>spiny rayed fishes</commonName>
+                      <taxonId provider="https://itis.gov">161061</taxonId>
+                      <taxonomicClassification>
+                        <taxonRankName>class</taxonRankName>
+                        <taxonRankValue>Teleostei</taxonRankValue>
+                        <taxonId provider="https://itis.gov">161105</taxonId>
+                        <taxonomicClassification>
+                          <taxonRankName>superorder</taxonRankName>
+                          <taxonRankValue>Protacanthopterygii</taxonRankValue>
+                          <taxonId provider="https://itis.gov">161928</taxonId>
+                          <taxonomicClassification>
+                            <taxonRankName>order</taxonRankName>
+                            <taxonRankValue>Osmeriformes</taxonRankValue>
+                            <commonName>argentines</commonName>
+                            <commonName>smelts</commonName>
+                            <taxonId provider="https://itis.gov">553133</taxonId>
+                            <taxonomicClassification>
+                              <taxonRankName>suborder</taxonRankName>
+                              <taxonRankValue>Osmeroidei</taxonRankValue>
+                              <taxonId provider="https://itis.gov">553145</taxonId>
+                              <taxonomicClassification>
+                                <taxonRankName>superfamily</taxonRankName>
+                                <taxonRankValue>Osmeroidea</taxonRankValue>
+                                <taxonId provider="https://itis.gov">623275</taxonId>
+                                <taxonomicClassification>
+                                  <taxonRankName>family</taxonRankName>
+                                  <taxonRankValue>Osmeridae</taxonRankValue>
+                                  <commonName>smelts</commonName>
+                                  <taxonId provider="https://itis.gov">162028</taxonId>
+                                  <taxonomicClassification>
+                                    <taxonRankName>genus</taxonRankName>
+                                    <taxonRankValue>Hypomesus</taxonRankValue>
+                                    <commonName>smallmouth smelts</commonName>
+                                    <taxonId provider="https://itis.gov">162029</taxonId>
+                                    <taxonomicClassification>
+                                      <taxonRankName>species</taxonRankName>
+                                      <taxonRankValue>Hypomesus transpacificus</taxonRankValue>
+                                      <commonName>delta smelt</commonName>
+                                      <taxonId provider="https://itis.gov">162032</taxonId>
+                                    </taxonomicClassification>
+                                  </taxonomicClassification>
+                                </taxonomicClassification>
+                              </taxonomicClassification>
+                            </taxonomicClassification>
+                          </taxonomicClassification>
+                        </taxonomicClassification>
+                      </taxonomicClassification>
+                    </taxonomicClassification>
+                  </taxonomicClassification>
+                </taxonomicClassification>
+              </taxonomicClassification>
+            </taxonomicClassification>
+          </taxonomicClassification>
+        </taxonomicClassification>
+        <taxonomicClassification>
+          <taxonRankName>kingdom</taxonRankName>
+          <taxonRankValue>Animalia</taxonRankValue>
+          <commonName>animals</commonName>
+          <taxonId provider="https://itis.gov">202423</taxonId>
+          <taxonomicClassification>
+            <taxonRankName>subkingdom</taxonRankName>
+            <taxonRankValue>Bilateria</taxonRankValue>
+            <commonName>triploblasts</commonName>
+            <taxonId provider="https://itis.gov">914154</taxonId>
+            <taxonomicClassification>
+              <taxonRankName>infrakingdom</taxonRankName>
+              <taxonRankValue>Deuterostomia</taxonRankValue>
+              <taxonId provider="https://itis.gov">914156</taxonId>
+              <taxonomicClassification>
+                <taxonRankName>phylum</taxonRankName>
+                <taxonRankValue>Chordata</taxonRankValue>
+                <commonName>chordates</commonName>
+                <taxonId provider="https://itis.gov">158852</taxonId>
+                <taxonomicClassification>
+                  <taxonRankName>subphylum</taxonRankName>
+                  <taxonRankValue>Vertebrata</taxonRankValue>
+                  <commonName>vertebrates</commonName>
+                  <taxonId provider="https://itis.gov">331030</taxonId>
+                  <taxonomicClassification>
+                    <taxonRankName>infraphylum</taxonRankName>
+                    <taxonRankValue>Gnathostomata</taxonRankValue>
+                    <taxonId provider="https://itis.gov">914179</taxonId>
+                    <taxonomicClassification>
+                      <taxonRankName>superclass</taxonRankName>
+                      <taxonRankValue>Actinopterygii</taxonRankValue>
+                      <commonName>ray-finned fishes</commonName>
+                      <commonName>spiny rayed fishes</commonName>
+                      <taxonId provider="https://itis.gov">161061</taxonId>
+                      <taxonomicClassification>
+                        <taxonRankName>class</taxonRankName>
+                        <taxonRankValue>Teleostei</taxonRankValue>
+                        <taxonId provider="https://itis.gov">161105</taxonId>
+                        <taxonomicClassification>
+                          <taxonRankName>superorder</taxonRankName>
+                          <taxonRankValue>Protacanthopterygii</taxonRankValue>
+                          <taxonId provider="https://itis.gov">161928</taxonId>
+                          <taxonomicClassification>
+                            <taxonRankName>order</taxonRankName>
+                            <taxonRankValue>Osmeriformes</taxonRankValue>
+                            <commonName>argentines</commonName>
+                            <commonName>smelts</commonName>
+                            <taxonId provider="https://itis.gov">553133</taxonId>
+                            <taxonomicClassification>
+                              <taxonRankName>suborder</taxonRankName>
+                              <taxonRankValue>Osmeroidei</taxonRankValue>
+                              <taxonId provider="https://itis.gov">553145</taxonId>
+                              <taxonomicClassification>
+                                <taxonRankName>superfamily</taxonRankName>
+                                <taxonRankValue>Osmeroidea</taxonRankValue>
+                                <taxonId provider="https://itis.gov">623275</taxonId>
+                                <taxonomicClassification>
+                                  <taxonRankName>family</taxonRankName>
+                                  <taxonRankValue>Osmeridae</taxonRankValue>
+                                  <commonName>smelts</commonName>
+                                  <taxonId provider="https://itis.gov">162028</taxonId>
+                                  <taxonomicClassification>
+                                    <taxonRankName>genus</taxonRankName>
+                                    <taxonRankValue>Spirinchus</taxonRankValue>
+                                    <commonName>longfin smelts</commonName>
+                                    <taxonId provider="https://itis.gov">162047</taxonId>
+                                    <taxonomicClassification>
+                                      <taxonRankName>species</taxonRankName>
+                                      <taxonRankValue>Spirinchus thaleichthys</taxonRankValue>
+                                      <commonName>longfin smelt</commonName>
+                                      <taxonId provider="https://itis.gov">162049</taxonId>
+                                    </taxonomicClassification>
+                                  </taxonomicClassification>
+                                </taxonomicClassification>
+                              </taxonomicClassification>
+                            </taxonomicClassification>
+                          </taxonomicClassification>
+                        </taxonomicClassification>
+                      </taxonomicClassification>
+                    </taxonomicClassification>
+                  </taxonomicClassification>
+                </taxonomicClassification>
+              </taxonomicClassification>
+            </taxonomicClassification>
+          </taxonomicClassification>
+        </taxonomicClassification>
+        <taxonomicClassification>
+          <taxonRankName>kingdom</taxonRankName>
+          <taxonRankValue>Animalia</taxonRankValue>
+          <commonName>animals</commonName>
+          <taxonId provider="https://itis.gov">202423</taxonId>
+          <taxonomicClassification>
+            <taxonRankName>subkingdom</taxonRankName>
+            <taxonRankValue>Bilateria</taxonRankValue>
+            <commonName>triploblasts</commonName>
+            <taxonId provider="https://itis.gov">914154</taxonId>
+            <taxonomicClassification>
+              <taxonRankName>infrakingdom</taxonRankName>
+              <taxonRankValue>Deuterostomia</taxonRankValue>
+              <taxonId provider="https://itis.gov">914156</taxonId>
+              <taxonomicClassification>
+                <taxonRankName>phylum</taxonRankName>
+                <taxonRankValue>Chordata</taxonRankValue>
+                <commonName>chordates</commonName>
+                <taxonId provider="https://itis.gov">158852</taxonId>
+                <taxonomicClassification>
+                  <taxonRankName>subphylum</taxonRankName>
+                  <taxonRankValue>Vertebrata</taxonRankValue>
+                  <commonName>vertebrates</commonName>
+                  <taxonId provider="https://itis.gov">331030</taxonId>
+                  <taxonomicClassification>
+                    <taxonRankName>infraphylum</taxonRankName>
+                    <taxonRankValue>Gnathostomata</taxonRankValue>
+                    <taxonId provider="https://itis.gov">914179</taxonId>
+                    <taxonomicClassification>
+                      <taxonRankName>superclass</taxonRankName>
+                      <taxonRankValue>Actinopterygii</taxonRankValue>
+                      <commonName>ray-finned fishes</commonName>
+                      <commonName>spiny rayed fishes</commonName>
+                      <taxonId provider="https://itis.gov">161061</taxonId>
+                      <taxonomicClassification>
+                        <taxonRankName>class</taxonRankName>
+                        <taxonRankValue>Teleostei</taxonRankValue>
+                        <taxonId provider="https://itis.gov">161105</taxonId>
+                        <taxonomicClassification>
+                          <taxonRankName>superorder</taxonRankName>
+                          <taxonRankValue>Ostariophysi</taxonRankValue>
+                          <taxonId provider="https://itis.gov">162845</taxonId>
+                          <taxonomicClassification>
+                            <taxonRankName>order</taxonRankName>
+                            <taxonRankValue>Cypriniformes</taxonRankValue>
+                            <commonName>minnows</commonName>
+                            <commonName>suckers</commonName>
+                            <taxonId provider="https://itis.gov">162846</taxonId>
+                            <taxonomicClassification>
+                              <taxonRankName>superfamily</taxonRankName>
+                              <taxonRankValue>Cyprinoidea</taxonRankValue>
+                              <taxonId provider="https://itis.gov">638796</taxonId>
+                              <taxonomicClassification>
+                                <taxonRankName>family</taxonRankName>
+                                <taxonRankValue>Leuciscidae</taxonRankValue>
+                                <taxonId provider="https://itis.gov">1198935</taxonId>
+                                <taxonomicClassification>
+                                  <taxonRankName>subfamily</taxonRankName>
+                                  <taxonRankValue>Pogonichthyinae</taxonRankValue>
+                                  <taxonId provider="https://itis.gov">1198937</taxonId>
+                                  <taxonomicClassification>
+                                    <taxonRankName>genus</taxonRankName>
+                                    <taxonRankValue>Pogonichthys</taxonRankValue>
+                                    <commonName>splittails</commonName>
+                                    <taxonId provider="https://itis.gov">163601</taxonId>
+                                    <taxonomicClassification>
+                                      <taxonRankName>species</taxonRankName>
+                                      <taxonRankValue>Pogonichthys macrolepidotus</taxonRankValue>
+                                      <commonName>Splittail</commonName>
+                                      <commonName>Sacramento splittail</commonName>
+                                      <taxonId provider="https://itis.gov">163603</taxonId>
+                                    </taxonomicClassification>
+                                  </taxonomicClassification>
+                                </taxonomicClassification>
+                              </taxonomicClassification>
+                            </taxonomicClassification>
+                          </taxonomicClassification>
+                        </taxonomicClassification>
+                      </taxonomicClassification>
+                    </taxonomicClassification>
+                  </taxonomicClassification>
+                </taxonomicClassification>
+              </taxonomicClassification>
+            </taxonomicClassification>
+          </taxonomicClassification>
+        </taxonomicClassification>
+        <taxonomicClassification>
+          <taxonRankName>kingdom</taxonRankName>
+          <taxonRankValue>Animalia</taxonRankValue>
+          <commonName>animals</commonName>
+          <taxonId provider="https://itis.gov">202423</taxonId>
+          <taxonomicClassification>
+            <taxonRankName>subkingdom</taxonRankName>
+            <taxonRankValue>Bilateria</taxonRankValue>
+            <commonName>triploblasts</commonName>
+            <taxonId provider="https://itis.gov">914154</taxonId>
+            <taxonomicClassification>
+              <taxonRankName>infrakingdom</taxonRankName>
+              <taxonRankValue>Deuterostomia</taxonRankValue>
+              <taxonId provider="https://itis.gov">914156</taxonId>
+              <taxonomicClassification>
+                <taxonRankName>phylum</taxonRankName>
+                <taxonRankValue>Chordata</taxonRankValue>
+                <commonName>chordates</commonName>
+                <taxonId provider="https://itis.gov">158852</taxonId>
+                <taxonomicClassification>
+                  <taxonRankName>subphylum</taxonRankName>
+                  <taxonRankValue>Vertebrata</taxonRankValue>
+                  <commonName>vertebrates</commonName>
+                  <taxonId provider="https://itis.gov">331030</taxonId>
+                  <taxonomicClassification>
+                    <taxonRankName>infraphylum</taxonRankName>
+                    <taxonRankValue>Gnathostomata</taxonRankValue>
+                    <taxonId provider="https://itis.gov">914179</taxonId>
+                    <taxonomicClassification>
+                      <taxonRankName>superclass</taxonRankName>
+                      <taxonRankValue>Actinopterygii</taxonRankValue>
+                      <commonName>ray-finned fishes</commonName>
+                      <commonName>spiny rayed fishes</commonName>
+                      <taxonId provider="https://itis.gov">161061</taxonId>
+                      <taxonomicClassification>
+                        <taxonRankName>class</taxonRankName>
+                        <taxonRankValue>Chondrostei</taxonRankValue>
+                        <commonName>paddlefishes</commonName>
+                        <commonName>sturgeons</commonName>
+                        <taxonId provider="https://itis.gov">161062</taxonId>
+                        <taxonomicClassification>
+                          <taxonRankName>order</taxonRankName>
+                          <taxonRankValue>Acipenseriformes</taxonRankValue>
+                          <commonName>sturgeons</commonName>
+                          <commonName>spoonfishes</commonName>
+                          <commonName>paddlefishes</commonName>
+                          <taxonId provider="https://itis.gov">161063</taxonId>
+                          <taxonomicClassification>
+                            <taxonRankName>suborder</taxonRankName>
+                            <taxonRankValue>Acipenseroidei</taxonRankValue>
+                            <taxonId provider="https://itis.gov">553169</taxonId>
+                            <taxonomicClassification>
+                              <taxonRankName>family</taxonRankName>
+                              <taxonRankValue>Acipenseridae</taxonRankValue>
+                              <commonName>sturgeons</commonName>
+                              <taxonId provider="https://itis.gov">161064</taxonId>
+                              <taxonomicClassification>
+                                <taxonRankName>subfamily</taxonRankName>
+                                <taxonRankValue>Acipenserinae</taxonRankValue>
+                                <taxonId provider="https://itis.gov">573236</taxonId>
+                                <taxonomicClassification>
+                                  <taxonRankName>genus</taxonRankName>
+                                  <taxonRankValue>Acipenser</taxonRankValue>
+                                  <commonName>sturgeons</commonName>
+                                  <commonName>greater sturgeons</commonName>
+                                  <taxonId provider="https://itis.gov">161065</taxonId>
+                                  <taxonomicClassification>
+                                    <taxonRankName>species</taxonRankName>
+                                    <taxonRankValue>Acipenser medirostris</taxonRankValue>
+                                    <commonName>green sturgeon</commonName>
+                                    <taxonId provider="https://itis.gov">161067</taxonId>
+                                  </taxonomicClassification>
+                                </taxonomicClassification>
+                              </taxonomicClassification>
+                            </taxonomicClassification>
+                          </taxonomicClassification>
+                        </taxonomicClassification>
+                      </taxonomicClassification>
+                    </taxonomicClassification>
+                  </taxonomicClassification>
+                </taxonomicClassification>
+              </taxonomicClassification>
+            </taxonomicClassification>
+          </taxonomicClassification>
+        </taxonomicClassification>
+        <taxonomicClassification>
+          <taxonRankName>kingdom</taxonRankName>
+          <taxonRankValue>Animalia</taxonRankValue>
+          <commonName>animals</commonName>
+          <taxonId provider="https://itis.gov">202423</taxonId>
+          <taxonomicClassification>
+            <taxonRankName>subkingdom</taxonRankName>
+            <taxonRankValue>Bilateria</taxonRankValue>
+            <commonName>triploblasts</commonName>
+            <taxonId provider="https://itis.gov">914154</taxonId>
+            <taxonomicClassification>
+              <taxonRankName>infrakingdom</taxonRankName>
+              <taxonRankValue>Deuterostomia</taxonRankValue>
+              <taxonId provider="https://itis.gov">914156</taxonId>
+              <taxonomicClassification>
+                <taxonRankName>phylum</taxonRankName>
+                <taxonRankValue>Chordata</taxonRankValue>
+                <commonName>chordates</commonName>
+                <taxonId provider="https://itis.gov">158852</taxonId>
+                <taxonomicClassification>
+                  <taxonRankName>subphylum</taxonRankName>
+                  <taxonRankValue>Vertebrata</taxonRankValue>
+                  <commonName>vertebrates</commonName>
+                  <taxonId provider="https://itis.gov">331030</taxonId>
+                  <taxonomicClassification>
+                    <taxonRankName>infraphylum</taxonRankName>
+                    <taxonRankValue>Gnathostomata</taxonRankValue>
+                    <taxonId provider="https://itis.gov">914179</taxonId>
+                    <taxonomicClassification>
+                      <taxonRankName>superclass</taxonRankName>
+                      <taxonRankValue>Actinopterygii</taxonRankValue>
+                      <commonName>ray-finned fishes</commonName>
+                      <commonName>spiny rayed fishes</commonName>
+                      <taxonId provider="https://itis.gov">161061</taxonId>
+                      <taxonomicClassification>
+                        <taxonRankName>class</taxonRankName>
+                        <taxonRankValue>Chondrostei</taxonRankValue>
+                        <commonName>paddlefishes</commonName>
+                        <commonName>sturgeons</commonName>
+                        <taxonId provider="https://itis.gov">161062</taxonId>
+                        <taxonomicClassification>
+                          <taxonRankName>order</taxonRankName>
+                          <taxonRankValue>Acipenseriformes</taxonRankValue>
+                          <commonName>sturgeons</commonName>
+                          <commonName>spoonfishes</commonName>
+                          <commonName>paddlefishes</commonName>
+                          <taxonId provider="https://itis.gov">161063</taxonId>
+                          <taxonomicClassification>
+                            <taxonRankName>suborder</taxonRankName>
+                            <taxonRankValue>Acipenseroidei</taxonRankValue>
+                            <taxonId provider="https://itis.gov">553169</taxonId>
+                            <taxonomicClassification>
+                              <taxonRankName>family</taxonRankName>
+                              <taxonRankValue>Acipenseridae</taxonRankValue>
+                              <commonName>sturgeons</commonName>
+                              <taxonId provider="https://itis.gov">161064</taxonId>
+                              <taxonomicClassification>
+                                <taxonRankName>subfamily</taxonRankName>
+                                <taxonRankValue>Acipenserinae</taxonRankValue>
+                                <taxonId provider="https://itis.gov">573236</taxonId>
+                                <taxonomicClassification>
+                                  <taxonRankName>genus</taxonRankName>
+                                  <taxonRankValue>Acipenser</taxonRankValue>
+                                  <commonName>sturgeons</commonName>
+                                  <commonName>greater sturgeons</commonName>
+                                  <taxonId provider="https://itis.gov">161065</taxonId>
+                                  <taxonomicClassification>
+                                    <taxonRankName>species</taxonRankName>
+                                    <taxonRankValue>Acipenser transmontanus</taxonRankValue>
+                                    <commonName>white sturgeon</commonName>
+                                    <taxonId provider="https://itis.gov">161068</taxonId>
+                                  </taxonomicClassification>
+                                </taxonomicClassification>
+                              </taxonomicClassification>
+                            </taxonomicClassification>
+                          </taxonomicClassification>
+                        </taxonomicClassification>
+                      </taxonomicClassification>
+                    </taxonomicClassification>
+                  </taxonomicClassification>
+                </taxonomicClassification>
+              </taxonomicClassification>
+            </taxonomicClassification>
+          </taxonomicClassification>
+        </taxonomicClassification>
+        <taxonomicClassification>
+          <taxonRankName>kingdom</taxonRankName>
+          <taxonRankValue>Animalia</taxonRankValue>
+          <commonName>animals</commonName>
+          <taxonId provider="https://itis.gov">202423</taxonId>
+          <taxonomicClassification>
+            <taxonRankName>subkingdom</taxonRankName>
+            <taxonRankValue>Bilateria</taxonRankValue>
+            <commonName>triploblasts</commonName>
+            <taxonId provider="https://itis.gov">914154</taxonId>
+            <taxonomicClassification>
+              <taxonRankName>infrakingdom</taxonRankName>
+              <taxonRankValue>Deuterostomia</taxonRankValue>
+              <taxonId provider="https://itis.gov">914156</taxonId>
+              <taxonomicClassification>
+                <taxonRankName>phylum</taxonRankName>
+                <taxonRankValue>Chordata</taxonRankValue>
+                <commonName>chordates</commonName>
+                <taxonId provider="https://itis.gov">158852</taxonId>
+                <taxonomicClassification>
+                  <taxonRankName>subphylum</taxonRankName>
+                  <taxonRankValue>Vertebrata</taxonRankValue>
+                  <commonName>vertebrates</commonName>
+                  <taxonId provider="https://itis.gov">331030</taxonId>
+                  <taxonomicClassification>
+                    <taxonRankName>infraphylum</taxonRankName>
+                    <taxonRankValue>Gnathostomata</taxonRankValue>
+                    <taxonId provider="https://itis.gov">914179</taxonId>
+                    <taxonomicClassification>
+                      <taxonRankName>superclass</taxonRankName>
+                      <taxonRankValue>Actinopterygii</taxonRankValue>
+                      <commonName>ray-finned fishes</commonName>
+                      <commonName>spiny rayed fishes</commonName>
+                      <taxonId provider="https://itis.gov">161061</taxonId>
+                      <taxonomicClassification>
+                        <taxonRankName>class</taxonRankName>
+                        <taxonRankValue>Teleostei</taxonRankValue>
+                        <taxonId provider="https://itis.gov">161105</taxonId>
+                        <taxonomicClassification>
+                          <taxonRankName>superorder</taxonRankName>
+                          <taxonRankValue>Acanthopterygii</taxonRankValue>
+                          <taxonId provider="https://itis.gov">166082</taxonId>
+                          <taxonomicClassification>
+                            <taxonRankName>order</taxonRankName>
+                            <taxonRankValue>Perciformes</taxonRankValue>
+                            <commonName>perch-like fishes</commonName>
+                            <taxonId provider="https://itis.gov">167640</taxonId>
+                            <taxonomicClassification>
+                              <taxonRankName>suborder</taxonRankName>
+                              <taxonRankValue>Percoidei</taxonRankValue>
+                              <taxonId provider="https://itis.gov">167641</taxonId>
+                              <taxonomicClassification>
+                                <taxonRankName>family</taxonRankName>
+                                <taxonRankValue>Moronidae</taxonRankValue>
+                                <commonName>temperate basses</commonName>
+                                <taxonId provider="https://itis.gov">202002</taxonId>
+                                <taxonomicClassification>
+                                  <taxonRankName>genus</taxonRankName>
+                                  <taxonRankValue>Morone</taxonRankValue>
+                                  <commonName>striped basses</commonName>
+                                  <taxonId provider="https://itis.gov">167676</taxonId>
+                                  <taxonomicClassification>
+                                    <taxonRankName>species</taxonRankName>
+                                    <taxonRankValue>Morone saxatilis</taxonRankValue>
+                                    <commonName>rockfish</commonName>
+                                    <commonName>Striped Bass</commonName>
+                                    <commonName>Paradise Bass hybrid</commonName>
+                                    <commonName>Wiper hybrid</commonName>
+                                    <commonName>Virginia Bass hybrid</commonName>
+                                    <commonName>Maryland Bass hybrid</commonName>
+                                    <commonName>Whiterock Bass hybrid</commonName>
+                                    <commonName>Sunshine Bass hybrid</commonName>
+                                    <commonName>Palmetto Bass hybrid</commonName>
+                                    <taxonId provider="https://itis.gov">167680</taxonId>
+                                  </taxonomicClassification>
+                                </taxonomicClassification>
+                              </taxonomicClassification>
+                            </taxonomicClassification>
+                          </taxonomicClassification>
+                        </taxonomicClassification>
+                      </taxonomicClassification>
+                    </taxonomicClassification>
+                  </taxonomicClassification>
+                </taxonomicClassification>
+              </taxonomicClassification>
+            </taxonomicClassification>
+          </taxonomicClassification>
+        </taxonomicClassification>
+        <taxonomicClassification>
+          <taxonRankName>kingdom</taxonRankName>
+          <taxonRankValue>Animalia</taxonRankValue>
+          <commonName>animals</commonName>
+          <taxonId provider="https://itis.gov">202423</taxonId>
+          <taxonomicClassification>
+            <taxonRankName>subkingdom</taxonRankName>
+            <taxonRankValue>Bilateria</taxonRankValue>
+            <commonName>triploblasts</commonName>
+            <taxonId provider="https://itis.gov">914154</taxonId>
+            <taxonomicClassification>
+              <taxonRankName>infrakingdom</taxonRankName>
+              <taxonRankValue>Deuterostomia</taxonRankValue>
+              <taxonId provider="https://itis.gov">914156</taxonId>
+              <taxonomicClassification>
+                <taxonRankName>phylum</taxonRankName>
+                <taxonRankValue>Chordata</taxonRankValue>
+                <commonName>chordates</commonName>
+                <taxonId provider="https://itis.gov">158852</taxonId>
+                <taxonomicClassification>
+                  <taxonRankName>subphylum</taxonRankName>
+                  <taxonRankValue>Vertebrata</taxonRankValue>
+                  <commonName>vertebrates</commonName>
+                  <taxonId provider="https://itis.gov">331030</taxonId>
+                  <taxonomicClassification>
+                    <taxonRankName>infraphylum</taxonRankName>
+                    <taxonRankValue>Gnathostomata</taxonRankValue>
+                    <taxonId provider="https://itis.gov">914179</taxonId>
+                    <taxonomicClassification>
+                      <taxonRankName>superclass</taxonRankName>
+                      <taxonRankValue>Actinopterygii</taxonRankValue>
+                      <commonName>ray-finned fishes</commonName>
+                      <commonName>spiny rayed fishes</commonName>
+                      <taxonId provider="https://itis.gov">161061</taxonId>
+                      <taxonomicClassification>
+                        <taxonRankName>class</taxonRankName>
+                        <taxonRankValue>Teleostei</taxonRankValue>
+                        <taxonId provider="https://itis.gov">161105</taxonId>
+                        <taxonomicClassification>
+                          <taxonRankName>superorder</taxonRankName>
+                          <taxonRankValue>Acanthopterygii</taxonRankValue>
+                          <taxonId provider="https://itis.gov">166082</taxonId>
+                          <taxonomicClassification>
+                            <taxonRankName>order</taxonRankName>
+                            <taxonRankValue>Perciformes</taxonRankValue>
+                            <commonName>perch-like fishes</commonName>
+                            <taxonId provider="https://itis.gov">167640</taxonId>
+                            <taxonomicClassification>
+                              <taxonRankName>suborder</taxonRankName>
+                              <taxonRankValue>Percoidei</taxonRankValue>
+                              <taxonId provider="https://itis.gov">167641</taxonId>
+                              <taxonomicClassification>
+                                <taxonRankName>family</taxonRankName>
+                                <taxonRankValue>Centrarchidae</taxonRankValue>
+                                <commonName>sunfishes</commonName>
+                                <taxonId provider="https://itis.gov">168093</taxonId>
+                                <taxonomicClassification>
+                                  <taxonRankName>genus</taxonRankName>
+                                  <taxonRankValue>Micropterus</taxonRankValue>
+                                  <commonName>black basses</commonName>
+                                  <commonName>largemouth basses</commonName>
+                                  <taxonId provider="https://itis.gov">168158</taxonId>
+                                  <taxonomicClassification>
+                                    <taxonRankName>species</taxonRankName>
+                                    <taxonRankValue>Micropterus salmoides</taxonRankValue>
+                                    <commonName>Largemouth Bass</commonName>
+                                    <taxonId provider="https://itis.gov">168160</taxonId>
+                                  </taxonomicClassification>
+                                </taxonomicClassification>
+                              </taxonomicClassification>
+                            </taxonomicClassification>
+                          </taxonomicClassification>
+                        </taxonomicClassification>
+                      </taxonomicClassification>
+                    </taxonomicClassification>
+                  </taxonomicClassification>
+                </taxonomicClassification>
+              </taxonomicClassification>
+            </taxonomicClassification>
+          </taxonomicClassification>
+        </taxonomicClassification>
+        <taxonomicClassification>
+          <taxonRankName>kingdom</taxonRankName>
+          <taxonRankValue>Animalia</taxonRankValue>
+          <commonName>animals</commonName>
+          <taxonId provider="https://itis.gov">202423</taxonId>
+          <taxonomicClassification>
+            <taxonRankName>subkingdom</taxonRankName>
+            <taxonRankValue>Bilateria</taxonRankValue>
+            <commonName>triploblasts</commonName>
+            <taxonId provider="https://itis.gov">914154</taxonId>
+            <taxonomicClassification>
+              <taxonRankName>infrakingdom</taxonRankName>
+              <taxonRankValue>Deuterostomia</taxonRankValue>
+              <taxonId provider="https://itis.gov">914156</taxonId>
+              <taxonomicClassification>
+                <taxonRankName>phylum</taxonRankName>
+                <taxonRankValue>Chordata</taxonRankValue>
+                <commonName>chordates</commonName>
+                <taxonId provider="https://itis.gov">158852</taxonId>
+                <taxonomicClassification>
+                  <taxonRankName>subphylum</taxonRankName>
+                  <taxonRankValue>Vertebrata</taxonRankValue>
+                  <commonName>vertebrates</commonName>
+                  <taxonId provider="https://itis.gov">331030</taxonId>
+                  <taxonomicClassification>
+                    <taxonRankName>infraphylum</taxonRankName>
+                    <taxonRankValue>Gnathostomata</taxonRankValue>
+                    <taxonId provider="https://itis.gov">914179</taxonId>
+                    <taxonomicClassification>
+                      <taxonRankName>superclass</taxonRankName>
+                      <taxonRankValue>Actinopterygii</taxonRankValue>
+                      <commonName>ray-finned fishes</commonName>
+                      <commonName>spiny rayed fishes</commonName>
+                      <taxonId provider="https://itis.gov">161061</taxonId>
+                      <taxonomicClassification>
+                        <taxonRankName>class</taxonRankName>
+                        <taxonRankValue>Teleostei</taxonRankValue>
+                        <taxonId provider="https://itis.gov">161105</taxonId>
+                        <taxonomicClassification>
+                          <taxonRankName>superorder</taxonRankName>
+                          <taxonRankValue>Protacanthopterygii</taxonRankValue>
+                          <taxonId provider="https://itis.gov">161928</taxonId>
+                          <taxonomicClassification>
+                            <taxonRankName>order</taxonRankName>
+                            <taxonRankValue>Osmeriformes</taxonRankValue>
+                            <commonName>argentines</commonName>
+                            <commonName>smelts</commonName>
+                            <taxonId provider="https://itis.gov">553133</taxonId>
+                            <taxonomicClassification>
+                              <taxonRankName>suborder</taxonRankName>
+                              <taxonRankValue>Osmeroidei</taxonRankValue>
+                              <taxonId provider="https://itis.gov">553145</taxonId>
+                              <taxonomicClassification>
+                                <taxonRankName>superfamily</taxonRankName>
+                                <taxonRankValue>Osmeroidea</taxonRankValue>
+                                <taxonId provider="https://itis.gov">623275</taxonId>
+                                <taxonomicClassification>
+                                  <taxonRankName>family</taxonRankName>
+                                  <taxonRankValue>Osmeridae</taxonRankValue>
+                                  <commonName>smelts</commonName>
+                                  <taxonId provider="https://itis.gov">162028</taxonId>
+                                  <taxonomicClassification>
+                                    <taxonRankName>genus</taxonRankName>
+                                    <taxonRankValue>Hypomesus</taxonRankValue>
+                                    <commonName>smallmouth smelts</commonName>
+                                    <taxonId provider="https://itis.gov">162029</taxonId>
+                                    <taxonomicClassification>
+                                      <taxonRankName>species</taxonRankName>
+                                      <taxonRankValue>Hypomesus nipponensis</taxonRankValue>
+                                      <commonName>wakasagi</commonName>
+                                      <commonName>Wakasagi smelt</commonName>
+                                      <taxonId provider="https://itis.gov">162033</taxonId>
+                                    </taxonomicClassification>
+                                  </taxonomicClassification>
+                                </taxonomicClassification>
+                              </taxonomicClassification>
+                            </taxonomicClassification>
+                          </taxonomicClassification>
+                        </taxonomicClassification>
+                      </taxonomicClassification>
+                    </taxonomicClassification>
+                  </taxonomicClassification>
+                </taxonomicClassification>
+              </taxonomicClassification>
+            </taxonomicClassification>
+          </taxonomicClassification>
+        </taxonomicClassification>
+        <taxonomicClassification>
+          <taxonRankName>kingdom</taxonRankName>
+          <taxonRankValue>Animalia</taxonRankValue>
+          <commonName>animals</commonName>
+          <taxonId provider="https://itis.gov">202423</taxonId>
+          <taxonomicClassification>
+            <taxonRankName>subkingdom</taxonRankName>
+            <taxonRankValue>Bilateria</taxonRankValue>
+            <commonName>triploblasts</commonName>
+            <taxonId provider="https://itis.gov">914154</taxonId>
+            <taxonomicClassification>
+              <taxonRankName>infrakingdom</taxonRankName>
+              <taxonRankValue>Deuterostomia</taxonRankValue>
+              <taxonId provider="https://itis.gov">914156</taxonId>
+              <taxonomicClassification>
+                <taxonRankName>phylum</taxonRankName>
+                <taxonRankValue>Chordata</taxonRankValue>
+                <commonName>chordates</commonName>
+                <taxonId provider="https://itis.gov">158852</taxonId>
+                <taxonomicClassification>
+                  <taxonRankName>subphylum</taxonRankName>
+                  <taxonRankValue>Vertebrata</taxonRankValue>
+                  <commonName>vertebrates</commonName>
+                  <taxonId provider="https://itis.gov">331030</taxonId>
+                  <taxonomicClassification>
+                    <taxonRankName>infraphylum</taxonRankName>
+                    <taxonRankValue>Gnathostomata</taxonRankValue>
+                    <taxonId provider="https://itis.gov">914179</taxonId>
+                    <taxonomicClassification>
+                      <taxonRankName>superclass</taxonRankName>
+                      <taxonRankValue>Actinopterygii</taxonRankValue>
+                      <commonName>ray-finned fishes</commonName>
+                      <commonName>spiny rayed fishes</commonName>
+                      <taxonId provider="https://itis.gov">161061</taxonId>
+                      <taxonomicClassification>
+                        <taxonRankName>class</taxonRankName>
+                        <taxonRankValue>Teleostei</taxonRankValue>
+                        <taxonId provider="https://itis.gov">161105</taxonId>
+                        <taxonomicClassification>
+                          <taxonRankName>superorder</taxonRankName>
+                          <taxonRankValue>Ostariophysi</taxonRankValue>
+                          <taxonId provider="https://itis.gov">162845</taxonId>
+                          <taxonomicClassification>
+                            <taxonRankName>order</taxonRankName>
+                            <taxonRankValue>Cypriniformes</taxonRankValue>
+                            <commonName>minnows</commonName>
+                            <commonName>suckers</commonName>
+                            <taxonId provider="https://itis.gov">162846</taxonId>
+                            <taxonomicClassification>
+                              <taxonRankName>superfamily</taxonRankName>
+                              <taxonRankValue>Cyprinoidea</taxonRankValue>
+                              <taxonId provider="https://itis.gov">638796</taxonId>
+                              <taxonomicClassification>
+                                <taxonRankName>family</taxonRankName>
+                                <taxonRankValue>Leuciscidae</taxonRankValue>
+                                <taxonId provider="https://itis.gov">1198935</taxonId>
+                                <taxonomicClassification>
+                                  <taxonRankName>subfamily</taxonRankName>
+                                  <taxonRankValue>Laviniinae</taxonRankValue>
+                                  <taxonId provider="https://itis.gov">1198941</taxonId>
+                                  <taxonomicClassification>
+                                    <taxonRankName>genus</taxonRankName>
+                                    <taxonRankValue>Orthodon</taxonRankValue>
+                                    <commonName>Sacramento blackfishes</commonName>
+                                    <taxonId provider="https://itis.gov">163588</taxonId>
+                                    <taxonomicClassification>
+                                      <taxonRankName>species</taxonRankName>
+                                      <taxonRankValue>Orthodon microlepidotus</taxonRankValue>
+                                      <commonName>Sacramento Blackfish</commonName>
+                                      <taxonId provider="https://itis.gov">163589</taxonId>
+                                    </taxonomicClassification>
+                                  </taxonomicClassification>
+                                </taxonomicClassification>
+                              </taxonomicClassification>
+                            </taxonomicClassification>
+                          </taxonomicClassification>
+                        </taxonomicClassification>
+                      </taxonomicClassification>
+                    </taxonomicClassification>
+                  </taxonomicClassification>
+                </taxonomicClassification>
+              </taxonomicClassification>
+            </taxonomicClassification>
+          </taxonomicClassification>
+        </taxonomicClassification>
+        <taxonomicClassification>
+          <taxonRankName>kingdom</taxonRankName>
+          <taxonRankValue>Animalia</taxonRankValue>
+          <commonName>animals</commonName>
+          <taxonId provider="https://itis.gov">202423</taxonId>
+          <taxonomicClassification>
+            <taxonRankName>subkingdom</taxonRankName>
+            <taxonRankValue>Bilateria</taxonRankValue>
+            <commonName>triploblasts</commonName>
+            <taxonId provider="https://itis.gov">914154</taxonId>
+            <taxonomicClassification>
+              <taxonRankName>infrakingdom</taxonRankName>
+              <taxonRankValue>Deuterostomia</taxonRankValue>
+              <taxonId provider="https://itis.gov">914156</taxonId>
+              <taxonomicClassification>
+                <taxonRankName>phylum</taxonRankName>
+                <taxonRankValue>Chordata</taxonRankValue>
+                <commonName>chordates</commonName>
+                <taxonId provider="https://itis.gov">158852</taxonId>
+                <taxonomicClassification>
+                  <taxonRankName>subphylum</taxonRankName>
+                  <taxonRankValue>Vertebrata</taxonRankValue>
+                  <commonName>vertebrates</commonName>
+                  <taxonId provider="https://itis.gov">331030</taxonId>
+                  <taxonomicClassification>
+                    <taxonRankName>infraphylum</taxonRankName>
+                    <taxonRankValue>Gnathostomata</taxonRankValue>
+                    <taxonId provider="https://itis.gov">914179</taxonId>
+                    <taxonomicClassification>
+                      <taxonRankName>superclass</taxonRankName>
+                      <taxonRankValue>Actinopterygii</taxonRankValue>
+                      <commonName>ray-finned fishes</commonName>
+                      <commonName>spiny rayed fishes</commonName>
+                      <taxonId provider="https://itis.gov">161061</taxonId>
+                      <taxonomicClassification>
+                        <taxonRankName>class</taxonRankName>
+                        <taxonRankValue>Teleostei</taxonRankValue>
+                        <taxonId provider="https://itis.gov">161105</taxonId>
+                        <taxonomicClassification>
+                          <taxonRankName>superorder</taxonRankName>
+                          <taxonRankValue>Ostariophysi</taxonRankValue>
+                          <taxonId provider="https://itis.gov">162845</taxonId>
+                          <taxonomicClassification>
+                            <taxonRankName>order</taxonRankName>
+                            <taxonRankValue>Cypriniformes</taxonRankValue>
+                            <commonName>minnows</commonName>
+                            <commonName>suckers</commonName>
+                            <taxonId provider="https://itis.gov">162846</taxonId>
+                            <taxonomicClassification>
+                              <taxonRankName>superfamily</taxonRankName>
+                              <taxonRankValue>Cyprinoidea</taxonRankValue>
+                              <taxonId provider="https://itis.gov">638796</taxonId>
+                              <taxonomicClassification>
+                                <taxonRankName>family</taxonRankName>
+                                <taxonRankValue>Leuciscidae</taxonRankValue>
+                                <taxonId provider="https://itis.gov">1198935</taxonId>
+                                <taxonomicClassification>
+                                  <taxonRankName>subfamily</taxonRankName>
+                                  <taxonRankValue>Laviniinae</taxonRankValue>
+                                  <taxonId provider="https://itis.gov">1198941</taxonId>
+                                  <taxonomicClassification>
+                                    <taxonRankName>genus</taxonRankName>
+                                    <taxonRankValue>Lavinia</taxonRankValue>
+                                    <commonName>hitches</commonName>
+                                    <taxonId provider="https://itis.gov">163568</taxonId>
+                                    <taxonomicClassification>
+                                      <taxonRankName>species</taxonRankName>
+                                      <taxonRankValue>Lavinia exilicauda</taxonRankValue>
+                                      <commonName>Hitch</commonName>
+                                      <taxonId provider="https://itis.gov">163569</taxonId>
+                                    </taxonomicClassification>
+                                  </taxonomicClassification>
+                                </taxonomicClassification>
+                              </taxonomicClassification>
+                            </taxonomicClassification>
+                          </taxonomicClassification>
+                        </taxonomicClassification>
+                      </taxonomicClassification>
+                    </taxonomicClassification>
+                  </taxonomicClassification>
+                </taxonomicClassification>
+              </taxonomicClassification>
+            </taxonomicClassification>
+          </taxonomicClassification>
+        </taxonomicClassification>
+        <taxonomicClassification>
+          <taxonRankName>kingdom</taxonRankName>
+          <taxonRankValue>Animalia</taxonRankValue>
+          <commonName>animals</commonName>
+          <taxonId provider="https://itis.gov">202423</taxonId>
+          <taxonomicClassification>
+            <taxonRankName>subkingdom</taxonRankName>
+            <taxonRankValue>Bilateria</taxonRankValue>
+            <commonName>triploblasts</commonName>
+            <taxonId provider="https://itis.gov">914154</taxonId>
+            <taxonomicClassification>
+              <taxonRankName>infrakingdom</taxonRankName>
+              <taxonRankValue>Deuterostomia</taxonRankValue>
+              <taxonId provider="https://itis.gov">914156</taxonId>
+              <taxonomicClassification>
+                <taxonRankName>phylum</taxonRankName>
+                <taxonRankValue>Chordata</taxonRankValue>
+                <commonName>chordates</commonName>
+                <taxonId provider="https://itis.gov">158852</taxonId>
+                <taxonomicClassification>
+                  <taxonRankName>subphylum</taxonRankName>
+                  <taxonRankValue>Vertebrata</taxonRankValue>
+                  <commonName>vertebrates</commonName>
+                  <taxonId provider="https://itis.gov">331030</taxonId>
+                  <taxonomicClassification>
+                    <taxonRankName>infraphylum</taxonRankName>
+                    <taxonRankValue>Gnathostomata</taxonRankValue>
+                    <taxonId provider="https://itis.gov">914179</taxonId>
+                    <taxonomicClassification>
+                      <taxonRankName>superclass</taxonRankName>
+                      <taxonRankValue>Actinopterygii</taxonRankValue>
+                      <commonName>ray-finned fishes</commonName>
+                      <commonName>spiny rayed fishes</commonName>
+                      <taxonId provider="https://itis.gov">161061</taxonId>
+                      <taxonomicClassification>
+                        <taxonRankName>class</taxonRankName>
+                        <taxonRankValue>Teleostei</taxonRankValue>
+                        <taxonId provider="https://itis.gov">161105</taxonId>
+                        <taxonomicClassification>
+                          <taxonRankName>superorder</taxonRankName>
+                          <taxonRankValue>Acanthopterygii</taxonRankValue>
+                          <taxonId provider="https://itis.gov">166082</taxonId>
+                          <taxonomicClassification>
+                            <taxonRankName>order</taxonRankName>
+                            <taxonRankValue>Perciformes</taxonRankValue>
+                            <commonName>perch-like fishes</commonName>
+                            <taxonId provider="https://itis.gov">167640</taxonId>
+                            <taxonomicClassification>
+                              <taxonRankName>suborder</taxonRankName>
+                              <taxonRankValue>Labroidei</taxonRankValue>
+                              <commonName>parrotfishes</commonName>
+                              <commonName>rainbowfishes</commonName>
+                              <commonName>wrasses</commonName>
+                              <taxonId provider="https://itis.gov">170476</taxonId>
+                              <taxonomicClassification>
+                                <taxonRankName>family</taxonRankName>
+                                <taxonRankValue>Embiotocidae</taxonRankValue>
+                                <commonName>surf perches</commonName>
+                                <commonName>surfperches</commonName>
+                                <taxonId provider="https://itis.gov">169735</taxonId>
+                                <taxonomicClassification>
+                                  <taxonRankName>genus</taxonRankName>
+                                  <taxonRankValue>Hysterocarpus</taxonRankValue>
+                                  <commonName>tule perches</commonName>
+                                  <taxonId provider="https://itis.gov">169762</taxonId>
+                                  <taxonomicClassification>
+                                    <taxonRankName>species</taxonRankName>
+                                    <taxonRankValue>Hysterocarpus traskii</taxonRankValue>
+                                    <commonName>tule perch</commonName>
+                                    <taxonId provider="https://itis.gov">553322</taxonId>
+                                  </taxonomicClassification>
+                                </taxonomicClassification>
+                              </taxonomicClassification>
+                            </taxonomicClassification>
+                          </taxonomicClassification>
+                        </taxonomicClassification>
+                      </taxonomicClassification>
+                    </taxonomicClassification>
+                  </taxonomicClassification>
+                </taxonomicClassification>
+              </taxonomicClassification>
+            </taxonomicClassification>
+          </taxonomicClassification>
+        </taxonomicClassification>
+        <taxonomicClassification>
+          <taxonRankName>kingdom</taxonRankName>
+          <taxonRankValue>Animalia</taxonRankValue>
+          <commonName>animals</commonName>
+          <taxonId provider="https://itis.gov">202423</taxonId>
+          <taxonomicClassification>
+            <taxonRankName>subkingdom</taxonRankName>
+            <taxonRankValue>Bilateria</taxonRankValue>
+            <commonName>triploblasts</commonName>
+            <taxonId provider="https://itis.gov">914154</taxonId>
+            <taxonomicClassification>
+              <taxonRankName>infrakingdom</taxonRankName>
+              <taxonRankValue>Deuterostomia</taxonRankValue>
+              <taxonId provider="https://itis.gov">914156</taxonId>
+              <taxonomicClassification>
+                <taxonRankName>phylum</taxonRankName>
+                <taxonRankValue>Chordata</taxonRankValue>
+                <commonName>chordates</commonName>
+                <taxonId provider="https://itis.gov">158852</taxonId>
+                <taxonomicClassification>
+                  <taxonRankName>subphylum</taxonRankName>
+                  <taxonRankValue>Vertebrata</taxonRankValue>
+                  <commonName>vertebrates</commonName>
+                  <taxonId provider="https://itis.gov">331030</taxonId>
+                  <taxonomicClassification>
+                    <taxonRankName>infraphylum</taxonRankName>
+                    <taxonRankValue>Gnathostomata</taxonRankValue>
+                    <taxonId provider="https://itis.gov">914179</taxonId>
+                    <taxonomicClassification>
+                      <taxonRankName>superclass</taxonRankName>
+                      <taxonRankValue>Actinopterygii</taxonRankValue>
+                      <commonName>ray-finned fishes</commonName>
+                      <commonName>spiny rayed fishes</commonName>
+                      <taxonId provider="https://itis.gov">161061</taxonId>
+                      <taxonomicClassification>
+                        <taxonRankName>class</taxonRankName>
+                        <taxonRankValue>Teleostei</taxonRankValue>
+                        <taxonId provider="https://itis.gov">161105</taxonId>
+                        <taxonomicClassification>
+                          <taxonRankName>superorder</taxonRankName>
+                          <taxonRankValue>Ostariophysi</taxonRankValue>
+                          <taxonId provider="https://itis.gov">162845</taxonId>
+                          <taxonomicClassification>
+                            <taxonRankName>order</taxonRankName>
+                            <taxonRankValue>Cypriniformes</taxonRankValue>
+                            <commonName>minnows</commonName>
+                            <commonName>suckers</commonName>
+                            <taxonId provider="https://itis.gov">162846</taxonId>
+                            <taxonomicClassification>
+                              <taxonRankName>superfamily</taxonRankName>
+                              <taxonRankValue>Cyprinoidea</taxonRankValue>
+                              <taxonId provider="https://itis.gov">638796</taxonId>
+                              <taxonomicClassification>
+                                <taxonRankName>family</taxonRankName>
+                                <taxonRankValue>Leuciscidae</taxonRankValue>
+                                <taxonId provider="https://itis.gov">1198935</taxonId>
+                                <taxonomicClassification>
+                                  <taxonRankName>subfamily</taxonRankName>
+                                  <taxonRankValue>Laviniinae</taxonRankValue>
+                                  <taxonId provider="https://itis.gov">1198941</taxonId>
+                                  <taxonomicClassification>
+                                    <taxonRankName>genus</taxonRankName>
+                                    <taxonRankValue>Ptychocheilus</taxonRankValue>
+                                    <commonName>pikeminnows</commonName>
+                                    <taxonId provider="https://itis.gov">163522</taxonId>
+                                    <taxonomicClassification>
+                                      <taxonRankName>species</taxonRankName>
+                                      <taxonRankValue>Ptychocheilus grandis</taxonRankValue>
+                                      <commonName>Sacramento squawfish</commonName>
+                                      <commonName>Sacramento Pikeminnow</commonName>
+                                      <taxonId provider="https://itis.gov">163524</taxonId>
+                                    </taxonomicClassification>
+                                  </taxonomicClassification>
+                                </taxonomicClassification>
+                              </taxonomicClassification>
+                            </taxonomicClassification>
+                          </taxonomicClassification>
+                        </taxonomicClassification>
+                      </taxonomicClassification>
+                    </taxonomicClassification>
+                  </taxonomicClassification>
+                </taxonomicClassification>
+              </taxonomicClassification>
+            </taxonomicClassification>
+          </taxonomicClassification>
+        </taxonomicClassification>
+        <taxonomicClassification>
+          <taxonRankName>kingdom</taxonRankName>
+          <taxonRankValue>Animalia</taxonRankValue>
+          <commonName>animals</commonName>
+          <taxonId provider="https://itis.gov">202423</taxonId>
+          <taxonomicClassification>
+            <taxonRankName>subkingdom</taxonRankName>
+            <taxonRankValue>Bilateria</taxonRankValue>
+            <commonName>triploblasts</commonName>
+            <taxonId provider="https://itis.gov">914154</taxonId>
+            <taxonomicClassification>
+              <taxonRankName>infrakingdom</taxonRankName>
+              <taxonRankValue>Deuterostomia</taxonRankValue>
+              <taxonId provider="https://itis.gov">914156</taxonId>
+              <taxonomicClassification>
+                <taxonRankName>phylum</taxonRankName>
+                <taxonRankValue>Chordata</taxonRankValue>
+                <commonName>chordates</commonName>
+                <taxonId provider="https://itis.gov">158852</taxonId>
+                <taxonomicClassification>
+                  <taxonRankName>subphylum</taxonRankName>
+                  <taxonRankValue>Vertebrata</taxonRankValue>
+                  <commonName>vertebrates</commonName>
+                  <taxonId provider="https://itis.gov">331030</taxonId>
+                  <taxonomicClassification>
+                    <taxonRankName>infraphylum</taxonRankName>
+                    <taxonRankValue>Gnathostomata</taxonRankValue>
+                    <taxonId provider="https://itis.gov">914179</taxonId>
+                    <taxonomicClassification>
+                      <taxonRankName>superclass</taxonRankName>
+                      <taxonRankValue>Actinopterygii</taxonRankValue>
+                      <commonName>ray-finned fishes</commonName>
+                      <commonName>spiny rayed fishes</commonName>
+                      <taxonId provider="https://itis.gov">161061</taxonId>
+                      <taxonomicClassification>
+                        <taxonRankName>class</taxonRankName>
+                        <taxonRankValue>Teleostei</taxonRankValue>
+                        <taxonId provider="https://itis.gov">161105</taxonId>
+                        <taxonomicClassification>
+                          <taxonRankName>superorder</taxonRankName>
+                          <taxonRankValue>Ostariophysi</taxonRankValue>
+                          <taxonId provider="https://itis.gov">162845</taxonId>
+                          <taxonomicClassification>
+                            <taxonRankName>order</taxonRankName>
+                            <taxonRankValue>Cypriniformes</taxonRankValue>
+                            <commonName>minnows</commonName>
+                            <commonName>suckers</commonName>
+                            <taxonId provider="https://itis.gov">162846</taxonId>
+                            <taxonomicClassification>
+                              <taxonRankName>superfamily</taxonRankName>
+                              <taxonRankValue>Cobitoidea</taxonRankValue>
+                              <taxonId provider="https://itis.gov">638797</taxonId>
+                              <taxonomicClassification>
+                                <taxonRankName>family</taxonRankName>
+                                <taxonRankValue>Catostomidae</taxonRankValue>
+                                <commonName>suckers</commonName>
+                                <taxonId provider="https://itis.gov">163892</taxonId>
+                                <taxonomicClassification>
+                                  <taxonRankName>subfamily</taxonRankName>
+                                  <taxonRankValue>Catostominae</taxonRankValue>
+                                  <taxonId provider="https://itis.gov">638809</taxonId>
+                                  <taxonomicClassification>
+                                    <taxonRankName>tribe</taxonRankName>
+                                    <taxonRankValue>Catostomini</taxonRankValue>
+                                    <taxonId provider="https://itis.gov">638849</taxonId>
+                                    <taxonomicClassification>
+                                      <taxonRankName>genus</taxonRankName>
+                                      <taxonRankValue>Catostomus</taxonRankValue>
+                                      <commonName>common suckers</commonName>
+                                      <taxonId provider="https://itis.gov">163893</taxonId>
+                                      <taxonomicClassification>
+                                        <taxonRankName>species</taxonRankName>
+                                        <taxonRankValue>Catostomus occidentalis</taxonRankValue>
+                                        <commonName>Sacramento Sucker</commonName>
+                                        <taxonId provider="https://itis.gov">163908</taxonId>
+                                      </taxonomicClassification>
+                                    </taxonomicClassification>
+                                  </taxonomicClassification>
+                                </taxonomicClassification>
+                              </taxonomicClassification>
+                            </taxonomicClassification>
+                          </taxonomicClassification>
+                        </taxonomicClassification>
+                      </taxonomicClassification>
+                    </taxonomicClassification>
+                  </taxonomicClassification>
+                </taxonomicClassification>
+              </taxonomicClassification>
+            </taxonomicClassification>
+          </taxonomicClassification>
+        </taxonomicClassification>
+        <taxonomicClassification>
+          <taxonRankName>kingdom</taxonRankName>
+          <taxonRankValue>Animalia</taxonRankValue>
+          <commonName>animals</commonName>
+          <taxonId provider="https://itis.gov">202423</taxonId>
+          <taxonomicClassification>
+            <taxonRankName>subkingdom</taxonRankName>
+            <taxonRankValue>Bilateria</taxonRankValue>
+            <commonName>triploblasts</commonName>
+            <taxonId provider="https://itis.gov">914154</taxonId>
+            <taxonomicClassification>
+              <taxonRankName>infrakingdom</taxonRankName>
+              <taxonRankValue>Deuterostomia</taxonRankValue>
+              <taxonId provider="https://itis.gov">914156</taxonId>
+              <taxonomicClassification>
+                <taxonRankName>phylum</taxonRankName>
+                <taxonRankValue>Chordata</taxonRankValue>
+                <commonName>chordates</commonName>
+                <taxonId provider="https://itis.gov">158852</taxonId>
+                <taxonomicClassification>
+                  <taxonRankName>subphylum</taxonRankName>
+                  <taxonRankValue>Vertebrata</taxonRankValue>
+                  <commonName>vertebrates</commonName>
+                  <taxonId provider="https://itis.gov">331030</taxonId>
+                  <taxonomicClassification>
+                    <taxonRankName>infraphylum</taxonRankName>
+                    <taxonRankValue>Gnathostomata</taxonRankValue>
+                    <taxonId provider="https://itis.gov">914179</taxonId>
+                    <taxonomicClassification>
+                      <taxonRankName>superclass</taxonRankName>
+                      <taxonRankValue>Actinopterygii</taxonRankValue>
+                      <commonName>ray-finned fishes</commonName>
+                      <commonName>spiny rayed fishes</commonName>
+                      <taxonId provider="https://itis.gov">161061</taxonId>
+                      <taxonomicClassification>
+                        <taxonRankName>class</taxonRankName>
+                        <taxonRankValue>Teleostei</taxonRankValue>
+                        <taxonId provider="https://itis.gov">161105</taxonId>
+                        <taxonomicClassification>
+                          <taxonRankName>superorder</taxonRankName>
+                          <taxonRankValue>Acanthopterygii</taxonRankValue>
+                          <taxonId provider="https://itis.gov">166082</taxonId>
+                          <taxonomicClassification>
+                            <taxonRankName>order</taxonRankName>
+                            <taxonRankValue>Gasterosteiformes</taxonRankValue>
+                            <commonName>pipefishes</commonName>
+                            <commonName>sticklebacks</commonName>
+                            <taxonId provider="https://itis.gov">166361</taxonId>
+                            <taxonomicClassification>
+                              <taxonRankName>suborder</taxonRankName>
+                              <taxonRankValue>Gasterosteoidei</taxonRankValue>
+                              <taxonId provider="https://itis.gov">166362</taxonId>
+                              <taxonomicClassification>
+                                <taxonRankName>family</taxonRankName>
+                                <taxonRankValue>Gasterosteidae</taxonRankValue>
+                                <commonName>sticklebacks</commonName>
+                                <taxonId provider="https://itis.gov">166363</taxonId>
+                                <taxonomicClassification>
+                                  <taxonRankName>genus</taxonRankName>
+                                  <taxonRankValue>Gasterosteus</taxonRankValue>
+                                  <commonName>threespine sticklebacks</commonName>
+                                  <taxonId provider="https://itis.gov">166364</taxonId>
+                                  <taxonomicClassification>
+                                    <taxonRankName>species</taxonRankName>
+                                    <taxonRankValue>Gasterosteus aculeatus</taxonRankValue>
+                                    <commonName>Alaskan stickleback</commonName>
+                                    <commonName>threespine stickleback</commonName>
+                                    <taxonId provider="https://itis.gov">166365</taxonId>
+                                  </taxonomicClassification>
+                                </taxonomicClassification>
+                              </taxonomicClassification>
+                            </taxonomicClassification>
+                          </taxonomicClassification>
+                        </taxonomicClassification>
+                      </taxonomicClassification>
+                    </taxonomicClassification>
+                  </taxonomicClassification>
+                </taxonomicClassification>
+              </taxonomicClassification>
+            </taxonomicClassification>
+          </taxonomicClassification>
+        </taxonomicClassification>
+        <taxonomicClassification>
+          <taxonRankName>kingdom</taxonRankName>
+          <taxonRankValue>Animalia</taxonRankValue>
+          <commonName>animals</commonName>
+          <taxonId provider="https://itis.gov">202423</taxonId>
+          <taxonomicClassification>
+            <taxonRankName>subkingdom</taxonRankName>
+            <taxonRankValue>Bilateria</taxonRankValue>
+            <commonName>triploblasts</commonName>
+            <taxonId provider="https://itis.gov">914154</taxonId>
+            <taxonomicClassification>
+              <taxonRankName>infrakingdom</taxonRankName>
+              <taxonRankValue>Deuterostomia</taxonRankValue>
+              <taxonId provider="https://itis.gov">914156</taxonId>
+              <taxonomicClassification>
+                <taxonRankName>phylum</taxonRankName>
+                <taxonRankValue>Chordata</taxonRankValue>
+                <commonName>chordates</commonName>
+                <taxonId provider="https://itis.gov">158852</taxonId>
+                <taxonomicClassification>
+                  <taxonRankName>subphylum</taxonRankName>
+                  <taxonRankValue>Vertebrata</taxonRankValue>
+                  <commonName>vertebrates</commonName>
+                  <taxonId provider="https://itis.gov">331030</taxonId>
+                  <taxonomicClassification>
+                    <taxonRankName>infraphylum</taxonRankName>
+                    <taxonRankValue>Gnathostomata</taxonRankValue>
+                    <taxonId provider="https://itis.gov">914179</taxonId>
+                    <taxonomicClassification>
+                      <taxonRankName>superclass</taxonRankName>
+                      <taxonRankValue>Actinopterygii</taxonRankValue>
+                      <commonName>ray-finned fishes</commonName>
+                      <commonName>spiny rayed fishes</commonName>
+                      <taxonId provider="https://itis.gov">161061</taxonId>
+                      <taxonomicClassification>
+                        <taxonRankName>class</taxonRankName>
+                        <taxonRankValue>Teleostei</taxonRankValue>
+                        <taxonId provider="https://itis.gov">161105</taxonId>
+                        <taxonomicClassification>
+                          <taxonRankName>superorder</taxonRankName>
+                          <taxonRankValue>Acanthopterygii</taxonRankValue>
+                          <taxonId provider="https://itis.gov">166082</taxonId>
+                          <taxonomicClassification>
+                            <taxonRankName>order</taxonRankName>
+                            <taxonRankValue>Scorpaeniformes</taxonRankValue>
+                            <commonName>mail-cheeked fishes</commonName>
+                            <commonName>scorpion fishes</commonName>
+                            <commonName>sculpins</commonName>
+                            <taxonId provider="https://itis.gov">166702</taxonId>
+                            <taxonomicClassification>
+                              <taxonRankName>suborder</taxonRankName>
+                              <taxonRankValue>Cottoidei</taxonRankValue>
+                              <commonName>sculpins</commonName>
+                              <taxonId provider="https://itis.gov">167185</taxonId>
+                              <taxonomicClassification>
+                                <taxonRankName>superfamily</taxonRankName>
+                                <taxonRankValue>Cottoidea</taxonRankValue>
+                                <taxonId provider="https://itis.gov">643429</taxonId>
+                                <taxonomicClassification>
+                                  <taxonRankName>family</taxonRankName>
+                                  <taxonRankValue>Cottidae</taxonRankValue>
+                                  <commonName>sculpins</commonName>
+                                  <commonName>bullheads</commonName>
+                                  <commonName>scaleless sculpins</commonName>
+                                  <taxonId provider="https://itis.gov">167196</taxonId>
+                                  <taxonomicClassification>
+                                    <taxonRankName>genus</taxonRankName>
+                                    <taxonRankValue>Cottus</taxonRankValue>
+                                    <commonName>Miller's thumbs</commonName>
+                                    <commonName>freshwater sculpins</commonName>
+                                    <taxonId provider="https://itis.gov">167229</taxonId>
+                                    <taxonomicClassification>
+                                      <taxonRankName>species</taxonRankName>
+                                      <taxonRankValue>Cottus asper</taxonRankValue>
+                                      <commonName>prickly sculpin</commonName>
+                                      <taxonId provider="https://itis.gov">167233</taxonId>
+                                    </taxonomicClassification>
+                                  </taxonomicClassification>
+                                </taxonomicClassification>
+                              </taxonomicClassification>
+                            </taxonomicClassification>
+                          </taxonomicClassification>
+                        </taxonomicClassification>
+                      </taxonomicClassification>
+                    </taxonomicClassification>
+                  </taxonomicClassification>
+                </taxonomicClassification>
+              </taxonomicClassification>
+            </taxonomicClassification>
+          </taxonomicClassification>
+        </taxonomicClassification>
+        <taxonomicClassification>
+          <taxonRankName>kingdom</taxonRankName>
+          <taxonRankValue>Plantae</taxonRankValue>
+          <commonName>plants</commonName>
+          <taxonId provider="https://itis.gov">202422</taxonId>
+          <taxonomicClassification>
+            <taxonRankName>subkingdom</taxonRankName>
+            <taxonRankValue>Viridiplantae</taxonRankValue>
+            <commonName>green plants</commonName>
+            <taxonId provider="https://itis.gov">954898</taxonId>
+            <taxonomicClassification>
+              <taxonRankName>infrakingdom</taxonRankName>
+              <taxonRankValue>Streptophyta</taxonRankValue>
+              <commonName>land plants</commonName>
+              <taxonId provider="https://itis.gov">846494</taxonId>
+              <taxonomicClassification>
+                <taxonRankName>superdivision</taxonRankName>
+                <taxonRankValue>Embryophyta</taxonRankValue>
+                <taxonId provider="https://itis.gov">954900</taxonId>
+                <taxonomicClassification>
+                  <taxonRankName>division</taxonRankName>
+                  <taxonRankValue>Tracheophyta</taxonRankValue>
+                  <commonName>vascular plants</commonName>
+                  <commonName>tracheophytes</commonName>
+                  <taxonId provider="https://itis.gov">846496</taxonId>
+                  <taxonomicClassification>
+                    <taxonRankName>subdivision</taxonRankName>
+                    <taxonRankValue>Spermatophytina</taxonRankValue>
+                    <commonName>spermatophytes</commonName>
+                    <commonName>seed plants</commonName>
+                    <taxonId provider="https://itis.gov">846504</taxonId>
+                    <taxonomicClassification>
+                      <taxonRankName>class</taxonRankName>
+                      <taxonRankValue>Magnoliopsida</taxonRankValue>
+                      <taxonId provider="https://itis.gov">18063</taxonId>
+                      <taxonomicClassification>
+                        <taxonRankName>superorder</taxonRankName>
+                        <taxonRankValue>Lilianae</taxonRankValue>
+                        <commonName>monocots</commonName>
+                        <commonName>monocotyledons</commonName>
+                        <taxonId provider="https://itis.gov">846542</taxonId>
+                        <taxonomicClassification>
+                          <taxonRankName>order</taxonRankName>
+                          <taxonRankValue>Alismatales</taxonRankValue>
+                          <taxonId provider="https://itis.gov">38883</taxonId>
+                          <taxonomicClassification>
+                            <taxonRankName>family</taxonRankName>
+                            <taxonRankValue>Hydrocharitaceae</taxonRankValue>
+                            <commonName>frog's bit</commonName>
+                            <commonName>tape-grass</commonName>
+                            <commonName>waternymphs</commonName>
+                            <taxonId provider="https://itis.gov">38935</taxonId>
+                            <taxonomicClassification>
+                              <taxonRankName>genus</taxonRankName>
+                              <taxonRankValue>Egeria</taxonRankValue>
+                              <taxonId provider="https://itis.gov">38971</taxonId>
+                              <taxonomicClassification>
+                                <taxonRankName>species</taxonRankName>
+                                <taxonRankValue>Egeria densa</taxonRankValue>
+                                <commonName>Brazilian elodea</commonName>
+                                <commonName>common waterweed</commonName>
+                                <commonName>South American waterweed</commonName>
+                                <commonName>Brazilian-waterweed</commonName>
+                                <commonName>Brazilian waterweed</commonName>
+                                <taxonId provider="https://itis.gov">38972</taxonId>
+                              </taxonomicClassification>
+                            </taxonomicClassification>
+                          </taxonomicClassification>
+                        </taxonomicClassification>
+                      </taxonomicClassification>
+                    </taxonomicClassification>
+                  </taxonomicClassification>
+                </taxonomicClassification>
+              </taxonomicClassification>
+            </taxonomicClassification>
+          </taxonomicClassification>
+        </taxonomicClassification>
+        <taxonomicClassification>
+          <taxonRankName>kingdom</taxonRankName>
+          <taxonRankValue>Bacteria</taxonRankValue>
+          <commonName>bacteria</commonName>
+          <taxonId provider="https://itis.gov">50</taxonId>
+          <taxonomicClassification>
+            <taxonRankName>subkingdom</taxonRankName>
+            <taxonRankValue>Negibacteria</taxonRankValue>
+            <taxonId provider="https://itis.gov">956096</taxonId>
+            <taxonomicClassification>
+              <taxonRankName>phylum</taxonRankName>
+              <taxonRankValue>Cyanobacteriota</taxonRankValue>
+              <taxonId provider="https://itis.gov">1237353</taxonId>
+              <taxonomicClassification>
+                <taxonRankName>class</taxonRankName>
+                <taxonRankValue>Cyanophyceae</taxonRankValue>
+                <commonName>blue-green algae</commonName>
+                <taxonId provider="https://itis.gov">602</taxonId>
+                <taxonomicClassification>
+                  <taxonRankName>order</taxonRankName>
+                  <taxonRankValue>Chroococcales</taxonRankValue>
+                  <taxonId provider="https://itis.gov">603</taxonId>
+                  <taxonomicClassification>
+                    <taxonRankName>family</taxonRankName>
+                    <taxonRankValue>Microcystaceae</taxonRankValue>
+                    <taxonId provider="https://itis.gov">1237375</taxonId>
+                    <taxonomicClassification>
+                      <taxonRankName>genus</taxonRankName>
+                      <taxonRankValue>Microcystis</taxonRankValue>
+                      <taxonId provider="https://itis.gov">747</taxonId>
+                    </taxonomicClassification>
+                  </taxonomicClassification>
+                </taxonomicClassification>
+              </taxonomicClassification>
+            </taxonomicClassification>
+          </taxonomicClassification>
+        </taxonomicClassification>
+        <taxonomicClassification>
+          <taxonRankName>kingdom</taxonRankName>
+          <taxonRankValue>Animalia</taxonRankValue>
+          <commonName>animals</commonName>
+          <taxonId provider="https://itis.gov">202423</taxonId>
+          <taxonomicClassification>
+            <taxonRankName>subkingdom</taxonRankName>
+            <taxonRankValue>Bilateria</taxonRankValue>
+            <commonName>triploblasts</commonName>
+            <taxonId provider="https://itis.gov">914154</taxonId>
+            <taxonomicClassification>
+              <taxonRankName>infrakingdom</taxonRankName>
+              <taxonRankValue>Protostomia</taxonRankValue>
+              <taxonId provider="https://itis.gov">914155</taxonId>
+              <taxonomicClassification>
+                <taxonRankName>superphylum</taxonRankName>
+                <taxonRankValue>Spiralia</taxonRankValue>
+                <taxonId provider="https://itis.gov">1204567</taxonId>
+                <taxonomicClassification>
+                  <taxonRankName>phylum</taxonRankName>
+                  <taxonRankValue>Mollusca</taxonRankValue>
+                  <commonName>molluscs</commonName>
+                  <commonName>mollusks</commonName>
+                  <taxonId provider="https://itis.gov">69458</taxonId>
+                  <taxonomicClassification>
+                    <taxonRankName>class</taxonRankName>
+                    <taxonRankValue>Bivalvia</taxonRankValue>
+                    <commonName>bivalves</commonName>
+                    <commonName>clams</commonName>
+                    <taxonId provider="https://itis.gov">79118</taxonId>
+                    <taxonomicClassification>
+                      <taxonRankName>subclass</taxonRankName>
+                      <taxonRankValue>Autobranchia</taxonRankValue>
+                      <taxonId provider="https://itis.gov">1204582</taxonId>
+                      <taxonomicClassification>
+                        <taxonRankName>infraclass</taxonRankName>
+                        <taxonRankValue>Heteroconchia</taxonRankValue>
+                        <taxonId provider="https://itis.gov">1204590</taxonId>
+                        <taxonomicClassification>
+                          <taxonRankName>order</taxonRankName>
+                          <taxonRankValue>Myida</taxonRankValue>
+                          <taxonId provider="https://itis.gov">1204616</taxonId>
+                          <taxonomicClassification>
+                            <taxonRankName>superfamily</taxonRankName>
+                            <taxonRankValue>Myoidea</taxonRankValue>
+                            <taxonId provider="https://itis.gov">566862</taxonId>
+                            <taxonomicClassification>
+                              <taxonRankName>family</taxonRankName>
+                              <taxonRankValue>Corbulidae</taxonRankValue>
+                              <taxonId provider="https://itis.gov">81708</taxonId>
+                              <taxonomicClassification>
+                                <taxonRankName>genus</taxonRankName>
+                                <taxonRankValue>Potamocorbula</taxonRankValue>
+                                <taxonId provider="https://itis.gov">81745</taxonId>
+                                <taxonomicClassification>
+                                  <taxonRankName>species</taxonRankName>
+                                  <taxonRankValue>Potamocorbula amurensis</taxonRankValue>
+                                  <commonName>brackish-water corbula</commonName>
+                                  <taxonId provider="https://itis.gov">81746</taxonId>
+                                </taxonomicClassification>
+                              </taxonomicClassification>
+                            </taxonomicClassification>
+                          </taxonomicClassification>
+                        </taxonomicClassification>
+                      </taxonomicClassification>
+                    </taxonomicClassification>
+                  </taxonomicClassification>
+                </taxonomicClassification>
+              </taxonomicClassification>
+            </taxonomicClassification>
+          </taxonomicClassification>
+        </taxonomicClassification>
+        <taxonomicClassification>
+          <taxonRankName>kingdom</taxonRankName>
+          <taxonRankValue>Plantae</taxonRankValue>
+          <commonName>plants</commonName>
+          <taxonId provider="https://itis.gov">202422</taxonId>
+          <taxonomicClassification>
+            <taxonRankName>subkingdom</taxonRankName>
+            <taxonRankValue>Viridiplantae</taxonRankValue>
+            <commonName>green plants</commonName>
+            <taxonId provider="https://itis.gov">954898</taxonId>
+            <taxonomicClassification>
+              <taxonRankName>infrakingdom</taxonRankName>
+              <taxonRankValue>Streptophyta</taxonRankValue>
+              <commonName>land plants</commonName>
+              <taxonId provider="https://itis.gov">846494</taxonId>
+              <taxonomicClassification>
+                <taxonRankName>superdivision</taxonRankName>
+                <taxonRankValue>Embryophyta</taxonRankValue>
+                <taxonId provider="https://itis.gov">954900</taxonId>
+                <taxonomicClassification>
+                  <taxonRankName>division</taxonRankName>
+                  <taxonRankValue>Tracheophyta</taxonRankValue>
+                  <commonName>vascular plants</commonName>
+                  <commonName>tracheophytes</commonName>
+                  <taxonId provider="https://itis.gov">846496</taxonId>
+                  <taxonomicClassification>
+                    <taxonRankName>subdivision</taxonRankName>
+                    <taxonRankValue>Spermatophytina</taxonRankValue>
+                    <commonName>spermatophytes</commonName>
+                    <commonName>seed plants</commonName>
+                    <taxonId provider="https://itis.gov">846504</taxonId>
+                    <taxonomicClassification>
+                      <taxonRankName>class</taxonRankName>
+                      <taxonRankValue>Magnoliopsida</taxonRankValue>
+                      <taxonId provider="https://itis.gov">18063</taxonId>
+                      <taxonomicClassification>
+                        <taxonRankName>superorder</taxonRankName>
+                        <taxonRankValue>Lilianae</taxonRankValue>
+                        <commonName>monocots</commonName>
+                        <commonName>monocotyledons</commonName>
+                        <taxonId provider="https://itis.gov">846542</taxonId>
+                        <taxonomicClassification>
+                          <taxonRankName>order</taxonRankName>
+                          <taxonRankValue>Poales</taxonRankValue>
+                          <taxonId provider="https://itis.gov">846620</taxonId>
+                          <taxonomicClassification>
+                            <taxonRankName>family</taxonRankName>
+                            <taxonRankValue>Poaceae</taxonRankValue>
+                            <taxonId provider="https://itis.gov">40351</taxonId>
+                            <taxonomicClassification>
+                              <taxonRankName>genus</taxonRankName>
+                              <taxonRankValue>Arundo</taxonRankValue>
+                              <taxonId provider="https://itis.gov">41449</taxonId>
+                              <taxonomicClassification>
+                                <taxonRankName>species</taxonRankName>
+                                <taxonRankValue>Arundo donax</taxonRankValue>
+                                <taxonId provider="https://itis.gov">41450</taxonId>
+                              </taxonomicClassification>
+                            </taxonomicClassification>
+                          </taxonomicClassification>
+                        </taxonomicClassification>
+                      </taxonomicClassification>
+                    </taxonomicClassification>
+                  </taxonomicClassification>
+                </taxonomicClassification>
+              </taxonomicClassification>
+            </taxonomicClassification>
+          </taxonomicClassification>
+        </taxonomicClassification>
+        <taxonomicClassification>
+          <taxonRankName>species</taxonRankName>
+          <taxonRankValue>Eichhornia crassipes</taxonRankValue>
+          <commonName>common water-hyacinth</commonName>
+          <commonName>water hyacinth</commonName>
+          <commonName>floating waterhyacinth</commonName>
+          <commonName>floating water hyacinth</commonName>
+          <commonName>common water hyacinth</commonName>
+          <taxonId provider="https://itis.gov">42623</taxonId>
+        </taxonomicClassification>
+        <taxonomicClassification>
+          <taxonRankName>kingdom</taxonRankName>
+          <taxonRankValue>Plantae</taxonRankValue>
+          <commonName>plants</commonName>
+          <taxonId provider="https://itis.gov">202422</taxonId>
+          <taxonomicClassification>
+            <taxonRankName>subkingdom</taxonRankName>
+            <taxonRankValue>Viridiplantae</taxonRankValue>
+            <commonName>green plants</commonName>
+            <taxonId provider="https://itis.gov">954898</taxonId>
+            <taxonomicClassification>
+              <taxonRankName>infrakingdom</taxonRankName>
+              <taxonRankValue>Streptophyta</taxonRankValue>
+              <commonName>land plants</commonName>
+              <taxonId provider="https://itis.gov">846494</taxonId>
+              <taxonomicClassification>
+                <taxonRankName>superdivision</taxonRankName>
+                <taxonRankValue>Embryophyta</taxonRankValue>
+                <taxonId provider="https://itis.gov">954900</taxonId>
+                <taxonomicClassification>
+                  <taxonRankName>division</taxonRankName>
+                  <taxonRankValue>Tracheophyta</taxonRankValue>
+                  <commonName>vascular plants</commonName>
+                  <commonName>tracheophytes</commonName>
+                  <taxonId provider="https://itis.gov">846496</taxonId>
+                  <taxonomicClassification>
+                    <taxonRankName>subdivision</taxonRankName>
+                    <taxonRankValue>Spermatophytina</taxonRankValue>
+                    <commonName>spermatophytes</commonName>
+                    <commonName>seed plants</commonName>
+                    <taxonId provider="https://itis.gov">846504</taxonId>
+                    <taxonomicClassification>
+                      <taxonRankName>class</taxonRankName>
+                      <taxonRankValue>Magnoliopsida</taxonRankValue>
+                      <taxonId provider="https://itis.gov">18063</taxonId>
+                      <taxonomicClassification>
+                        <taxonRankName>superorder</taxonRankName>
+                        <taxonRankValue>Lilianae</taxonRankValue>
+                        <commonName>monocots</commonName>
+                        <commonName>monocotyledons</commonName>
+                        <taxonId provider="https://itis.gov">846542</taxonId>
+                        <taxonomicClassification>
+                          <taxonRankName>order</taxonRankName>
+                          <taxonRankValue>Alismatales</taxonRankValue>
+                          <taxonId provider="https://itis.gov">38883</taxonId>
+                          <taxonomicClassification>
+                            <taxonRankName>family</taxonRankName>
+                            <taxonRankValue>Potamogetonaceae</taxonRankValue>
+                            <commonName>pondweed</commonName>
+                            <commonName>pond weed</commonName>
+                            <commonName>Pondweed family</commonName>
+                            <taxonId provider="https://itis.gov">39004</taxonId>
+                            <taxonomicClassification>
+                              <taxonRankName>genus</taxonRankName>
+                              <taxonRankValue>Potamogeton</taxonRankValue>
+                              <commonName>pondweed</commonName>
+                              <taxonId provider="https://itis.gov">39005</taxonId>
+                              <taxonomicClassification>
+                                <taxonRankName>species</taxonRankName>
+                                <taxonRankValue>Potamogeton crispus</taxonRankValue>
+                                <commonName>curly-leaved pondweed</commonName>
+                                <commonName>curly pondweed</commonName>
+                                <taxonId provider="https://itis.gov">39007</taxonId>
+                              </taxonomicClassification>
+                            </taxonomicClassification>
+                          </taxonomicClassification>
+                        </taxonomicClassification>
+                      </taxonomicClassification>
+                    </taxonomicClassification>
+                  </taxonomicClassification>
+                </taxonomicClassification>
+              </taxonomicClassification>
+            </taxonomicClassification>
+          </taxonomicClassification>
+        </taxonomicClassification>
+        <taxonomicClassification>
+          <taxonRankValue>Menidia spp. (audens/beryllina)</taxonRankValue>
+          <taxonId provider="itis"/>
+        </taxonomicClassification>
+        <taxonomicClassification>
+          <taxonRankValue>Corbicula spp. (manilensis; fluminea)</taxonRankValue>
+          <taxonId provider="itis"/>
+        </taxonomicClassification>
+      </taxonomicCoverage>
+    </coverage>
+    <maintenance>
+      <description>Completed, possible occasional updates</description>
+    </maintenance>
+    <contact>
+      <individualName>
+        <givenName>Brittany</givenName>
+        <surName>Davis</surName>
+      </individualName>
+      <organizationName>California Department of Water Resources</organizationName>
+      <electronicMailAddress>Brittany.E.Davis@water.ca.gov</electronicMailAddress>
+      <userId directory="https://orcid.org">https://orcid.org/0000-0003-3752-1830</userId>
+    </contact>
+    <contact>
+      <individualName>
+        <givenName>Catarina</givenName>
+        <surName>Pien</surName>
+      </individualName>
+      <organizationName>Bureau of Reclamation and California Department of Water Resources</organizationName>
+      <electronicMailAddress>cpien@usbr.gov</electronicMailAddress>
+      <userId directory="https://orcid.org">https://orcid.org/0000-0003-4427-6300</userId>
+    </contact>
+    <methods>
+      <methodStep>
+        <description>
+          <markdown># Methods&#13;
+&#13;
+## Data Collection Methods&#13;
+&#13;
+### Temperature Thresholds&#13;
+&#13;
+We compiled an integrated dataset (or catalogue) of temperature thresholds for fishes, invertebrates, aquatic vegetation, and cyanobacteria using documented values in peer-reviewed research, technical reports or field data when nothing was found in literature. While hundreds of native and non-native species exist in the Sacramento-San Joaquin Delta, we included only a subset of species focused around 1) resource management (e.g., state or federally listed endangered or threatened species), 2) species that may negatively affect management-relevant species (e.g., non-native predators, clams, aquatic vegetation), and 3) other native fishes where information is less known. For each species and life-stage (if found) we conducted a literature search and recorded documented suboptimum or tolerance temperature values. Often literature and experimental research values varied based on the metric (e.g. growth, metabolic scope, critical thermal maximum or lethal thermal maximum) or acclimation temperature where species can acquire thermal tolerance. For variable values, a range was documented in the dataset to capture the variability across literature.&#13;
+&#13;
+### Life Stage Designations&#13;
+&#13;
+Most monitoring programs report length data for fish catch, but do not report life stage. To connect temperature thresholds with monitoring data, we conducted a literature search to find documented lengths for each life stage (larvae, juvenile, adult) so that we could make life stage designations for monitoring data. See notes on data quality (below) for more details on how these designations were made. &#13;
+&#13;
+## Quality Assurance and Control&#13;
+&#13;
+### Notes on Data Quality&#13;
+&#13;
+**Life Stage data**&#13;
+&#13;
+Due to the scarcity of literature, there were some differences in how life stage was designated, depending on the species. We generally used minimum length at maturity or minimum spawning length as the designation for minimum adult lengths, but sometimes literature sources would mention sizes for adults that did not specifically indicate how the life stage designation was made. For larvae, we often used maximum length at yolk-sac larvae completion stage, but not always. Juvenile ranges often encompassed the whole range between larval and mature adult lengths, and thus could include sub-adult life stages. If we could not find larval or juvenile cutoff lengths, we combined the two life stages. See life_stage_designations.csv for additional notes and references. Additionally, there were three types of length measurements that were referenced through our literature search: standard length, total length, and fork length. There can be differences of several millimeters depending on the type of measurement used. Given the uncertainty around the different ways maturity and life stage were designated, and the uncertainty in how to interpolate a standardized length for each species-life stage, we decided to stick to the recorded values despite different length measurements.&#13;
+&#13;
+**Field data**&#13;
+&#13;
+Each monitoring program used different gear types and methods to target specific habitats and species, and each monitoring program has a different temporal resolution (both in terms of how often the program samples, and the total duration of the survey). Thus, there is some inequality in sampling for the dataset. Nevertheless, we hope our summary statistics provide useful information about the temperatures in which each species-life stage was observed. &#13;
+&#13;
+## Calculations and Analysis&#13;
+&#13;
+For each species and life-stage we calculated corresponding field temperatures using three fish monitoring datasets. Bashevkin et al. 2022 integrated data from nine surveys in the San Francisco Estuary (USFWS Delta Juvenile Fish Monitoring Program, USFWS Enhanced Delta Smelt Monitoring Program, UC Davis Suisun Marsh Study, CDFW Bay Study, CDFW Fall Midwater Trawl, CDFW Spring Kodiak Trawl, CDFW 20mm Survey, CDFW Smelt Larval Survey, and CDFW Summer Townet), while IEP et al. 2022 contains data from the Yolo Bypass Fish Monitoring Program, and CDFW 2022 contains data from the salvage facilities in the South Delta. Datasets were integrated into one dataset.&#13;
+Datasets were filtered for our species of interest, regions of interest (using latitude and longitude data), and for observations that had length data so we could classify organisms by life-stage. Life stage cutoffs (described above) were used to designate each organisms to a life stage, based on reported length. The mean, maximum and upper quartile (75th percentile) temperature at which each species-life-stage grouping was observed was then calculated. &#13;
+&#13;
+## Review Processes&#13;
+&#13;
+* Internal Review: Co-authors reviewed literature sources used for threshold and life stage cutoff information.  &#13;
+* External Review: Integrated field data sources were previously QA/QC’ed by each individual monitoring program. Please see each monitoring program’s metadata or contact programs for more information.&#13;
+</markdown>
+        </description>
+      </methodStep>
+    </methods>
+    <project>
+      <title>Temperature Thresholds</title>
+      <personnel>
+        <individualName>
+          <givenName>Catarina</givenName>
+          <surName>Pien</surName>
+        </individualName>
+        <organizationName>Bureau of Reclamation and California Department of Water Resources</organizationName>
+        <electronicMailAddress>cpien@usbr.gov</electronicMailAddress>
+        <userId directory="https://orcid.org">https://orcid.org/0000-0003-4427-6300</userId>
+        <role>Principal Investigator</role>
+      </personnel>
+      <funding>DWR Not applicable</funding>
+    </project>
+    <dataTable>
+      <entityName>Life Stage Length Designations</entityName>
+      <entityDescription>Length cutoffs for species life stages</entityDescription>
+      <physical>
+        <objectName>Lifestage_length_designations.csv</objectName>
+        <size unit="bytes">6476</size>
+        <authentication method="MD5">312f01d529774fc757d429099535d5b1</authentication>
+        <dataFormat>
+          <textFormat>
+            <numHeaderLines>1</numHeaderLines>
+            <recordDelimiter>\r\n</recordDelimiter>
+            <attributeOrientation>column</attributeOrientation>
+            <simpleDelimited>
+              <fieldDelimiter>,</fieldDelimiter>
+              <quoteCharacter>"</quoteCharacter>
+            </simpleDelimited>
+          </textFormat>
+        </dataFormat>
+      </physical>
+      <attributeList>
+        <attribute>
+          <attributeName>Common_name</attributeName>
+          <attributeDefinition>Species common name</attributeDefinition>
+          <storageType>string</storageType>
+          <measurementScale>
+            <nominal>
+              <nonNumericDomain>
+                <textDomain>
+                  <definition>Species common name</definition>
+                </textDomain>
+              </nonNumericDomain>
+            </nominal>
+          </measurementScale>
+        </attribute>
+        <attribute>
+          <attributeName>Taxon</attributeName>
+          <attributeDefinition>Species scientific name</attributeDefinition>
+          <storageType>string</storageType>
+          <measurementScale>
+            <nominal>
+              <nonNumericDomain>
+                <textDomain>
+                  <definition>Species scientific name</definition>
+                </textDomain>
+              </nonNumericDomain>
+            </nominal>
+          </measurementScale>
+        </attribute>
+        <attribute>
+          <attributeName>Assigned_life_stage</attributeName>
+          <attributeDefinition>Life stage assigned based on length</attributeDefinition>
+          <storageType>string</storageType>
+          <measurementScale>
+            <nominal>
+              <nonNumericDomain>
+                <enumeratedDomain>
+                  <codeDefinition>
+                    <code>Adult</code>
+                    <definition>adult</definition>
+                  </codeDefinition>
+                  <codeDefinition>
+                    <code>Juvenile</code>
+                    <definition>juvenile</definition>
+                  </codeDefinition>
+                  <codeDefinition>
+                    <code>Juvenile/Larvae</code>
+                    <definition>either juvenile or larvae</definition>
+                  </codeDefinition>
+                  <codeDefinition>
+                    <code>Larvae</code>
+                    <definition>larvae</definition>
+                  </codeDefinition>
+                </enumeratedDomain>
+              </nonNumericDomain>
+            </nominal>
+          </measurementScale>
+        </attribute>
+        <attribute>
+          <attributeName>Length_mm</attributeName>
+          <attributeDefinition>Length in millimeters</attributeDefinition>
+          <storageType>string</storageType>
+          <measurementScale>
+            <nominal>
+              <nonNumericDomain>
+                <textDomain>
+                  <definition>Length in millimeters</definition>
+                </textDomain>
+              </nonNumericDomain>
+            </nominal>
+          </measurementScale>
+        </attribute>
+        <attribute>
+          <attributeName>Length_type</attributeName>
+          <attributeDefinition>Type of length</attributeDefinition>
+          <storageType>string</storageType>
+          <measurementScale>
+            <nominal>
+              <nonNumericDomain>
+                <enumeratedDomain>
+                  <codeDefinition>
+                    <code>FL</code>
+                    <definition>fork length</definition>
+                  </codeDefinition>
+                  <codeDefinition>
+                    <code>FL/TL</code>
+                    <definition>fork length (first value); total length (second value)</definition>
+                  </codeDefinition>
+                  <codeDefinition>
+                    <code>SL</code>
+                    <definition>standard length</definition>
+                  </codeDefinition>
+                  <codeDefinition>
+                    <code>SL/FL</code>
+                    <definition>standard length (first value); fork length (second value)</definition>
+                  </codeDefinition>
+                  <codeDefinition>
+                    <code>SL/TL</code>
+                    <definition>standard length (first value); total length (second value)</definition>
+                  </codeDefinition>
+                  <codeDefinition>
+                    <code>TL</code>
+                    <definition>total length</definition>
+                  </codeDefinition>
+                  <codeDefinition>
+                    <code>TL/FL</code>
+                    <definition>total length (first value); fork length (second value)</definition>
+                  </codeDefinition>
+                </enumeratedDomain>
+              </nonNumericDomain>
+            </nominal>
+          </measurementScale>
+        </attribute>
+        <attribute>
+          <attributeName>Notes_life_stage_designation</attributeName>
+          <attributeDefinition>Additional notes</attributeDefinition>
+          <storageType>string</storageType>
+          <measurementScale>
+            <nominal>
+              <nonNumericDomain>
+                <textDomain>
+                  <definition>Additional notes</definition>
+                </textDomain>
+              </nonNumericDomain>
+            </nominal>
+          </measurementScale>
+        </attribute>
+        <attribute>
+          <attributeName>Reference</attributeName>
+          <attributeDefinition>Source</attributeDefinition>
+          <storageType>string</storageType>
+          <measurementScale>
+            <nominal>
+              <nonNumericDomain>
+                <textDomain>
+                  <definition>Source</definition>
+                </textDomain>
+              </nonNumericDomain>
+            </nominal>
+          </measurementScale>
+          <missingValueCode>
+            <code>NA</code>
+            <codeExplanation>Did not find a reference, range is based on ranges for other life stages</codeExplanation>
+          </missingValueCode>
+        </attribute>
+      </attributeList>
+      <numberOfRecords>48</numberOfRecords>
+    </dataTable>
+    <dataTable>
+      <entityName>Temperature thresholds</entityName>
+      <entityDescription>Temperature thresholds for aquatic species</entityDescription>
+      <physical>
+        <objectName>Temperature_thresholds.csv</objectName>
+        <size unit="bytes">11469</size>
+        <authentication method="MD5">8223782ec91acd543c3e511cfa0fea2d</authentication>
+        <dataFormat>
+          <textFormat>
+            <numHeaderLines>1</numHeaderLines>
+            <recordDelimiter>\r\n</recordDelimiter>
+            <attributeOrientation>column</attributeOrientation>
+            <simpleDelimited>
+              <fieldDelimiter>,</fieldDelimiter>
+              <quoteCharacter>"</quoteCharacter>
+            </simpleDelimited>
+          </textFormat>
+        </dataFormat>
+      </physical>
+      <attributeList>
+        <attribute>
+          <attributeName>Common_name</attributeName>
+          <attributeDefinition>Species common name</attributeDefinition>
+          <storageType>string</storageType>
+          <measurementScale>
+            <nominal>
+              <nonNumericDomain>
+                <textDomain>
+                  <definition>Species common name</definition>
+                </textDomain>
+              </nonNumericDomain>
+            </nominal>
+          </measurementScale>
+        </attribute>
+        <attribute>
+          <attributeName>Taxon</attributeName>
+          <attributeDefinition>Species scientific name</attributeDefinition>
+          <storageType>string</storageType>
+          <measurementScale>
+            <nominal>
+              <nonNumericDomain>
+                <textDomain>
+                  <definition>Species scientific name</definition>
+                </textDomain>
+              </nonNumericDomain>
+            </nominal>
+          </measurementScale>
+        </attribute>
+        <attribute>
+          <attributeName>Assigned_life_stage</attributeName>
+          <attributeDefinition>Life stage from reference</attributeDefinition>
+          <storageType>string</storageType>
+          <measurementScale>
+            <nominal>
+              <nonNumericDomain>
+                <enumeratedDomain>
+                  <codeDefinition>
+                    <code>Adult</code>
+                    <definition>adult</definition>
+                  </codeDefinition>
+                  <codeDefinition>
+                    <code>Juvenile</code>
+                    <definition>juvenile</definition>
+                  </codeDefinition>
+                  <codeDefinition>
+                    <code>Juvenile/Larvae</code>
+                    <definition>either juvenile or larvae</definition>
+                  </codeDefinition>
+                  <codeDefinition>
+                    <code>Larvae</code>
+                    <definition>larvae</definition>
+                  </codeDefinition>
+                  <codeDefinition>
+                    <code>Undifferentiated</code>
+                    <definition>undifferentiated</definition>
+                  </codeDefinition>
+                </enumeratedDomain>
+              </nonNumericDomain>
+            </nominal>
+          </measurementScale>
+        </attribute>
+        <attribute>
+          <attributeName>Status</attributeName>
+          <attributeDefinition>Native or non-native</attributeDefinition>
+          <storageType>string</storageType>
+          <measurementScale>
+            <nominal>
+              <nonNumericDomain>
+                <enumeratedDomain>
+                  <codeDefinition>
+                    <code>Native</code>
+                    <definition>native</definition>
+                  </codeDefinition>
+                  <codeDefinition>
+                    <code>Non-native</code>
+                    <definition>non-native</definition>
+                  </codeDefinition>
+                </enumeratedDomain>
+              </nonNumericDomain>
+            </nominal>
+          </measurementScale>
+        </attribute>
+        <attribute>
+          <attributeName>Field_detection_temp_mean</attributeName>
+          <attributeDefinition>Mean field detection temperature</attributeDefinition>
+          <storageType>float</storageType>
+          <measurementScale>
+            <ratio>
+              <unit>
+                <standardUnit>celsius</standardUnit>
+              </unit>
+              <numericDomain>
+                <numberType>real</numberType>
+                <bounds>
+                  <minimum exclusive="false">10.7</minimum>
+                  <maximum exclusive="false">21.8</maximum>
+                </bounds>
+              </numericDomain>
+            </ratio>
+          </measurementScale>
+          <missingValueCode>
+            <code>NA</code>
+            <codeExplanation>Information not found/available</codeExplanation>
+          </missingValueCode>
+        </attribute>
+        <attribute>
+          <attributeName>Field_detection_temp_75Q</attributeName>
+          <attributeDefinition>75th quartile field detection temperature</attributeDefinition>
+          <storageType>float</storageType>
+          <measurementScale>
+            <ratio>
+              <unit>
+                <standardUnit>celsius</standardUnit>
+              </unit>
+              <numericDomain>
+                <numberType>real</numberType>
+                <bounds>
+                  <minimum exclusive="false">11.7</minimum>
+                  <maximum exclusive="false">24</maximum>
+                </bounds>
+              </numericDomain>
+            </ratio>
+          </measurementScale>
+          <missingValueCode>
+            <code>NA</code>
+            <codeExplanation>Information not found/available</codeExplanation>
+          </missingValueCode>
+        </attribute>
+        <attribute>
+          <attributeName>Field_detection_temp_max</attributeName>
+          <attributeDefinition>Max field detection temperature</attributeDefinition>
+          <storageType>float</storageType>
+          <measurementScale>
+            <ratio>
+              <unit>
+                <standardUnit>celsius</standardUnit>
+              </unit>
+              <numericDomain>
+                <numberType>real</numberType>
+                <bounds>
+                  <minimum exclusive="false">19</minimum>
+                  <maximum exclusive="false">32.1</maximum>
+                </bounds>
+              </numericDomain>
+            </ratio>
+          </measurementScale>
+          <missingValueCode>
+            <code>NA</code>
+            <codeExplanation>Information not found/available</codeExplanation>
+          </missingValueCode>
+        </attribute>
+        <attribute>
+          <attributeName>n</attributeName>
+          <attributeDefinition>Number of samples used in mean, 75Q and maximum, with each sample generally referring to one fish</attributeDefinition>
+          <storageType>float</storageType>
+          <measurementScale>
+            <ratio>
+              <unit>
+                <standardUnit>dimensionless</standardUnit>
+              </unit>
+              <numericDomain>
+                <numberType>natural</numberType>
+                <bounds>
+                  <minimum exclusive="false">8</minimum>
+                  <maximum exclusive="false">639019</maximum>
+                </bounds>
+              </numericDomain>
+            </ratio>
+          </measurementScale>
+          <missingValueCode>
+            <code>NA</code>
+            <codeExplanation>Information not found/available</codeExplanation>
+          </missingValueCode>
+        </attribute>
+        <attribute>
+          <attributeName>Threshold_suboptimum</attributeName>
+          <attributeDefinition>Range of suboptimum temperature thresholds</attributeDefinition>
+          <storageType>string</storageType>
+          <measurementScale>
+            <nominal>
+              <nonNumericDomain>
+                <textDomain>
+                  <definition>Range of suboptimum temperature thresholds</definition>
+                </textDomain>
+              </nonNumericDomain>
+            </nominal>
+          </measurementScale>
+          <missingValueCode>
+            <code>NA</code>
+            <codeExplanation>Information not found/available</codeExplanation>
+          </missingValueCode>
+        </attribute>
+        <attribute>
+          <attributeName>Threshold_tolerance</attributeName>
+          <attributeDefinition>Range of tolerance temperature thresholds</attributeDefinition>
+          <storageType>string</storageType>
+          <measurementScale>
+            <nominal>
+              <nonNumericDomain>
+                <textDomain>
+                  <definition>Range of tolerance temperature thresholds</definition>
+                </textDomain>
+              </nonNumericDomain>
+            </nominal>
+          </measurementScale>
+          <missingValueCode>
+            <code>NA</code>
+            <codeExplanation>Information not found/available</codeExplanation>
+          </missingValueCode>
+        </attribute>
+        <attribute>
+          <attributeName>Spawning_growth_temp_range</attributeName>
+          <attributeDefinition>Spawning and growth temperature ranges</attributeDefinition>
+          <storageType>string</storageType>
+          <measurementScale>
+            <nominal>
+              <nonNumericDomain>
+                <textDomain>
+                  <definition>Spawning and growth temperature ranges</definition>
+                </textDomain>
+              </nonNumericDomain>
+            </nominal>
+          </measurementScale>
+          <missingValueCode>
+            <code>NA</code>
+            <codeExplanation>Information not found/available</codeExplanation>
+          </missingValueCode>
+        </attribute>
+        <attribute>
+          <attributeName>Metric_suboptimum</attributeName>
+          <attributeDefinition>Suboptimum metric</attributeDefinition>
+          <storageType>string</storageType>
+          <measurementScale>
+            <nominal>
+              <nonNumericDomain>
+                <textDomain>
+                  <definition>Suboptimum metric</definition>
+                </textDomain>
+              </nonNumericDomain>
+            </nominal>
+          </measurementScale>
+          <missingValueCode>
+            <code>NA</code>
+            <codeExplanation>Information not found/available</codeExplanation>
+          </missingValueCode>
+        </attribute>
+        <attribute>
+          <attributeName>Metric_tolerance</attributeName>
+          <attributeDefinition>Tolerance metric</attributeDefinition>
+          <storageType>string</storageType>
+          <measurementScale>
+            <nominal>
+              <nonNumericDomain>
+                <textDomain>
+                  <definition>Tolerance metric</definition>
+                </textDomain>
+              </nonNumericDomain>
+            </nominal>
+          </measurementScale>
+          <missingValueCode>
+            <code>NA</code>
+            <codeExplanation>Information not found/available</codeExplanation>
+          </missingValueCode>
+        </attribute>
+        <attribute>
+          <attributeName>Reference_suboptimum</attributeName>
+          <attributeDefinition>Reference for suboptimum information</attributeDefinition>
+          <storageType>string</storageType>
+          <measurementScale>
+            <nominal>
+              <nonNumericDomain>
+                <textDomain>
+                  <definition>Reference for suboptimum information</definition>
+                </textDomain>
+              </nonNumericDomain>
+            </nominal>
+          </measurementScale>
+          <missingValueCode>
+            <code>NA</code>
+            <codeExplanation>Information not found/available</codeExplanation>
+          </missingValueCode>
+        </attribute>
+        <attribute>
+          <attributeName>Reference_tolerance</attributeName>
+          <attributeDefinition>Reference for tolerance information</attributeDefinition>
+          <storageType>string</storageType>
+          <measurementScale>
+            <nominal>
+              <nonNumericDomain>
+                <textDomain>
+                  <definition>Reference for tolerance information</definition>
+                </textDomain>
+              </nonNumericDomain>
+            </nominal>
+          </measurementScale>
+          <missingValueCode>
+            <code>NA</code>
+            <codeExplanation>Information not found/available</codeExplanation>
+          </missingValueCode>
+        </attribute>
+        <attribute>
+          <attributeName>Reference_spawning</attributeName>
+          <attributeDefinition>Reference for spawning and growth information</attributeDefinition>
+          <storageType>string</storageType>
+          <measurementScale>
+            <nominal>
+              <nonNumericDomain>
+                <textDomain>
+                  <definition>Reference for spawning and growth information</definition>
+                </textDomain>
+              </nonNumericDomain>
+            </nominal>
+          </measurementScale>
+          <missingValueCode>
+            <code>NA</code>
+            <codeExplanation>Information not found/available</codeExplanation>
+          </missingValueCode>
+        </attribute>
+      </attributeList>
+      <numberOfRecords>55</numberOfRecords>
+    </dataTable>
+    <otherEntity>
+      <entityName>Metadata for Species Thresholds</entityName>
+      <entityDescription>Metadata for Species Thresholds</entityDescription>
+      <physical>
+        <objectName>Metadata_SpeciesThresholds.pdf</objectName>
+        <size unit="bytes">602734</size>
+        <authentication method="MD5">4aebe2e97898ff1bcf730edff0255d98</authentication>
+        <dataFormat>
+          <externallyDefinedFormat>
+            <formatName>application/pdf</formatName>
+          </externallyDefinedFormat>
+        </dataFormat>
+      </physical>
+      <entityType>unknown</entityType>
+    </otherEntity>
+  </dataset>
+  <additionalMetadata>
+    <metadata>
+      <emlEditor>
+        <app>EMLassemblyline</app>
+        <release>3.5.6</release>
+      </emlEditor>
+    </metadata>
+  </additionalMetadata>
+</eml:eml>
