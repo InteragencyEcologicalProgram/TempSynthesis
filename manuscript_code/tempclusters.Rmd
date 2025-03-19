@@ -89,7 +89,7 @@ dx = as.ggdend(d)
 ggplot(dx)+ geom_hline(yintercept = 65)+
   theme(text = element_text(size =6))+ ylim(-10, 500)
 ggsave("Figures/dendplot.png", device = "png", width = 11, height =9)
-
+ggsave("Figures/dendplot.tiff", device = "tiff", width = 11, height =9)
 
 ```
 
@@ -246,7 +246,7 @@ I want to see how closely the EDSM regions map to my clusters. Brian made one ve
 
 ```{r}
 
-spas = st_join(stashap, edsm)
+spas = st_join(st_transform(stashap, crs = st_crs(edsm)), edsm)
 stjoin = as.data.frame(spas)[,1:8]
 
 
