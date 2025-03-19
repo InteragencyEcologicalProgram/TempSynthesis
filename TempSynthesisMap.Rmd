@@ -312,8 +312,51 @@ gg_inset_map2
 
 ggsave("Figures/StationMapnostation.jpeg", width = 9, height = 8, device = 'png', dpi = 300, bg = "transparent")
 ```
-```
+
 ```{r}
 mapview::mapview(stations_sf_4269)
+```
+
+```{r}
+library(ggrepel)
+map_clusters <- 
+  #ggmap(map_obj) + 
+  ggplot() +
+  geom_sf(data = RosieReg,  inherit.aes = FALSE, alpha = 0.3, fill = c("#FDE725FF", "#7AD151FF", "#414487FF","#2A788EFF","#440154FF",  "#22A884FF" ))+
+  geom_sf(data = WW_Delta_crop, fill = "gray60", colour = "gray50", alpha = 0.6, inherit.aes = FALSE) + 
+  geom_sf(data = filter(WW_Delta,HNAME == "SACRAMENTO RIVER"), fill = "navyblue", colour = "navyblue", alpha = 0.6, inherit.aes = FALSE) + 
+  geom_sf(data = filter(WW_Delta,HNAME == "SAN JOAQUIN RIVER"), fill = "dodgerblue", colour = "dodgerblue", alpha = 0.8, inherit.aes = FALSE) +  
+  geom_sf(data = stashap, size = 2, 
+          aes(fill = cluster, shape = cluster), inherit.aes = FALSE)+
+  geom_sf_label(data = RosieReg, aes(label = Regions), nudge_x = c(0, 0, .2,0, -0.1,-.15), nudge_y = c(.1,-.1,0, .2, 0, -.1))+
+  scale_shape_manual(values = c(21, 22, 23, 24, 25, 17))+
+      annotate(geom = "text", x = -121.55, y = 38.19, size = 3.2, label = "Sacramento River", fontface = "italic",angle = 40) +
+   annotate(geom = "text", x = -121.46, y = 38.05, size = 3.2, label = "San Joaquin River", fontface = "italic", angle = 320) +
+  # geom_text(data = rivers_4269, aes(x = Longitude, y = Latitude, label = River), color = c("navyblue", "paleturquoise1"),fontface = c("bold.italic"), nudge_x = c(0.11, -0.21), nudge_y = -0.03) + 
+  annotation_north_arrow(location = "tr", which_north = "true", 
+        pad_x = unit(.2, "in"), pad_y = unit(0.2, "in"),
+        style = north_arrow_fancy_orienteering,
+        height = unit(2, "cm"),
+  width = unit(2, "cm"),) +
+  annotation_scale(location = "bl", bar_cols = c("black", "white", "black", "white"), text_cex = 1.5) +
+  #annotate(geom = "text", x = -122.3, y = 37.85, label = "San Francisco Bay", fontface = "italic", color = "grey22", size = 4.5) +
+  # coord_sf(xlim = st_bbox(insetbbox)[c(1, 3)],
+  #          ylim = st_bbox(insetbbox)[c(2, 4)])+
+  scale_fill_brewer(palette = "Dark2") +
+  ylim(c(37.6, 38.7)) +
+  theme_bw()+
+  theme(axis.title = element_blank(),
+        axis.text = element_text(size = 16),
+        axis.text.x = element_text(angle = 90),
+        legend.text = element_text(size = 14),
+        legend.title = element_blank(),
+        legend.position = "inside",
+          legend.position.inside = c(0.84, .65),
+        #legend.position = "none",
+        legend.margin = margin(0, 0.1, 0.1, 0.1, "cm") )
+
+map_clusters
+
+ggsave("manuscript_code/Figures/map_clusters.tiff", device = "tiff", width =10, height =10)
 ```
 

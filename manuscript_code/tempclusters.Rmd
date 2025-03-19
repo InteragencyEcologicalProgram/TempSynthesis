@@ -88,8 +88,8 @@ dx = as.ggdend(d)
 
 ggplot(dx)+ geom_hline(yintercept = 65)+
   theme(text = element_text(size =6))+ ylim(-10, 500)
-ggsave("Figures/dendplot.png", device = "png", width = 11, height =9)
-ggsave("Figures/dendplot.tiff", device = "tiff", width = 11, height =9)
+ggsave("manuscript_code/Figures/dendplot.png", device = "png", width = 11, height =9)
+ggsave("manuscript_code/Figures/dendplot.tiff", device = "tiff", width = 11, height =9)
 
 ```
 
@@ -367,14 +367,15 @@ mypal2 = c(brewer.pal(6, "Dark2"), "grey")
 #plot of my regions
 gp6c = ggplot() +
   geom_sf(data = RosieReg, mapping = aes(fill = Regions), alpha = 0.5)+
-#  geom_sf_label(aes(label = notes), RosieReg, nudge_y = .1, nudge_x = 0.1) +
+  geom_sf_label(aes(label = Regions), RosieReg, nudge_y = .1, nudge_x = 0.1) +
   geom_sf(data = delta, alpha = 0.5)+
   geom_sf(data = stashap, mapping =aes(color = cluster))+
   scale_fill_brewer(palette = "Pastel2", guide = NULL) + 
   scale_color_manual(values = mypal2)+
   theme_bw() + 
   coord_sf(xlim = c(-122.2, -121), ylim = c(37.6, 38.8))+
-  ggtitle("Rosie's Regions, 6 clusters")
+  ggtitle("Rosie's Regions, 6 clusters")+
+  ylab(NULL)+xlab(NULL)
 
 gp6c
 
