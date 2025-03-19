@@ -1,5 +1,5 @@
 ---
-title: "TempTrendModels"
+title: "Prepare Datasets"
 author: "Catarina Pien"
 date: "9/10/2020"
 output: 
@@ -8,6 +8,10 @@ output:
     editor_options: 
       chunk_output_type: console
 ---
+This code takes the original filtered hourly temperature dataset and filters it down based on stations that are not desired, thresholds for days (>275 days), months (>10 months), years (>7 years) so that only reasonably complete stations are included in the final dataset.
+Also creates daily, annual, monthly dataset with summary stats
+
+
 # Create Datasets
 
 ```{r setup, include=FALSE}
@@ -168,52 +172,6 @@ today = format(today(), "%Y%m%d")
 saveRDS(tempToUse, paste0("Data/temp10years_", today, ".rds"))
 saveRDS(tempToUse, here::here("Data/temp10years_20210811.rds"))
 ```
-
-
-# Calendar Year 
-
-Edit dataset for Peggy (Calendar Year)
-```{r}
-StationYearComboCY <- tempFilt1 %>%
-  filter(Year>2009) %>%
-  dplyr::select(c(Region,Station,Year,Month, Date)) %>%
-  unique() %>%
-  group_by(Region, Station, Year) %>%
-  mutate(totalDays = n()) %>%
-  ungroup() 
-  
-StationDayFilterCY <- StationYearComboCY %>%
-  filter(totalDays>275) %>%
-  dplyr::select(-Date) %>%
-  unique() %>%
-  group_by(Region, Station, Year) %>%
-  mutate(nMonth = n()) %>%
-  ungroup()
-
-StationMonthFilterCY <- StationDayFilterCY %>%
-  filter(nMonth >10) %>%
-  dplyr::select(-Month) %>%
-  unique() %>%
-  group_by(Region, Station) %>%
-  mutate(nYear = n()) %>%ungroup()
-
-StationYearFilterCY <- StationMonthFilterCY %>%
-  filter(nYear>7) %>%
-  filter(Station!="FLT")
-
-ListOfStaCY <- StationYearFilterCY %>%
-  dplyr::select(-c(Year, totalDays, nMonth))%>%
-  unique() 
-
-# Write data -------------------------
-tempToUseCY <- inner_join(tempFilt, StationYearFilterCY, by = c("Region","Station", "Year")) %>%
-  dplyr::select(-nMonth, -nYear, -totalDays)
-#tempToUse$WY = as.numeric(tempToUse$WY)
-today = format(today(), "%Y%m%d")
-saveRDS(tempToUseCY, paste0("../manuscript_code/Data/temp10yearsCalYr_", today, ".rds"))
-
-```
-
 # Create additional datasets
 * Create dataset for mean, max, and min, var for Monthly
 * Filter for data that is represented for a whole year

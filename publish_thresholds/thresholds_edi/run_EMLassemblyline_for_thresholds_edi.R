@@ -92,4 +92,6 @@ EMLassemblyline::make_eml(
   data.table.quote.character = c('"', '"'), # If you have columns that have commas in the text, you will need to use "quote = TRUE" when you write your R file (write.csv), and then use this to tell make_eml what is going around your character cells. c(apostrophe, quote, apostrophe, comma, etc...)
   user.id = "aquaticecology",
   user.domain = "EDI", 
-  package.id = "edi.1286.2")
+  package.id = "edi.1286.3")
+
+

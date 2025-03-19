@@ -213,8 +213,8 @@ resid_ar1 <- resid(m.maxsAR1b, type = "pearson")
 acf(resid_ar1, main = "Autocorrelation of Residuals")
 pacf(resid_ar1, main = "Partial Autocorrelation of Residuals")
 
-
-
+library(lmtest)
+dwtest(m.maxsAR1)
 
 summary(m.maxs9 <- lmer(maxAvTemp ~ fWY + Season * Region2 + (1|Station) +(1|fMonth), data = temp))
 anova(m.maxs9, type = 2)
