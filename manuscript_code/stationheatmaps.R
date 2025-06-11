@@ -1,19 +1,31 @@
+############################
+# Created by Rosie Hartman (DWR) and edited by Cat Pien (USBR)
+# cpien@usbr.gov
+# Last edited 6/11/2025 (made notations and changed tiffs to pngs)
+# This code creates: 
+# Figure 6 - heat map looking at proportion of days/stations >22C
+# Figure A4 - no recovery barplot comparing warm years and mean
+# Other plots include summary stat heatmaps that were not included in the manuscript
+#############################
 
 library(tidyverse)
 library(lubridate)
 library(scales)
+library(here)
 
-#load the filtered data set
-temps = readRDS("manuscript_code/Data/tempDaily.rds")
-Temp_filtered = readRDS("Data/temp10years_20230613.rds")
-latlon <- read_csv("Data/StationsMetadata.csv") %>%
+# Load data -----------------------------
+temps = readRDS(here("manuscript_code/Data/tempDaily.rds"))
+Temp_filtered = readRDS(here("manuscript_code/Data/temp10years_20230613.rds"))
+latlon <- read_csv(here("manuscript_code/Data/StationsMetadata.csv")) %>%
   dplyr::select(Station, Latitude, Longitude)
 
-# grouping years
+# Process data ---------------
+
+## grouping years ------------------------
 hotyears <- c(2014, 2015, 2016)
 coolyears <- c(2010, 2011, 2012)
 
-#percentage of day above 22
+## assign if above 22/25 -------------------
 tempabove = Temp_filtered %>%
   mutate(above22 = case_when(Temp >= 22 ~ 1,
                              Temp <22 ~ 0),
@@ -31,7 +43,7 @@ temps2 = temps %>%
   mutate(Station = fct_inorder(factor(Station, ordered = TRUE)),
          Region = factor(Region, levels = c("North Delta", "Confluence", "Central", "South", "Suisun Bay", "Suisun Marsh")))
 
-# calculate means across stations 
+## calculate means across stations -------------------
 dataset_means <- Temp_filtered %>%
   group_by(Station) %>%
   summarize(Tempmean = round(mean(Temp, na.rm = T),1), 
@@ -39,10 +51,12 @@ dataset_means <- Temp_filtered %>%
             TempMin = round(min(Temp, na.rm =T),1)) %>%
   ungroup() 
 
+# write summary stats
 write_csv(dataset_means, "manuscript_code/Data/temp_summary_stats_station.csv")
 
 
-#calculate the daily means
+## calculate the daily means -----------------------
+
 tempmean = temps2 %>%
   mutate(dummyDate = ymd(paste0("2024-", format(Date, format = "%m-%d")))) %>%
   group_by(Station, dummyDate, Region) %>%
@@ -86,13 +100,14 @@ temps_cool <- temps2 %>%
   mutate(month = month(dummyDate))
 
 
-#Percent of day over thresholds -----------------------
+# Plot Percent of day over thresholds -----------------------
 
+# create dummy data to draw vert lines
 vlines <- data.frame(dummyDate=rep(seq(as.Date(0, origin="2024-01-01"),
                             length=12, by="1 month")),
                   Station=24)
 
-# plotting function
+## plotting function ---------------------
 # @df = data frame of interest
 # @threshold = temperature threshold of interest
 # @plottype = used for naming the plot file, needs to be in quotations
@@ -112,16 +127,16 @@ plot_percent <- function(df, threshold, plottype) {
           axis.title.x = element_blank(),
           legend.position = "top"))
   
-  ggsave(paste0("manuscript_code/Figures/",plottype, "_above",threshold, ".png"), device = "png", width =6, height =10)
+  ggsave(paste0("manuscript_code/Figures/",plottype, "_above",threshold, ".tiff"), device = "tiff", width =6, height =10)
 }
 
 # for testing function 
 df = tempmean
 threshold = 22
 plottype = "stationheatmap"
-##########
 
-# Calculate percent in each region that is fully above threshold
+
+## Calculate percent in each region that is fully above threshold ------
 temp_all_warm <- bind_rows(temps_warm %>% mutate(TempClass = "Warm Years (2014-2016)"),
                        tempmean %>% mutate(TempClass = "All Years"))
 recov <- temp_all_warm %>%
@@ -140,7 +155,7 @@ temprecov_summary <- recov %>% dplyr::select(-total, -n) %>%
   mutate(Difference = (`Warm Years (2014-2016)` - `All Years`),
          Days = Difference*365/100)
 
-# Figures ---------------
+## Figures ---------------
 ## Functions for different cases
 plot_percent(tempmean %>% filter(month > 3 & month < 11), 22, "stationheatmap")
 plot_percent(tempmean%>% filter(month > 3 & month < 11), 25, "stationheatmap")
@@ -149,6 +164,7 @@ plot_percent(temps_warm%>% filter(month > 3 & month < 11), 25, "warmyears")
 plot_percent(temps_cool%>% filter(month > 3 & month < 11), 22, "coolyears")
 plot_percent(temps_cool%>% filter(month > 3 & month < 11), 25, "coolyears")
 
+# This one used in manuscript
 (plot_all_warm <- ggplot() + 
   geom_tile(data = temp_all_warm %>%filter(month>3 & month<11), aes(x = dummyDate, y = Station, fill = percent)) +
   scale_x_date(date_breaks = "1 month", date_labels = "%b",
@@ -163,7 +179,7 @@ plot_percent(temps_cool%>% filter(month > 3 & month < 11), 25, "coolyears")
         axis.title.x = element_blank(),
         legend.position = "top"))
 
-ggsave("manuscript_code/Figures/stationheatmap_above22_all_warm_years.png", device = "png", width =7.25, height =10)
+ggsave("manuscript_code/Figures/Fig6_stations_above22_all_warm.png", device = "png", width =7.25, height =10)
 
 (compare_warm_cool_barplot <- ggplot(recov, aes(Region, percent)) + 
   geom_col(aes(fill = over95), width = 0.8) +
@@ -177,7 +193,8 @@ ggsave("manuscript_code/Figures/stationheatmap_above22_all_warm_years.png", devi
         legend.position = "top",
         axis.title.x = element_blank()))
 
-ggsave(paste0("manuscript_code/Figures/compare_warm_all_barplot.png"), device = "png", width =6, height =7)
+# Used in manuscript
+ggsave(paste0("manuscript_code/Figures/FigA4_norecovery_barplot.png"), device = "png", width =6, height =7)
 
 
 
