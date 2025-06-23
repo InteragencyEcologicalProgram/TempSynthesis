@@ -7,7 +7,8 @@ editor_options:
   chunk_output_type: console
 ---
 
-# This is the most recent version of temperature trend modeling, including year, region + season
+This is the most recent version of temperature trend modeling, including year, region + season. Creates Figures 2 and 3 of manuscript, and Tables A2-A5 (model results). Also creates part of metadata table A1.
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
@@ -595,7 +596,7 @@ pwpp(plotmax9.rs, type = "response", adjust = "bonferroni", by = "Season")
 
 ### Year plot
 ```{r}
-(plot_ci_max9_wy <- ggplot(data = results_max92,) + 
+(plot_ci_max9_wy <- ggplot(data = ci_max9_wy) + 
    geom_errorbar(aes(x = fWY, ymin = asymp.LCL, ymax = asymp.UCL), size = 0.5,  width = 0.3) +
    geom_text( aes(label = .group, x = fWY, y = asymp.UCL + 0.3), position = position_dodge2(width = 0.75)) + 
   # geom_segment(aes(x=fWY, y=emmean, xend =fWY, yend = rcmpl), color = "orange",
@@ -729,12 +730,9 @@ p4 <- ggplot(data.frame(l = "Maximum Water Temperature (°C)\nwith 95% Confidenc
       coord_cartesian(clip = "off")
 plot_ci_max9_wy$labels$y <- plot_ci_max9$labels$y <- " "
 
-png(filename = "Figures/Watertemp_trends_max2.png", height = 7.5, width = 7,units = "in", 
-    res = 300, pointsize = 12, family = "sans")
-(maxplot <- p4 + (plot_ci_max9_wy/plot_ci_max9) + plot_layout(widths = c(2.5,25)))
-
-dev.off()
-
+# png(filename = "Figures/Watertemp_trends_max2.png", height = 7.5, width = 7,units = "in", 
+#     res = 300, pointsize = 12, family = "sans")
+# (maxplot <- p4 + (plot_ci_max9_wy/plot_ci_max9) + plot_layout(widths = c(2.5,25)))
 
 p5 <- ggplot(data.frame(l = "Maximum Water \nTemperature Anomaly (°C) \nwith Standard Error", x = 1, y = 1)) +
       geom_text(aes(x, y, label = l), angle = 90) + 
@@ -744,7 +742,14 @@ bar10yrAnomMax$labels$y <- bar10yrAnomMax$labels$y <- " "
 
 (updated <- (p5+bar10yrAnomMax) + plot_layout(widths = c(2.5,25)))
 
-png(filename = "manuscript_code/Figures/Watertemp_trends_max3.png", height = 8.5, width = 7,units = "in", 
+# png(filename = "manuscript_code/Figures/Watertemp_trends_max3.png", height = 8.5, width = 7,units = "in", 
+#     res = 300, pointsize = 12, family = "sans")
+# (updated/maxplot + plot_layout(heights = c(2,6.5)))
+# dev.off()
+
+# This one used for manuscript
+
+tiff(filename = "manuscript_code/Figures/Fig2_Watertemp_trends_max.tiff", height = 8.5, width = 7,units = "in", 
     res = 300, pointsize = 12, family = "sans")
 (updated/maxplot + plot_layout(heights = c(2,6.5)))
 dev.off()
@@ -881,10 +886,14 @@ p4 <- ggplot(data.frame(l = "Minimum Water Temperature (°C) with 95% Confidence
       coord_cartesian(clip = "off")
 plot_ci_min9_wy$labels$y <- plot_ci_min9$labels$y <- " "
 
+# png(filename = "manuscript_code/Figures/Watertemp_trends_min.png", height = 7.5, width = 7,units = "in", 
+#     res = 300, pointsize = 12, family = "sans")
+# p4 + (plot_ci_min9_wy/plot_ci_min9) + plot_layout(widths = c(1,25))
+# 
+# dev.off()
 
-
-
-png(filename = "manuscript_code/Figures/Watertemp_trends_min.png", height = 7.5, width = 7,units = "in", 
+# Used this one for mansucript
+tiff(filename = "manuscript_code/Figures/Fig3_Watertemp_trends_min.tiff", height = 7.5, width = 7,units = "in", 
     res = 300, pointsize = 12, family = "sans")
 p4 + (plot_ci_min9_wy/plot_ci_min9) + plot_layout(widths = c(1,25))
 

@@ -1,11 +1,12 @@
 ---
 title: "model_native_nonnative"
-author: "NCEAS"
+author: "Catarina Pien"
 date: '2022-08-11'
 output: html_document
 editor_options: 
   chunk_output_type: console
 ---
+This script makes models for comparing proportion of days exceedance for natives v nonnatives, listed vs unlisted fish spp.
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -95,7 +96,7 @@ Write table of species included in model
 table <- data_exceedance %>% 
   filter(LifeStage == "Adult" | LifeStage == "Undifferentiated", 
          !is.na(daysExceedanceTol)) %>%
-  dplyr::select(Species, Lstatus, Tolerance_Upper) %>%
+  dplyr::select(Species, Lstatus) %>%
   distinct() %>%
   arrange(Species)
 

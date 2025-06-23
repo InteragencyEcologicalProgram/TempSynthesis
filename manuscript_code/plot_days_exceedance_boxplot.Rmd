@@ -7,9 +7,9 @@ editor_options:
   chunk_output_type: console
 ---
 # Days Exceedance
-Last updated 6/19/2023 by C. Pien
+Last updated 6/23/2025 by C. Pien
 
-Calculate days exceedance for temperature suitability based on tolerance and optimum temperatures in species table
+Calculate days exceedance for temperature suitability based on tolerance and optimum temperatures in species table. Generates boxplots for days exceedance, Figure 5.
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -222,7 +222,7 @@ legend <- get_legend(FishTol1)
                                     axis.text.x = element_blank()))
 (FishTol1_noleg<- FishTol1 + theme(legend.position = "none") )
 
-png(filename=file.path("manuscript_code/Figures/Figure_Opt_Tol.png"), units="in",type="cairo", bg="white", height=7.5, 
+tiff(filename=file.path("manuscript_code/Figures/Figure_Opt_Tol.tiff"), units="in",type="cairo", bg="white", height=7.5, 
      width=8, res=300, pointsize=12)
 ggarrange(legend, FishOpt1_noleg, FishTol1_noleg, ncol=1, nrow=3,
              heights = c(0.75,2.5,4), labels = c("", "A","B"))
@@ -235,7 +235,7 @@ legend2 <- get_legend(FishTol1b)
 (FishOpt2_noleg <- FishOpt2 + theme(legend.position = "none") )
 (FishTol1b_noleg<- FishTol1b + theme(legend.position = "none") )
 
-png(filename=file.path("manuscript_code/Figures/Figure_Opt_Tol_scalesdiff.tiff"), units="in",type="cairo", bg="white", height=5.5, 
+tiff(filename=file.path("manuscript_code/Figures/Figure_Opt_Tol_scalesdiff.tiff"), units="in",type="cairo", bg="white", height=5.5, 
      width=6, res=300, pointsize=12,compression="lzw")
 ggarrange(legend, FishOpt2_noleg, FishTol1b_noleg, ncol=1, nrow=3,
              heights = c(0.75,3,3.3), labels = c("", "A","B"))
@@ -394,7 +394,13 @@ legend <- get_legend(FishTolU)
                                     axis.text.x = element_blank()))
 (FishTolU_noleg<- FishTolU + theme(legend.position = "none") )
 
-png(filename=file.path("manuscript_code/Figures/Figure_Opt_Tol_Upper.tiff"), units="in",type="cairo", bg="white", height=7.5, 
+# png(filename=file.path("manuscript_code/Figures/Figure_Opt_Tol_Upper.png"), units="in",type="cairo", bg="white", height=7.5, 
+#      width=8, res=300, pointsize=12)
+# ggarrange(legend, FishOptU_noleg, FishTolU_noleg, ncol=1, nrow=3,
+#              heights = c(0.75,2.35,4), labels = c("", "A","B"))
+# dev.off()
+
+tiff(filename=file.path("manuscript_code/Figures/Figure_Opt_Tol_Upper.tiff"), units="in",type="cairo", bg="white", height=7.5, 
      width=8, res=300, pointsize=12)
 ggarrange(legend, FishOptU_noleg, FishTolU_noleg, ncol=1, nrow=3,
              heights = c(0.75,2.35,4), labels = c("", "A","B"))
