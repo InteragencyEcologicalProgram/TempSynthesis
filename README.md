@@ -8,6 +8,8 @@ Integrated datasets are published at: <https://portal.edirepository.org/nis/mapb
 
 Species thresholds are published at: <https://portal.edirepository.org/nis/mapbrowse?scope=edi&identifier=1286&revision=3>
 
+[![Workflow Diagram (<https://github.com/InteragencyEcologicalProgram/TempSynthesis/blob/master/manuscript_code/Figures/flowchart.png>)](manuscript_code/Figures/flowchart.png)](https://github.com/InteragencyEcologicalProgram/TempSynthesis/blob/master/manuscript_code/Figures/flowchart.png)
+
 ## Code asssociated with Water Temperature Thresholds Manuscript
 
 -   Go to **manuscript_code** folder for most up-to-date code.
